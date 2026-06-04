@@ -1,0 +1,275 @@
+// Sistema Administrativo Escolar - Prisma Schema
+// Compatible con Azure Database for PostgreSQL y Azure SQL Database
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ESCUELA (Institución)
+// ============================================
+model School {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relaciones
+  teachers      Teacher[]
+  subjects      Subject[]
+  groups        Group[]
+  students      Student[]
+  contracts     Contract[]
+  attendance    Attendance[]
+
+  @@map("schools")
+}
+
+// ============================================
+// MAESTROS
+// ============================================
+model Teacher {
+  id                String    @id @default(cuid())
+  schoolId          String
+  firstName         String
+  lastName          String
+  email             String    @unique
+  phone             String?
+  cedula            String?   @unique
+  specialization    String?
+  contractStatus    String    @default("pending") // active, inactive, pending
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relaciones
+  school            School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  availability      TeacherAvailability[]
+  assignments       TeacherSubjectGroup[]
+  contracts         Contract[]
+
+  @@map("teachers")
+  @@index([schoolId])
+  @@index([email])
+}
+
+// ============================================
+// MATERIAS/ASIGNATURAS
+// ============================================
+model Subject {
+  id            String   @id @default(cuid())
+  schoolId      String
+  name          String
+  code          String
+  description   String?
+  credits       Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relaciones
+  school        School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  assignments   TeacherSubjectGroup[]
+
+  @@unique([schoolId, code])
+  @@map("subjects")
+  @@index([schoolId])
+}
+
+// ============================================
+// GRUPOS/GRADOS
+// ============================================
+model Group {
+  id              String   @id @default(cuid())
+  schoolId        String
+  name            String   // "1ro A", "2do B", etc.
+  grade           Int
+  section         String?
+  totalStudents   Int?
+  academicYear    String   // "2025-2026"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relaciones
+  school          School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  students        Student[]
+  assignments     TeacherSubjectGroup[]
+
+  @@unique([schoolId, name, academicYear])
+  @@map("groups")
+  @@index([schoolId])
+}
+
+// ============================================
+// ALUMNOS/ESTUDIANTES
+// ============================================
+model Student {
+  id                  String   @id @default(cuid())
+  schoolId            String
+  groupId             String
+  firstName           String
+  lastName            String
+  registrationNumber  String   @unique
+  dateOfBirth         DateTime?
+  email               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relaciones
+  school              School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  group               Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendance          Attendance[]
+
+  @@map("students")
+  @@index([schoolId])
+  @@index([groupId])
+  @@index([registrationNumber])
+}
+
+// ============================================
+// DISPONIBILIDAD DE MAESTROS
+// ============================================
+model TeacherAvailability {
+  id            String   @id @default(cuid())
+  teacherId     String
+  dayOfWeek     Int      // 0=Lunes, 1=Martes, ..., 5=Sábado, 6=Domingo
+  startTime     DateTime // Hora de inicio
+  endTime       DateTime // Hora de fin
+  isAvailable   Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relaciones
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@map("teacher_availability")
+  @@index([teacherId])
+}
+
+// ============================================
+// ASIGNACIONES: Maestro - Materia - Grupo
+// ============================================
+model TeacherSubjectGroup {
+  id            String   @id @default(cuid())
+  teacherId     String
+  subjectId     String
+  groupId       String
+  scheduleDay   Int?     // Día de la semana
+  startTime     DateTime?
+  endTime       DateTime?
+  classroom     String?
+  academicYear  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relaciones
+  teacher       Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject       Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  group         Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendance    Attendance[]
+  signatures    AttendanceSignature[]
+
+  @@unique([teacherId, subjectId, groupId, academicYear])
+  @@map("teacher_subject_groups")
+  @@index([teacherId])
+  @@index([subjectId])
+  @@index([groupId])
+}
+
+// ============================================
+// CONTRATOS
+// ============================================
+model Contract {
+  id            String   @id @default(cuid())
+  schoolId      String
+  teacherId     String
+  academicYear  String
+  contractType  String   // "full-time", "part-time", "hourly"
+  startDate     DateTime
+  endDate       DateTime
+  salary        Decimal  @db.Decimal(10, 2)
+  signedDate    DateTime?
+  isSigned      Boolean  @default(false)
+  signaturePath String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relaciones
+  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@map("contracts")
+  @@index([teacherId])
+  @@index([schoolId])
+}
+
+// ============================================
+// ASISTENCIA
+// ============================================
+model Attendance {
+  id                      String   @id @default(cuid())
+  teacherSubjectGroupId   String
+  studentId               String
+  sessionDate             DateTime
+  status                  String   // "present", "absent", "late", "excused"
+  notes                   String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relaciones
+  teacherSubjectGroup     TeacherSubjectGroup @relation(fields: [teacherSubjectGroupId], references: [id], onDelete: Cascade)
+  student                 Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  signature               AttendanceSignature?
+
+  @@unique([teacherSubjectGroupId, studentId, sessionDate])
+  @@map("attendance")
+  @@index([teacherSubjectGroupId])
+  @@index([studentId])
+}
+
+// ============================================
+// FIRMAS DE ASISTENCIA
+// ============================================
+model AttendanceSignature {
+  id                      String   @id @default(cuid())
+  attendanceId            String   @unique
+  teacherSubjectGroupId   String
+  teacherSignaturePath    String?
+  principalSignaturePath  String?
+  signedDate              DateTime?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relaciones
+  attendance              Attendance          @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  teacherSubjectGroup     TeacherSubjectGroup @relation(fields: [teacherSubjectGroupId], references: [id], onDelete: Cascade)
+
+  @@map("attendance_signatures")
+  @@index([attendanceId])
+  @@index([teacherSubjectGroupId])
+}
+
+// ============================================
+// USUARIOS (para autenticación local)
+// ============================================
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String   // Debe estar hasheado
+  role          String   @default("teacher") // admin, teacher, principal
+  firstName     String?
+  lastName      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastLogin     DateTime?
+
+  @@map("users")
+  @@index([email])
+}
