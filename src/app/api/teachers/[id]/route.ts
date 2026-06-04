@@ -91,7 +91,7 @@ export async function GET(
  * Actualizar información de un maestro
  */
 export async function PUT(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
