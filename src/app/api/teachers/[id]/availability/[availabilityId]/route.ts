@@ -32,7 +32,7 @@ function handleError(error: unknown) {
  * Eliminar una disponibilidad específica
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   {
     params,
   }: {
