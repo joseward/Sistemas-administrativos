@@ -66,7 +66,7 @@ function handleError(error: unknown) {
  * Obtener un maestro específico con toda su información
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
