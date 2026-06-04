@@ -91,7 +91,7 @@ export async function GET(
  * Actualizar información de un maestro
  */
 export async function PUT(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -122,7 +122,7 @@ export async function PUT(
  * Eliminar un maestro (cambiar a inactivo)
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
