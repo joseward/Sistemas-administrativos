@@ -227,6 +227,9 @@ model Attendance {
   teacherSubjectGroup     TeacherSubjectGroup @relation(fields: [teacherSubjectGroupId], references: [id], onDelete: Cascade)
   student                 Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
   signature               AttendanceSignature?
+  
+  schoolId                String
+  school                  School              @relation(fields: [schoolId], references: [id])
 
   @@unique([teacherSubjectGroupId, studentId, sessionDate])
   @@map("attendance")
