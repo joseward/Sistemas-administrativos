@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply box-border;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+}
+
+/* Estilos para impresión */
+@media print {
+  body {
+    @apply bg-white;
+  }
+
+  .no-print {
+    @apply hidden;
+  }
+
+  .print-only {
+    @apply block;
+  }
+}
+
+.print-only {
+  @apply hidden;
+}
+
+/* Estilos de la aplicación */
+.sidebar {
+  @apply h-screen bg-gray-900 text-white fixed left-0 top-0 w-64;
+}
+
+.main-content {
+  @apply ml-64 p-8;
+}
+
+/* Diseño A4 para impresión de contratos y asistencia */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body {
+    margin: 0;
+    padding: 1cm;
+  }
+
+  .page-break {
+    page-break-after: always;
+    break-after: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
