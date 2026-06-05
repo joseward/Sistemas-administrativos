@@ -48,8 +48,8 @@ export default function AsistenciaPage() {
     return teachers.filter(t => activeTeacherIds.has(t.id));
   }, [teachers, assignments]);
 
-  // Obtener las materias asignadas al docente seleccionado
-  const teacherSubjects = useMemo(() => {
+  // Asignaciones del maestro seleccionado
+  const teacherAssignments = useMemo(() => {
     if (!selectedTeacherId) return [];
     return assignments.filter(a => a.teacherId === selectedTeacherId);
   }, [selectedTeacherId, assignments]);
