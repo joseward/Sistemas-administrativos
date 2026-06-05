@@ -15,6 +15,11 @@ interface Teacher {
   specialization?: string;
   contractStatus: 'active' | 'inactive' | 'pending';
   createdAt: string;
+  createdByUser?: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  } | null;
 }
 
 interface PaginationData {
@@ -50,7 +55,6 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
     try {
       const response = await axios.get('/api/teachers', {
         params: {
-          schoolId,
           page: currentPage,
           limit: 10,
         },
@@ -172,6 +176,12 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
                 Estado
               </th>
               <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                Registro
+              </th>
+              <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                Creado por
+              </th>
+              <th className="px-4 py-3 text-center font-semibold text-gray-700">
                 Acciones
               </th>
             </tr>
@@ -179,7 +189,7 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
           <tbody>
             {filteredTeachers.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-6 text-center text-gray-500">
                   {searchTerm
                     ? 'No hay maestros que coincidan con tu búsqueda'
                     : 'No hay maestros registrados'}
@@ -203,6 +213,14 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
                   </td>
                   <td className="px-4 py-3 text-center">
                     {getStatusBadge(teacher.contractStatus)}
+                  </td>
+                  <td className="px-4 py-3 text-center text-gray-700">
+                    {new Date(teacher.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 text-center text-sm text-gray-600">
+                    {teacher.createdByUser 
+                      ? `${teacher.createdByUser.firstName || ''} ${teacher.createdByUser.lastName || ''}`.trim() || 'Admin'
+                      : '—'}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex gap-2 justify-center">

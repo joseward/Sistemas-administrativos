@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { jwtVerify } from 'jose';
 
 const prisma = new PrismaClient();
 
@@ -12,6 +13,15 @@ export async function GET(request: NextRequest) {
     const teachers = await prisma.teacher.findMany({
       where: schoolId ? { schoolId } : undefined,
       orderBy: { createdAt: 'desc' },
+      include: {
+        createdByUser: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          }
+        }
+      }
     });
 
     return NextResponse.json({ success: true, data: teachers, pagination: { total: teachers.length, pages: 1 } });
@@ -25,6 +35,21 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { firstName, lastName, email, phone, cedula, specialization, contractStatus } = body;
+
+    // Obtener quién está creando el maestro
+    let adminId = undefined;
+    const token = request.cookies.get('auth-token')?.value;
+    if (token) {
+      try {
+        const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+        const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+        if (payload && payload.id) {
+          adminId = payload.id as string;
+        }
+      } catch (err) {
+        console.warn('Error verificando token para createdBy:', err);
+      }
+    }
 
     if (!firstName || !lastName || !email) {
       return NextResponse.json({ success: false, error: 'Faltan campos obligatorios' }, { status: 400 });
@@ -67,6 +92,7 @@ export async function POST(request: NextRequest) {
           cedula,
           specialization,
           contractStatus: contractStatus || 'active',
+          createdByUserId: adminId,
         },
       });
 

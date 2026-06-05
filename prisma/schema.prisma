@@ -55,6 +55,8 @@ model Teacher {
   availability      TeacherAvailability[]
   assignments       TeacherSubjectGroup[]
   contracts         Contract[]
+  createdByUserId   String?
+  createdByUser     User?                  @relation("TeacherCreator", fields: [createdByUserId], references: [id])
 
   @@map("teachers")
   @@index([schoolId])
@@ -273,6 +275,9 @@ model User {
   updatedAt     DateTime @updatedAt
   lastLogin     DateTime?
   status        String   @default("active") // active, inactive
+
+  // Relaciones
+  createdTeachers Teacher[] @relation("TeacherCreator")
 
   @@map("users")
   @@index([email])
