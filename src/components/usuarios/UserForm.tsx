@@ -11,6 +11,7 @@ const UserFormSchema = z.object({
   name: z.string().min(2, 'Nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   status: z.enum(['active', 'inactive']),
+  password: z.string().min(6, 'Mínimo 6 caracteres').optional(),
 });
 
 type UserFormData = z.infer<typeof UserFormSchema>;
@@ -64,22 +65,30 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
     setSubmitError(null);
 
     try {
-      await new Promise(res => setTimeout(res, 500)); // Simular red
-
       if (editingUser) {
-        const idx = MOCK_USERS.findIndex(u => u.id === editingUser.id);
-        if (idx !== -1) {
-          MOCK_USERS[idx] = { ...MOCK_USERS[idx], ...data };
-        }
-      } else {
-        MOCK_USERS.push({
-          id: `usr-admin${Date.now()}`,
-          name: data.name,
-          email: data.email,
-          role: 'admin',
-          status: data.status,
-          createdAt: new Date().toISOString(),
+        const response = await fetch(`/api/users/${editingUser.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: data.name,
+            email: data.email,
+            status: data.status,
+          }),
         });
+        if (!response.ok) throw new Error('Error updating');
+      } else {
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: data.name,
+            email: data.email,
+            password: data.password || 'admin123',
+            role: 'admin',
+            status: data.status,
+          }),
+        });
+        if (!response.ok) throw new Error('Error creating');
       }
 
       reset();
@@ -140,9 +149,13 @@ export function UserForm({ isOpen, onClose, onSuccess, editingUser }: UserFormPr
         />
         
         {!editingUser && (
-          <p className="text-xs text-gray-500 mt-2">
-            La contraseña se generará automáticamente y se enviará al correo del nuevo administrador.
-          </p>
+          <Input
+            label="Contraseña"
+            type="password"
+            placeholder="Mínimo 6 caracteres"
+            {...register('password')}
+            error={errors.password?.message}
+          />
         )}
       </form>
     </Modal>

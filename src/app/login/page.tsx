@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<'admin' | 'docente' | null>(null);
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -21,18 +21,30 @@ export default function LoginPage() {
       return;
     }
 
-    if (selectedRole === 'admin') {
-      if (email === 'admin@aztlan.edu.mx' && password === 'admin123') {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, role: selectedRole }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Error al iniciar sesión');
+        return;
+      }
+
+      // Si todo es correcto, redirigimos
+      if (selectedRole === 'admin') {
         router.push('/');
-      } else {
-        setError('Credenciales de administrador incorrectas.');
-      }
-    } else if (selectedRole === 'docente') {
-      if (email.includes('docente') && password === 'docente123') {
+      } else if (selectedRole === 'docente') {
         router.push('/portal-docente');
-      } else {
-        setError('Credenciales de docente incorrectas.');
       }
+    } catch (err) {
+      setError('Error de conexión con el servidor.');
     }
   };
 
