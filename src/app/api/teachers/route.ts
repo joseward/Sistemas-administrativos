@@ -1,126 +1,93 @@
-/**
- * API Routes: Maestros (Teachers)
- * Endpoints: GET /api/teachers, POST /api/teachers
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import * as teacherService from '@/services/teacherService';
-import { ZodError, z } from 'zod';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-// Esquemas de validación
-const CreateTeacherSchema = z.object({
-  schoolId: z.string().min(1, 'Escuela requerida'),
-  firstName: z.string().min(2, 'Nombre debe tener al menos 2 caracteres'),
-  lastName: z.string().min(2, 'Apellido debe tener al menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  phone: z.string().optional(),
-  cedula: z.string().optional(),
-  specialization: z.string().optional(),
-  contractStatus: z.enum(['active', 'inactive', 'pending']).default('pending'),
-});
+const prisma = new PrismaClient();
 
-const QueryParamsSchema = z.object({
-  schoolId: z.string().min(1, 'schoolId requerido'),
-  page: z.string().optional().transform((val) => (val ? parseInt(val) : 1)),
-  limit: z.string().optional().transform((val) => (val ? parseInt(val) : 10)),
-});
-
-// Helper para manejo de errores
-function handleError(error: unknown) {
-  if (error instanceof ZodError) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Validación fallida',
-        details: error.errors,
-      },
-      { status: 400 }
-    );
-  }
-
-  if (error instanceof Error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: error.message,
-      },
-      { status: 400 }
-    );
-  }
-
-  return NextResponse.json(
-    {
-      success: false,
-      error: 'Error interno del servidor',
-    },
-    { status: 500 }
-  );
-}
-
-/**
- * GET /api/teachers
- * Obtener lista de maestros por escuela
- * Query params: schoolId, page?, limit?
- */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const queryData = {
-      schoolId: searchParams.get('schoolId'),
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
-    };
+    const schoolId = searchParams.get('schoolId');
 
-    // Validar parámetros
-    const validatedParams = QueryParamsSchema.parse(queryData);
-
-    // Obtener maestros
-    const result = await teacherService.getAllTeachers(validatedParams.schoolId, {
-      page: validatedParams.page,
-      limit: validatedParams.limit,
+    const teachers = await prisma.teacher.findMany({
+      where: schoolId ? { schoolId } : undefined,
+      orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: result.data,
-        pagination: {
-          page: result.page,
-          limit: result.limit,
-          total: result.total,
-          pages: result.pages,
-        },
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true, data: teachers, pagination: { total: teachers.length, pages: 1 } });
   } catch (error) {
-    return handleError(error);
+    console.error('Error fetching teachers:', error);
+    return NextResponse.json({ success: false, error: 'Error al obtener maestros' }, { status: 500 });
   }
 }
 
-/**
- * POST /api/teachers
- * Crear un nuevo maestro
- */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const { firstName, lastName, email, phone, cedula, specialization, contractStatus } = body;
 
-    // Validar datos de entrada
-    const validatedData = CreateTeacherSchema.parse(body);
+    if (!firstName || !lastName || !email) {
+      return NextResponse.json({ success: false, error: 'Faltan campos obligatorios' }, { status: 400 });
+    }
 
-    // Crear maestro
-    const teacher = await teacherService.createTeacher(validatedData);
+    // Verificar que exista al menos una escuela (para la relación)
+    let school = await prisma.school.findFirst();
+    if (!school) {
+      school = await prisma.school.create({
+        data: {
+          name: 'Universidad Aztlán',
+        }
+      });
+    }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'Maestro creado exitosamente',
-        data: teacher,
-      },
-      { status: 201 }
-    );
+    // Verificar si el correo ya existe
+    const existingTeacher = await prisma.teacher.findUnique({ where: { email } });
+    if (existingTeacher) {
+      return NextResponse.json({ success: false, error: 'El correo ya está registrado' }, { status: 400 });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return NextResponse.json({ success: false, error: 'Ya existe un usuario con este correo' }, { status: 400 });
+    }
+
+    // Encriptar la contraseña por defecto "docente123"
+    const hashedPassword = await bcrypt.hash('docente123', 10);
+
+    // Ejecutar en una transacción para que ambas operaciones se completen o ninguna
+    const newTeacher = await prisma.$transaction(async (tx) => {
+      // 1. Crear el Maestro
+      const teacher = await tx.teacher.create({
+        data: {
+          schoolId: school.id,
+          firstName,
+          lastName,
+          email,
+          phone,
+          cedula,
+          specialization,
+          contractStatus: contractStatus || 'active',
+        },
+      });
+
+      // 2. Crear su cuenta de Usuario para el Login
+      await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          role: 'docente',
+          firstName,
+          lastName,
+          status: contractStatus === 'inactive' ? 'inactive' : 'active',
+        },
+      });
+
+      return teacher;
+    });
+
+    return NextResponse.json({ success: true, data: newTeacher }, { status: 201 });
   } catch (error) {
-    return handleError(error);
+    console.error('Error creating teacher:', error);
+    return NextResponse.json({ success: false, error: 'Error al crear maestro' }, { status: 500 });
   }
 }

@@ -82,25 +82,19 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
 
     setDeleting(teacherId);
     try {
-      // Simular delay de red
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await fetch(`/api/teachers/${teacherId}`, {
+        method: 'DELETE',
+      });
       
-      // Remover del mockData para que persista
-      const index = MOCK_TEACHERS.findIndex(t => t.id === teacherId);
-      if (index !== -1) {
-        MOCK_TEACHERS.splice(index, 1);
-      }
-      
-      // Eliminar también su cuenta de usuario
-      const userIndex = MOCK_USERS.findIndex(u => u.teacherId === teacherId);
-      if (userIndex !== -1) {
-        MOCK_USERS.splice(userIndex, 1);
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Error al eliminar');
       }
       
       setTeachers(teachers.filter((t) => t.id !== teacherId));
       if (onDelete) onDelete(teacherId);
-    } catch (err) {
-      setError('Error al eliminar el maestro');
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar el maestro');
     } finally {
       setDeleting(null);
     }
