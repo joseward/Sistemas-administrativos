@@ -53,11 +53,14 @@ export function ChangePasswordModal({ isOpen, onClose, user, onSuccess }: Change
     setSubmitting(true);
 
     try {
-      await new Promise(res => setTimeout(res, 600)); // Simular red
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: data.password })
+      });
 
-      const idx = MOCK_USERS.findIndex(u => u.id === user.id);
-      if (idx !== -1) {
-        MOCK_USERS[idx].password = data.password;
+      if (!response.ok) {
+        throw new Error('Error al actualizar la contraseña');
       }
 
       setSubmitSuccess(true);

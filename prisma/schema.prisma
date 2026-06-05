@@ -272,6 +272,7 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   lastLogin     DateTime?
+  status        String   @default("active") // active, inactive
 
   @@map("users")
   @@index([email])

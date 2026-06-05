@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button, Badge } from '@/components/ui';
 import { MOCK_USERS, type MockUser, MOCK_TEACHERS } from '@/lib/mockData';
@@ -9,11 +9,11 @@ import { ChangePasswordModal } from '@/components/usuarios/ChangePasswordModal';
 import { TeacherForm } from '@/components/teachers/TeacherForm';
 
 export default function UsuariosPage() {
-  const [users, setUsers] = useState<MockUser[]>(MOCK_USERS);
+  const [users, setUsers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'admin' | 'docente'>('admin');
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<MockUser | null>(null);
-  const [changingPasswordUser, setChangingPasswordUser] = useState<MockUser | null>(null);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [changingPasswordUser, setChangingPasswordUser] = useState<any | null>(null);
   
   // Para Docentes
   const [isTeacherFormOpen, setIsTeacherFormOpen] = useState(false);
@@ -21,7 +21,30 @@ export default function UsuariosPage() {
 
   const filteredUsers = users.filter(u => u.role === activeTab);
 
-  const handleEdit = (user: MockUser) => {
+  const loadUsers = useCallback(async () => {
+    try {
+      const response = await fetch('/api/users');
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        const formattedUsers = data.map((u: any) => ({
+          id: u.id,
+          name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Administrador',
+          email: u.email,
+          role: u.role,
+          status: u.status,
+        }));
+        setUsers(formattedUsers);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  const handleEdit = (user: any) => {
     setEditingUser(user);
     setIsFormOpen(true);
   };
@@ -31,16 +54,23 @@ export default function UsuariosPage() {
     setIsFormOpen(true);
   };
 
-  const handleRemove = (id: string) => {
+  const handleRemove = async (id: string) => {
     if (confirm('¿Seguro que quieres eliminar este usuario?')) {
-      const idx = MOCK_USERS.findIndex(u => u.id === id);
-      if (idx !== -1) MOCK_USERS.splice(idx, 1);
-      setUsers([...MOCK_USERS]);
+      try {
+        const response = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+          loadUsers();
+        } else {
+          alert('Error al eliminar usuario');
+        }
+      } catch (error) {
+        console.error('Error al eliminar:', error);
+      }
     }
   };
 
   const handleSuccess = () => {
-    setUsers([...MOCK_USERS]);
+    loadUsers();
   };
 
   return (
