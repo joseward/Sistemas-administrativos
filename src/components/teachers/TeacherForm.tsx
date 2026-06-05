@@ -108,50 +108,31 @@ export function TeacherForm({
     setSubmitError(null);
 
     try {
-      // Simular tiempo de red
-      await new Promise(resolve => setTimeout(resolve, 500));
-
+      let response;
       if (editingTeacher) {
-        // Actualizar maestro en memoria
-        const index = MOCK_TEACHERS.findIndex(t => t.id === editingTeacher.id);
-        if (index !== -1) {
-          MOCK_TEACHERS[index] = { ...MOCK_TEACHERS[index], ...data };
-        }
-        
-        // Sincronizar actualización con el usuario vinculado
-        const userIndex = MOCK_USERS.findIndex(u => u.teacherId === editingTeacher.id);
-        if (userIndex !== -1) {
-          MOCK_USERS[userIndex].name = `${data.firstName} ${data.lastName}`;
-          MOCK_USERS[userIndex].email = data.email;
-          MOCK_USERS[userIndex].status = data.contractStatus === 'inactive' ? 'inactive' : 'active';
-        }
-      } else {
-        // Crear maestro en memoria
-        const newTeacherId = `mock-t${Date.now()}`;
-        const newTeacher: any = {
-          id: newTeacherId,
-          ...data,
-          createdAt: new Date().toISOString(),
-        };
-        MOCK_TEACHERS.push(newTeacher);
-        
-        // Crear automáticamente la cuenta de usuario para este maestro
-        MOCK_USERS.push({
-          id: `usr-doc${Date.now()}`,
-          name: `${data.firstName} ${data.lastName}`,
-          email: data.email,
-          role: 'docente',
-          teacherId: newTeacherId,
-          status: data.contractStatus === 'inactive' ? 'inactive' : 'active',
-          createdAt: new Date().toISOString(),
+        response = await fetch(`/api/teachers/${editingTeacher.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
         });
+      } else {
+        response = await fetch('/api/teachers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+      }
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Error al guardar el maestro');
       }
       
       reset();
       onClose();
       onSuccess?.();
-    } catch (err) {
-      setSubmitError('Error al guardar el maestro');
+    } catch (err: any) {
+      setSubmitError(err.message || 'Error al guardar el maestro');
     } finally {
       setSubmitting(false);
     }

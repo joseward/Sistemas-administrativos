@@ -1,20 +1,17 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Button, Badge, Modal, Select, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import {
   MOCK_ASSIGNMENTS,
-  MOCK_TEACHERS,
   MOCK_SUBJECTS,
   MOCK_GROUPS,
   DAYS_OF_WEEK,
   TIME_SLOTS,
-  getTeacherById,
   getSubjectById,
   getGroupById,
-  getActiveTeachers,
   type MockScheduleAssignment,
 } from '@/lib/mockData';
 
@@ -30,11 +27,28 @@ function getTeacherColor(teacherId: string) {
 }
 
 export default function HorariosPage() {
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(true);
   const [assignments, setAssignments] = useState<MockScheduleAssignment[]>(MOCK_ASSIGNMENTS);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'week'>('week');
   const [filterTeacher, setFilterTeacher] = useState<string>('');
   const [filterGroup, setFilterGroup] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/teachers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setTeachers(data.data);
+        }
+      })
+      .catch(err => console.error("Error fetching teachers", err))
+      .finally(() => setLoadingTeachers(false));
+  }, []);
+
+  const getTeacherById = (id: string) => teachers.find((t) => t.id === id);
+  const getActiveTeachers = () => teachers.filter((t) => t.contractStatus === 'active');
 
   // Estado del formulario de nueva asignación
   const [formData, setFormData] = useState({
@@ -215,7 +229,7 @@ export default function HorariosPage() {
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Todos los maestros</option>
-              {MOCK_TEACHERS.filter(t => t.contractStatus !== 'inactive').map((t) => (
+              {teachers.filter(t => t.contractStatus !== 'inactive').map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.firstName} {t.lastName}
                 </option>
@@ -323,7 +337,7 @@ export default function HorariosPage() {
             {/* Leyenda de colores */}
             <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-50 border-t border-gray-200">
               <span className="text-xs font-semibold text-gray-500 uppercase">Maestros:</span>
-              {MOCK_TEACHERS.filter(t => t.contractStatus !== 'inactive').map((t) => {
+              {teachers.filter(t => t.contractStatus !== 'inactive').map((t) => {
                 const colors = getTeacherColor(t.id);
                 return (
                   <div key={t.id} className="flex items-center gap-1.5">

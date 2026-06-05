@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Button, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import {
-  MOCK_TEACHERS,
   MOCK_ASSIGNMENTS,
   DAYS_OF_WEEK,
   CUATRIMESTRES,
@@ -16,15 +15,27 @@ import {
 } from '@/lib/mockData';
 
 export default function AsistenciaPage() {
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
+  useEffect(() => {
+    fetch('/api/teachers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setTeachers(data.data);
+        }
+      })
+      .catch(err => console.error("Error fetching teachers", err));
+  }, []);
+
   // Obtener solo maestros que tengan al menos una asignación
   const teachersWithAssignments = useMemo(() => {
     const activeTeacherIds = new Set(MOCK_ASSIGNMENTS.map(a => a.teacherId));
-    return MOCK_TEACHERS.filter(t => activeTeacherIds.has(t.id));
-  }, []);
+    return teachers.filter(t => activeTeacherIds.has(t.id));
+  }, [teachers]);
 
   // Asignaciones del maestro seleccionado
   const teacherAssignments = useMemo(() => {
@@ -39,7 +50,7 @@ export default function AsistenciaPage() {
 
   // Detalles de la asignación seleccionada
   const selectedAssignment = teacherAssignments.find(a => a.id === selectedAssignmentId);
-  const selectedTeacher = MOCK_TEACHERS.find(t => t.id === selectedTeacherId);
+  const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
   
   // Datos relacionados a la asignación
   const subject = selectedAssignment ? getSubjectById(selectedAssignment.subjectId) : null;

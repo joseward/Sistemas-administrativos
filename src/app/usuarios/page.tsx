@@ -3,13 +3,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button, Badge } from '@/components/ui';
-import { MOCK_USERS, type MockUser, MOCK_TEACHERS } from '@/lib/mockData';
+import { MOCK_USERS, type MockUser } from '@/lib/mockData';
 import { UserForm } from '@/components/usuarios/UserForm';
 import { ChangePasswordModal } from '@/components/usuarios/ChangePasswordModal';
 import { TeacherForm } from '@/components/teachers/TeacherForm';
 
 export default function UsuariosPage() {
   const [users, setUsers] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'admin' | 'docente'>('admin');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any | null>(null);
@@ -25,13 +26,25 @@ export default function UsuariosPage() {
     try {
       const response = await fetch('/api/users');
       const data = await response.json();
-      if (Array.isArray(data)) {
+      if (Array.isArray(data.data)) {
+        const formattedUsers = data.data.map((u: any) => ({
+          id: u.id,
+          name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Administrador',
+          email: u.email,
+          role: u.role,
+          status: u.status,
+          // If the backend returns teacherId or if we link by email
+          teacherId: u.teacherId || null,
+        }));
+        setUsers(formattedUsers);
+      } else if (Array.isArray(data)) {
         const formattedUsers = data.map((u: any) => ({
           id: u.id,
           name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Administrador',
           email: u.email,
           role: u.role,
           status: u.status,
+          teacherId: u.teacherId || null,
         }));
         setUsers(formattedUsers);
       }
@@ -40,9 +53,22 @@ export default function UsuariosPage() {
     }
   }, []);
 
+  const loadTeachers = useCallback(async () => {
+    try {
+      const response = await fetch('/api/teachers');
+      const data = await response.json();
+      if (data.success) {
+        setTeachers(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading teachers:', error);
+    }
+  }, []);
+
   useEffect(() => {
     loadUsers();
-  }, [loadUsers]);
+    loadTeachers();
+  }, [loadUsers, loadTeachers]);
 
   const handleEdit = (user: any) => {
     setEditingUser(user);
@@ -174,7 +200,9 @@ export default function UsuariosPage() {
                             ) : (
                               <>
                                 <Button size="sm" variant="outline" onClick={() => {
-                                  setEditingTeacherId(user.teacherId || null);
+                                  // Find the teacher by email
+                                  const teacher = teachers.find(t => t.email === user.email);
+                                  setEditingTeacherId(teacher ? teacher.id : null);
                                   setIsTeacherFormOpen(true);
                                 }}>
                                   Editar Docente
@@ -213,9 +241,12 @@ export default function UsuariosPage() {
       <TeacherForm
         isOpen={isTeacherFormOpen}
         onClose={() => setIsTeacherFormOpen(false)}
-        onSuccess={handleSuccess}
+        onSuccess={() => {
+          handleSuccess();
+          loadTeachers();
+        }}
         schoolId="main-school"
-        editingTeacher={editingTeacherId ? MOCK_TEACHERS.find(t => t.id === editingTeacherId) : null}
+        editingTeacher={editingTeacherId ? teachers.find(t => t.id === editingTeacherId) : null}
       />
     </div>
   );

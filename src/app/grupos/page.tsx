@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Button, Badge, Modal, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import {
   MOCK_ASSIGNMENTS,
-  MOCK_TEACHERS,
   MOCK_SUBJECTS,
   MOCK_GROUPS,
   DAYS_OF_WEEK,
@@ -14,7 +13,6 @@ import {
   MOCK_CARRERAS,
   MOCK_BIMESTRES,
   MOCK_YEARS,
-  getTeacherById,
   getSubjectById,
   getGroupById,
 } from '@/lib/mockData';
@@ -22,6 +20,7 @@ import { Select } from '@/components/ui/Select';
 import { CatalogManagerModal } from '@/components/grupos/CatalogManagerModal';
 
 export default function GruposPage() {
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [filters, setFilters] = useState({
     modulo: '1',
     cuatrimestre: '',
@@ -32,6 +31,17 @@ export default function GruposPage() {
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
 
+  useEffect(() => {
+    fetch('/api/teachers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setTeachers(data.data);
+        }
+      })
+      .catch(err => console.error("Error fetching teachers", err));
+  }, []);
+
   // Agrupar asignaciones por maestro para la tabla
   const teacherAssignments = useMemo(() => {
     const grouped = new Map();
@@ -39,7 +49,7 @@ export default function GruposPage() {
     // Solo mostrar maestros que tengan alguna asignación
     const activeTeacherIds = new Set(MOCK_ASSIGNMENTS.map(a => a.teacherId));
     
-    MOCK_TEACHERS.filter(t => activeTeacherIds.has(t.id)).forEach((teacher) => {
+    teachers.filter(t => activeTeacherIds.has(t.id)).forEach((teacher) => {
       // Filtrar asignaciones del maestro combinando los nuevos filtros
       const assignments = MOCK_ASSIGNMENTS.filter((a) => {
         if (a.teacherId !== teacher.id) return false;
@@ -65,7 +75,7 @@ export default function GruposPage() {
     });
     
     return Array.from(grouped.values());
-  }, [filters, refreshTick]);
+  }, [filters, refreshTick, teachers]);
 
   const filteredTeachers = teacherAssignments.filter(({ teacher }) => {
     const search = searchTerm.toLowerCase();

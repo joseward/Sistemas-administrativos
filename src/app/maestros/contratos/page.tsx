@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import {
-  MOCK_TEACHERS,
   MOCK_ASSIGNMENTS,
   DAYS_OF_WEEK,
   getSubjectById,
@@ -12,15 +11,27 @@ import {
 } from '@/lib/mockData';
 
 export default function ContratosPage() {
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/teachers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setTeachers(data.data);
+        }
+      })
+      .catch(err => console.error("Error fetching teachers", err));
+  }, []);
 
   // Solo maestros que tienen asignaciones
   const teachersWithAssignments = useMemo(() => {
     const activeTeacherIds = new Set(MOCK_ASSIGNMENTS.map(a => a.teacherId));
-    return MOCK_TEACHERS.filter(t => activeTeacherIds.has(t.id));
-  }, []);
+    return teachers.filter(t => activeTeacherIds.has(t.id));
+  }, [teachers]);
 
-  const selectedTeacher = MOCK_TEACHERS.find(t => t.id === selectedTeacherId);
+  const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
 
   // Filtrar asignaciones del maestro por módulo
   const assignmentsMod1 = useMemo(() => {
