@@ -1,15 +1,56 @@
-'use client';
-
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { MOCK_TEACHERS } from '@/lib/mockData';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
+import { PrismaClient } from '@prisma/client';
 import { TeacherScheduleEditor } from '@/components/portal-docente/TeacherScheduleEditor';
 
-export default function PortalDocentePage() {
-  // Simulador de sesión: Permite cambiar entre maestros para pruebas
-  const [activeTeacherId, setActiveTeacherId] = useState<string>(MOCK_TEACHERS[0]?.id || '');
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
-  const activeTeacher = MOCK_TEACHERS.find(t => t.id === activeTeacherId);
+export default async function PortalDocentePage() {
+  const token = cookies().get('auth-token')?.value;
+  let teacherId = null;
+  let teacherName = 'Docente';
+
+  if (token) {
+    try {
+      const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+      const email = payload.email as string;
+      
+      // Buscar al maestro por su correo
+      const teacher = await prisma.teacher.findUnique({ 
+        where: { email } 
+      });
+      
+      if (teacher) {
+        teacherId = teacher.id;
+        teacherName = teacher.firstName;
+      }
+    } catch (err) {
+      console.warn('Invalid token in portal-docente:', err);
+    }
+  }
+
+  if (!teacherId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f4f6f8] p-4">
+        <div className="bg-white p-8 rounded-xl shadow-md text-center max-w-md w-full border border-gray-100">
+          <div className="text-5xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Perfil No Encontrado</h2>
+          <p className="text-gray-600 mb-6">
+            No se encontró un perfil de maestro asociado a tu cuenta actual. 
+            Asegúrate de que tu correo de inicio de sesión coincida con el correo registrado en la <b>Gestión de Maestros</b>.
+          </p>
+          <Link href="/login">
+            <button className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-emerald-700 w-full transition-colors">
+              Regresar al Login
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f4f6f8] flex flex-col font-sans">
@@ -22,21 +63,8 @@ export default function PortalDocentePage() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Usuario Actual (Simulador) */}
-            <div className="flex items-center bg-emerald-800/50 rounded-lg p-1.5 border border-emerald-600/30">
-              <span className="text-lg mr-2 ml-1">👤</span>
-              <select 
-                value={activeTeacherId}
-                onChange={(e) => setActiveTeacherId(e.target.value)}
-                className="bg-transparent text-white text-sm outline-none font-medium appearance-none cursor-pointer pr-4"
-                title="Cambiar usuario para pruebas"
-              >
-                {MOCK_TEACHERS.map(t => (
-                  <option key={t.id} value={t.id} className="text-gray-800">
-                    {t.firstName} {t.lastName}
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center bg-emerald-800/50 rounded-lg px-3 py-1.5 border border-emerald-600/30">
+              <span className="text-sm font-medium">✅ Sesión Activa</span>
             </div>
 
             <Link href="/login">
@@ -54,20 +82,14 @@ export default function PortalDocentePage() {
         {/* Saludo */}
         <div className="mb-8 print:hidden">
           <h2 className="text-3xl font-black text-[#061266] mb-2">
-            ¡Hola, {activeTeacher?.firstName}! 👋
+            ¡Hola, {teacherName}! 👋
           </h2>
           <p className="text-gray-600">Bienvenido a tu espacio personal. Gestiona tus asignaturas y horarios de clase por módulo.</p>
         </div>
 
         {/* Área dinámica */}
         <div className="min-h-[500px]">
-          {activeTeacherId ? (
-            <TeacherScheduleEditor teacherId={activeTeacherId} />
-          ) : (
-            <div className="flex items-center justify-center h-64 text-gray-400">
-              Selecciona un docente en la barra superior para comenzar.
-            </div>
-          )}
+          <TeacherScheduleEditor teacherId={teacherId} />
         </div>
 
       </main>

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Button, Badge, Modal, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import {
-  MOCK_ASSIGNMENTS,
   MOCK_SUBJECTS,
   MOCK_GROUPS,
   DAYS_OF_WEEK,
@@ -31,6 +30,8 @@ export default function GruposPage() {
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
 
+  const [assignments, setAssignments] = useState<any[]>([]);
+
   useEffect(() => {
     fetch('/api/teachers')
       .then(res => res.json())
@@ -40,6 +41,15 @@ export default function GruposPage() {
         }
       })
       .catch(err => console.error("Error fetching teachers", err));
+
+    fetch('/api/assignments')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAssignments(data.data);
+        }
+      })
+      .catch(err => console.error("Error fetching assignments", err));
   }, []);
 
   // Agrupar asignaciones por maestro para la tabla
@@ -47,11 +57,11 @@ export default function GruposPage() {
     const grouped = new Map();
     
     // Solo mostrar maestros que tengan alguna asignación
-    const activeTeacherIds = new Set(MOCK_ASSIGNMENTS.map(a => a.teacherId));
+    const activeTeacherIds = new Set(assignments.map(a => a.teacherId));
     
     teachers.filter(t => activeTeacherIds.has(t.id)).forEach((teacher) => {
       // Filtrar asignaciones del maestro combinando los nuevos filtros
-      const assignments = MOCK_ASSIGNMENTS.filter((a) => {
+      const teacherAssignmentsFiltered = assignments.filter((a) => {
         if (a.teacherId !== teacher.id) return false;
         if (filters.modulo && a.modulo !== Number(filters.modulo)) return false;
         if (filters.cuatrimestre && a.cuatrimestre !== Number(filters.cuatrimestre)) return false;
@@ -66,16 +76,16 @@ export default function GruposPage() {
       });
       
       // Si el maestro no tiene asignaciones con estos filtros, no lo mostramos en la tabla
-      if (assignments.length > 0) {
+      if (teacherAssignmentsFiltered.length > 0) {
         grouped.set(teacher.id, {
           teacher,
-          assignments: assignments.sort((a, b) => a.scheduleDay - b.scheduleDay || a.startTime.localeCompare(b.startTime)),
+          assignments: teacherAssignmentsFiltered.sort((a, b) => a.scheduleDay - b.scheduleDay),
         });
       }
     });
     
     return Array.from(grouped.values());
-  }, [filters, refreshTick, teachers]);
+  }, [teachers, assignments, filters, refreshTick]);
 
   const filteredTeachers = teacherAssignments.filter(({ teacher }) => {
     const search = searchTerm.toLowerCase();

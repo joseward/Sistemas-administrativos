@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
 import {
-  MOCK_ASSIGNMENTS,
   DAYS_OF_WEEK,
   getSubjectById,
   getGroupById,
@@ -13,6 +12,8 @@ import {
 export default function ContratosPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
+
+  const [assignments, setAssignments] = useState<any[]>([]);
 
   useEffect(() => {
     fetch('/api/teachers')
@@ -23,26 +24,35 @@ export default function ContratosPage() {
         }
       })
       .catch(err => console.error("Error fetching teachers", err));
+
+    fetch('/api/assignments')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAssignments(data.data);
+        }
+      })
+      .catch(err => console.error("Error fetching assignments", err));
   }, []);
 
   // Solo maestros que tienen asignaciones
   const teachersWithAssignments = useMemo(() => {
-    const activeTeacherIds = new Set(MOCK_ASSIGNMENTS.map(a => a.teacherId));
+    const activeTeacherIds = new Set(assignments.map(a => a.teacherId));
     return teachers.filter(t => activeTeacherIds.has(t.id));
-  }, [teachers]);
+  }, [teachers, assignments]);
 
   const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
 
   // Filtrar asignaciones del maestro por módulo
   const assignmentsMod1 = useMemo(() => {
     if (!selectedTeacherId) return [];
-    return MOCK_ASSIGNMENTS.filter(a => a.teacherId === selectedTeacherId && a.modulo === 1);
-  }, [selectedTeacherId]);
+    return assignments.filter(a => a.teacherId === selectedTeacherId && a.modulo === 1);
+  }, [selectedTeacherId, assignments]);
 
   const assignmentsMod2 = useMemo(() => {
     if (!selectedTeacherId) return [];
-    return MOCK_ASSIGNMENTS.filter(a => a.teacherId === selectedTeacherId && a.modulo === 2);
-  }, [selectedTeacherId]);
+    return assignments.filter(a => a.teacherId === selectedTeacherId && a.modulo === 2);
+  }, [selectedTeacherId, assignments]);
 
   const handlePrint = () => {
     window.print();

@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { Button, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import {
-  MOCK_ASSIGNMENTS,
-  DAYS_OF_WEEK,
+  MOCK_SUBJECTS,
+  MOCK_GROUPS,
   CUATRIMESTRES,
   getSubjectById,
   getGroupById,
@@ -20,6 +20,8 @@ export default function AsistenciaPage() {
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
+  const [assignments, setAssignments] = useState<any[]>([]);
+
   useEffect(() => {
     fetch('/api/teachers')
       .then(res => res.json())
@@ -29,19 +31,28 @@ export default function AsistenciaPage() {
         }
       })
       .catch(err => console.error("Error fetching teachers", err));
+
+    fetch('/api/assignments')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAssignments(data.data);
+        }
+      })
+      .catch(err => console.error("Error fetching assignments", err));
   }, []);
 
-  // Obtener solo maestros que tengan al menos una asignación
+  // Obtener docentes que tienen clases asignadas
   const teachersWithAssignments = useMemo(() => {
-    const activeTeacherIds = new Set(MOCK_ASSIGNMENTS.map(a => a.teacherId));
+    const activeTeacherIds = new Set(assignments.map(a => a.teacherId));
     return teachers.filter(t => activeTeacherIds.has(t.id));
-  }, [teachers]);
+  }, [teachers, assignments]);
 
-  // Asignaciones del maestro seleccionado
-  const teacherAssignments = useMemo(() => {
+  // Obtener las materias asignadas al docente seleccionado
+  const teacherSubjects = useMemo(() => {
     if (!selectedTeacherId) return [];
-    return MOCK_ASSIGNMENTS.filter(a => a.teacherId === selectedTeacherId);
-  }, [selectedTeacherId]);
+    return assignments.filter(a => a.teacherId === selectedTeacherId);
+  }, [selectedTeacherId, assignments]);
 
   // Si cambia el maestro, reiniciar la asignación seleccionada
   useEffect(() => {
