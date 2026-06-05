@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Button, Badge, Modal, Select, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import {
-  MOCK_ASSIGNMENTS,
   MOCK_SUBJECTS,
   MOCK_GROUPS,
   DAYS_OF_WEEK,
@@ -29,7 +28,7 @@ function getTeacherColor(teacherId: string) {
 export default function HorariosPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [loadingTeachers, setLoadingTeachers] = useState(true);
-  const [assignments, setAssignments] = useState<MockScheduleAssignment[]>(MOCK_ASSIGNMENTS);
+  const [assignments, setAssignments] = useState<any[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'week'>('week');
   const [filterTeacher, setFilterTeacher] = useState<string>('');
@@ -45,6 +44,15 @@ export default function HorariosPage() {
       })
       .catch(err => console.error("Error fetching teachers", err))
       .finally(() => setLoadingTeachers(false));
+
+    fetch('/api/assignments')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setAssignments(data.data);
+        }
+      })
+      .catch(err => console.error("Error fetching assignments", err));
   }, []);
 
   const getTeacherById = (id: string) => teachers.find((t) => t.id === id);

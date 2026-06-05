@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui';
-import { MOCK_ASSIGNMENTS, MOCK_SUBJECTS, MOCK_CARRERAS, type MockScheduleAssignment } from '@/lib/mockData';
+import { MOCK_SUBJECTS, MOCK_CARRERAS } from '@/lib/mockData';
 
 interface TeacherScheduleEditorProps {
   teacherId: string;
@@ -26,32 +26,42 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    // Cargar datos existentes y convertirlos al formato de filas (Módulo 1 izq, Módulo 2 der)
-    const teacherAssignments = MOCK_ASSIGNMENTS.filter(a => a.teacherId === teacherId);
-    const mod1 = teacherAssignments.filter(a => a.modulo === 1);
-    const mod2 = teacherAssignments.filter(a => a.modulo === 2);
+    // Cargar datos reales desde la API
+    const loadAssignments = async () => {
+      try {
+        const res = await fetch(`/api/assignments?teacherId=${teacherId}`);
+        const data = await res.json();
+        if (data.success) {
+          const teacherAssignments = data.data;
+          const mod1 = teacherAssignments.filter((a: any) => a.modulo === 1);
+          const mod2 = teacherAssignments.filter((a: any) => a.modulo === 2);
 
-    const maxRows = Math.max(mod1.length, mod2.length, 3); // Al menos 3 filas vacías por defecto
-    const initialRows: RowData[] = [];
+          const maxRows = Math.max(mod1.length, mod2.length, 3);
+          const initialRows: RowData[] = [];
 
-    for (let i = 0; i < maxRows; i++) {
-      const a1 = mod1[i];
-      const a2 = mod2[i];
+          for (let i = 0; i < maxRows; i++) {
+            const a1 = mod1[i];
+            const a2 = mod2[i];
 
-      initialRows.push({
-        id: `row-${Date.now()}-${i}`,
-        mod1_subject: a1?.subjectId || '',
-        mod1_schedule: a1 ? `${a1.scheduleDay === 1 ? 'LUNES' : a1.scheduleDay === 2 ? 'MARTES' : a1.scheduleDay === 3 ? 'MIERCOLES' : a1.scheduleDay === 4 ? 'JUEVES' : a1.scheduleDay === 5 ? 'VIERNES' : a1.scheduleDay === 6 ? 'SABADO' : 'DOMINGO'} ${a1.startTime}-${a1.endTime}` : '',
-        mod1_ctm: a1?.groupId || '',
-        mod1_available: a1?.isAvailable ?? false,
-        mod2_subject: a2?.subjectId || '',
-        mod2_schedule: a2 ? `${a2.scheduleDay === 1 ? 'LUNES' : a2.scheduleDay === 2 ? 'MARTES' : a2.scheduleDay === 3 ? 'MIERCOLES' : a2.scheduleDay === 4 ? 'JUEVES' : a2.scheduleDay === 5 ? 'VIERNES' : a2.scheduleDay === 6 ? 'SABADO' : 'DOMINGO'} ${a2.startTime}-${a2.endTime}` : '',
-        mod2_ctm: a2?.groupId || '',
-        mod2_available: a2?.isAvailable ?? false,
-      });
-    }
-
-    setRows(initialRows);
+            initialRows.push({
+              id: `row-${Date.now()}-${i}`,
+              mod1_subject: a1?.subjectId || '',
+              mod1_schedule: a1 && a1.startTime && a1.endTime ? `${a1.scheduleDay === 1 ? 'LUNES' : a1.scheduleDay === 2 ? 'MARTES' : a1.scheduleDay === 3 ? 'MIERCOLES' : a1.scheduleDay === 4 ? 'JUEVES' : a1.scheduleDay === 5 ? 'VIERNES' : a1.scheduleDay === 6 ? 'SABADO' : 'DOMINGO'} ${a1.startTime}-${a1.endTime}` : '',
+              mod1_ctm: a1?.groupId || '',
+              mod1_available: a1?.isAvailable ?? false,
+              mod2_subject: a2?.subjectId || '',
+              mod2_schedule: a2 && a2.startTime && a2.endTime ? `${a2.scheduleDay === 1 ? 'LUNES' : a2.scheduleDay === 2 ? 'MARTES' : a2.scheduleDay === 3 ? 'MIERCOLES' : a2.scheduleDay === 4 ? 'JUEVES' : a2.scheduleDay === 5 ? 'VIERNES' : a2.scheduleDay === 6 ? 'SABADO' : 'DOMINGO'} ${a2.startTime}-${a2.endTime}` : '',
+              mod2_ctm: a2?.groupId || '',
+              mod2_available: a2?.isAvailable ?? false,
+            });
+          }
+          setRows(initialRows);
+        }
+      } catch (err) {
+        console.error('Error al cargar horarios:', err);
+      }
+    };
+    loadAssignments();
   }, [teacherId]);
 
   const handleRowChange = (index: number, field: keyof RowData, value: string | boolean) => {
@@ -79,19 +89,9 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
     setSaving(true);
     setSuccessMsg(null);
     try {
-      await new Promise(res => setTimeout(res, 800)); // Simular red
-
-      // Eliminar asignaciones anteriores de este maestro
-      const indexToKeep = MOCK_ASSIGNMENTS.filter(a => a.teacherId !== teacherId);
-      MOCK_ASSIGNMENTS.length = 0;
-      MOCK_ASSIGNMENTS.push(...indexToKeep);
-
-      // Generar nuevas asignaciones desde las filas
-      const newAssignments: MockScheduleAssignment[] = [];
+      const newAssignments: any[] = [];
       
       const parseSchedule = (text: string) => {
-        // Parse simple: "JUEVES 10:10-11:10" -> day 4, start 10:10, end 11:10
-        // Esto es simplificado para el prototipo
         const txt = text.toUpperCase();
         let day = 1;
         if (txt.includes('MARTES')) day = 2;
@@ -113,10 +113,8 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
         if (r.mod1_subject && r.mod1_schedule) {
           const sched = parseSchedule(r.mod1_schedule);
           newAssignments.push({
-            id: `a-mod1-${Date.now()}-${Math.random()}`,
-            teacherId,
             subjectId: r.mod1_subject,
-            groupId: r.mod1_ctm || 'mock-g1', // Default si no elige
+            groupId: r.mod1_ctm || 'mock-g1',
             scheduleDay: sched.day,
             startTime: sched.start,
             endTime: sched.end,
@@ -128,8 +126,6 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
         if (r.mod2_subject && r.mod2_schedule) {
           const sched = parseSchedule(r.mod2_schedule);
           newAssignments.push({
-            id: `a-mod2-${Date.now()}-${Math.random()}`,
-            teacherId,
             subjectId: r.mod2_subject,
             groupId: r.mod2_ctm || 'mock-g1',
             scheduleDay: sched.day,
@@ -142,9 +138,25 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
         }
       });
 
-      MOCK_ASSIGNMENTS.push(...newAssignments);
-      setSuccessMsg('Tus horarios y cargas se han sincronizado correctamente con Administración.');
-      setTimeout(() => setSuccessMsg(null), 4000);
+      const res = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teacherId,
+          assignments: newAssignments
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg('Tus horarios y cargas se han guardado permanentemente.');
+        setTimeout(() => setSuccessMsg(null), 4000);
+      } else {
+        alert(data.error || 'Error al guardar asignaciones');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión al guardar los horarios');
     } finally {
       setSaving(false);
     }

@@ -164,10 +164,13 @@ model TeacherSubjectGroup {
   subjectId     String
   groupId       String
   scheduleDay   Int?     // Día de la semana
-  startTime     DateTime?
-  endTime       DateTime?
+  startTime     String?  // Ej. "08:00"
+  endTime       String?  // Ej. "09:30"
   classroom     String?
   academicYear  String
+  modulo        Int?     // Ej. 1 o 2
+  cuatrimestre  Int?     // Ej. 1
+  isAvailable   Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
