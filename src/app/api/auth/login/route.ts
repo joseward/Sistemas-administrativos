@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { SignJWT } from 'jose';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+const encoder = new TextEncoder();
 
 const prisma = new PrismaClient();
 
@@ -43,8 +48,26 @@ export async function POST(request: NextRequest) {
       data: { lastLogin: new Date() },
     });
 
-    // We don't generate a JWT here yet, we just return success so the frontend can redirect.
-    // In a fully secure app, you'd set a cookie here. For Phase 1, frontend redirection is enough.
+    // Generar JWT
+    const token = await new SignJWT({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('8h') // 8 hours
+      .sign(encoder.encode(JWT_SECRET));
+
+    // Establecer la cookie HTTP-only
+    cookies().set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 8, // 8 hours
+    });
+
     return NextResponse.json({ 
       success: true, 
       user: {

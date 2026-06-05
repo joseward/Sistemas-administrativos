@@ -19,8 +19,13 @@ export function HeaderUserMenu() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsOpen(false);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.error('Error logging out');
+    }
     // Redirigir a la pantalla de login
     router.push('/login');
   };
