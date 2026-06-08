@@ -58,7 +58,6 @@ export default async function PortalDocentePage() {
       <header className="bg-emerald-700 text-white shadow-md sticky top-0 z-50 print:hidden">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">👨‍🏫</span>
             <h1 className="font-bold text-lg hidden sm:block">Portal del Docente</h1>
           </div>
 
@@ -71,7 +70,7 @@ export default async function PortalDocentePage() {
         {/* Saludo */}
         <div className="mb-8 print:hidden">
           <h2 className="text-3xl font-black text-[#061266] mb-2">
-            ¡Hola, {teacherName}! 👋
+            ¡Hola, {teacherName}!
           </h2>
           <p className="text-gray-600">Bienvenido a tu espacio personal. Gestiona tus asignaturas y horarios de clase por módulo.</p>
         </div>
