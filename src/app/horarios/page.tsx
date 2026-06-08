@@ -81,24 +81,37 @@ export default function HorariosPage() {
 
   // Verificar conflictos de horario
   const checkConflict = (newAssignment: Omit<MockScheduleAssignment, 'id'>): string | null => {
+    // 1. Validar que el maestro marcó este horario como disponible
+    const isAvailable = assignments.some(a => 
+      a.teacherId === newAssignment.teacherId &&
+      a.scheduleDay === newAssignment.scheduleDay &&
+      a.startTime <= newAssignment.startTime &&
+      a.endTime >= newAssignment.endTime &&
+      a.isAvailable === true
+    );
+
+    if (!isAvailable) {
+      return 'El docente tiene horario en otra universidad o no está disponible en este horario.';
+    }
+
     for (const existing of assignments) {
+      // Si ya hay otra materia asignada al mismo maestro en esa hora (que no sea un slot de disponibilidad en blanco)
       if (
         existing.teacherId === newAssignment.teacherId &&
-        existing.scheduleDay === newAssignment.scheduleDay
+        existing.scheduleDay === newAssignment.scheduleDay &&
+        existing.groupId !== 'mock-g1' // Asumiendo que 'mock-g1' es el default de disponibilidad no asignada
       ) {
-        // Verificar solapamiento de horarios
         if (newAssignment.startTime < existing.endTime && newAssignment.endTime > existing.startTime) {
-          if (existing.isAvailable === false) {
-            return `El docente no marcó este horario como disponible en su portal (está ocupado).`;
-          }
           const teacher = getTeacherById(existing.teacherId);
-          return `Conflicto: ${teacher?.firstName} ${teacher?.lastName} ya tiene clase de ${existing.startTime} a ${existing.endTime} el ${DAYS_OF_WEEK[existing.scheduleDay]}`;
+          return `Conflicto: ${teacher?.firstName} ${teacher?.lastName} ya tiene una clase asignada de ${existing.startTime} a ${existing.endTime} el ${DAYS_OF_WEEK[existing.scheduleDay]}`;
         }
       }
-      // También verificar conflicto de grupo
+      
+      // Verificar conflicto de grupo
       if (
         existing.groupId === newAssignment.groupId &&
-        existing.scheduleDay === newAssignment.scheduleDay
+        existing.scheduleDay === newAssignment.scheduleDay &&
+        existing.groupId !== 'mock-g1'
       ) {
         if (newAssignment.startTime < existing.endTime && newAssignment.endTime > existing.startTime) {
           const group = getGroupById(existing.groupId);
@@ -361,94 +374,124 @@ export default function HorariosPage() {
         {/* ============ VISTA TABLA ============ */}
         {viewMode === 'table' && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-100 border-b border-gray-300">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Día</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Horario</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Maestro</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Materia</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Grupo</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Aula</th>
-                    <th className="px-4 py-3 text-center font-semibold text-gray-700">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAssignments.length === 0 ? (
+            {!filterTeacher ? (
+              <div className="p-12 text-center">
+                <p className="text-gray-500 mb-2 text-lg">Por favor selecciona un maestro en los filtros de arriba.</p>
+                <p className="text-sm text-gray-400">Podrás visualizar su disponibilidad y asignarle materias, grupos y aulas.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100 border-b border-gray-300">
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                        No hay asignaciones registradas
-                      </td>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Día</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Horario</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700 w-1/4">Materia</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700 w-1/4">Grupo</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700 w-1/6">Aula</th>
                     </tr>
-                  ) : (
-                    [...filteredAssignments]
-                      .sort((a, b) => a.scheduleDay - b.scheduleDay || a.startTime.localeCompare(b.startTime))
-                      .map((a) => {
-                        const teacher = getTeacherById(a.teacherId);
-                        const subject = getSubjectById(a.subjectId);
-                        const group = getGroupById(a.groupId);
-                        const colors = getTeacherColor(a.teacherId);
-                        return (
-                          <tr key={a.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                            <td className="px-4 py-3 font-medium text-gray-900">
-                              {DAYS_OF_WEEK[a.scheduleDay]}
-                            </td>
-                            <td className="px-4 py-3 text-gray-700 font-mono text-xs">
-                              {a.startTime} — {a.endTime}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <span className={cn('w-2 h-2 rounded-full', colors.bg, colors.border)} />
-                                <span className="text-gray-900">{teacher?.firstName} {teacher?.lastName}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-gray-700">
-                              {subject?.name}
-                              <span className="text-xs text-gray-400 ml-1">({subject?.code})</span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <Badge variant="info" size="sm">{group?.name}</Badge>
-                            </td>
-                            <td className="px-4 py-3 text-gray-600">
-                              {a.classroom || '—'}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <Button
-                                size="sm"
-                                variant="danger"
-                                onClick={() => handleDelete(a.id)}
-                              >
-                                Eliminar
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredAssignments.filter(a => a.isAvailable).length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-12 text-center text-gray-500 bg-gray-50">
+                          Este docente no ha enviado su disponibilidad o no tiene horarios registrados.
+                        </td>
+                      </tr>
+                    ) : (
+                      [...filteredAssignments]
+                        .filter(a => a.isAvailable)
+                        .sort((a, b) => a.scheduleDay - b.scheduleDay || a.startTime.localeCompare(b.startTime))
+                        .map((a) => {
+                          return (
+                            <tr key={a.id} className="border-b border-gray-200 bg-[#5cdb5c]/20 hover:bg-[#5cdb5c]/40 transition-colors">
+                              <td className="px-4 py-4 font-bold text-emerald-900 uppercase">
+                                {DAYS_OF_WEEK[a.scheduleDay]}
+                              </td>
+                              <td className="px-4 py-4 text-emerald-800 font-mono font-semibold">
+                                {a.startTime} — {a.endTime}
+                              </td>
+                              <td className="px-4 py-2">
+                                <select
+                                  className="w-full px-2 py-1.5 border border-emerald-300 rounded bg-white text-gray-800 text-xs focus:ring-2 focus:ring-emerald-500"
+                                  value={a.subjectId && a.subjectId !== 'mock-s1' ? a.subjectId : ''}
+                                  onChange={(e) => {
+                                    const newAsg = [...assignments];
+                                    const index = newAsg.findIndex(asg => asg.id === a.id);
+                                    if(index !== -1) { newAsg[index].subjectId = e.target.value; setAssignments(newAsg); }
+                                  }}
+                                >
+                                  <option value="">-- Seleccionar Materia --</option>
+                                  {MOCK_SUBJECTS.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-4 py-2">
+                                <select
+                                  className="w-full px-2 py-1.5 border border-emerald-300 rounded bg-white text-gray-800 text-xs focus:ring-2 focus:ring-emerald-500"
+                                  value={a.groupId && a.groupId !== 'mock-g1' ? a.groupId : ''}
+                                  onChange={(e) => {
+                                    const newAsg = [...assignments];
+                                    const index = newAsg.findIndex(asg => asg.id === a.id);
+                                    if(index !== -1) { newAsg[index].groupId = e.target.value; setAssignments(newAsg); }
+                                  }}
+                                >
+                                  <option value="">-- Seleccionar Grupo --</option>
+                                  {MOCK_GROUPS.map((g) => (
+                                    <option key={g.id} value={g.id}>{g.name}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-4 py-2">
+                                <input
+                                  type="text"
+                                  placeholder="Ej. Aula 101"
+                                  className="w-full px-2 py-1.5 border border-emerald-300 rounded bg-white text-gray-800 text-xs focus:ring-2 focus:ring-emerald-500"
+                                  value={a.classroom || ''}
+                                  onChange={(e) => {
+                                    const newAsg = [...assignments];
+                                    const index = newAsg.findIndex(asg => asg.id === a.id);
+                                    if(index !== -1) { newAsg[index].classroom = e.target.value; setAssignments(newAsg); }
+                                  }}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
         {/* Resumen de estadísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <div className="bg-white rounded-lg shadow-md p-5 border-l-4 border-blue-500">
-            <p className="text-sm font-medium text-gray-500">Total Asignaciones</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{assignments.length}</p>
+            <p className="text-sm font-medium text-gray-500">Total de Maestros</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{teachers.length}</p>
           </div>
           <div className="bg-white rounded-lg shadow-md p-5 border-l-4 border-emerald-500">
-            <p className="text-sm font-medium text-gray-500">Maestros con Horario</p>
+            <p className="text-sm font-medium text-gray-500">Maestros con Horarios</p>
             <p className="text-3xl font-bold text-gray-900 mt-1">
-              {new Set(assignments.map((a) => a.teacherId)).size}
+              {new Set(assignments.filter(a => a.isAvailable).map(a => a.teacherId)).size}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow-md p-5 border-l-4 border-purple-500">
-            <p className="text-sm font-medium text-gray-500">Grupos Cubiertos</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">
-              {new Set(assignments.map((a) => a.groupId)).size} / {MOCK_GROUPS.length}
-            </p>
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Aulas Asignadas</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">
+                  {new Set(assignments.filter(a => a.classroom).map(a => a.classroom)).size} <span className="text-xl text-gray-400">/ 10</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-gray-400 font-medium">AULAS PENDIENTES</p>
+                <p className="text-xs text-amber-600 mt-0.5">Pendiente de BD</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

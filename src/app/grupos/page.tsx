@@ -52,48 +52,63 @@ export default function GruposPage() {
       .catch(err => console.error("Error fetching assignments", err));
   }, []);
 
-  // Agrupar asignaciones por maestro para la tabla
-  const teacherAssignments = useMemo(() => {
+  // Agrupar asignaciones por grupo/carrera para la tabla
+  const groupedAssignments = useMemo(() => {
     const grouped = new Map();
     
-    // Solo mostrar maestros que tengan alguna asignación
-    const activeTeacherIds = new Set(assignments.map(a => a.teacherId));
-    
-    teachers.filter(t => activeTeacherIds.has(t.id)).forEach((teacher) => {
-      // Filtrar asignaciones del maestro combinando los nuevos filtros
-      const teacherAssignmentsFiltered = assignments.filter((a) => {
-        if (a.teacherId !== teacher.id) return false;
-        if (filters.modulo && a.modulo !== Number(filters.modulo)) return false;
-        if (filters.cuatrimestre && a.cuatrimestre !== Number(filters.cuatrimestre)) return false;
-        
-        const group = getGroupById(a.groupId);
-        if (!group) return false;
-        
-        if (filters.academicYear && group.academicYear !== filters.academicYear) return false;
-        if (filters.carrera && group.carrera !== filters.carrera) return false;
-
-        return true;
-      });
+    assignments.forEach((a) => {
+      if (filters.modulo && a.modulo !== Number(filters.modulo)) return;
+      if (filters.cuatrimestre && a.cuatrimestre !== Number(filters.cuatrimestre)) return;
       
-      // Si el maestro no tiene asignaciones con estos filtros, no lo mostramos en la tabla
-      if (teacherAssignmentsFiltered.length > 0) {
-        grouped.set(teacher.id, {
-          teacher,
-          assignments: teacherAssignmentsFiltered.sort((a, b) => a.scheduleDay - b.scheduleDay),
+      const group = getGroupById(a.groupId);
+      if (!group) return;
+      
+      if (filters.academicYear && group.academicYear !== filters.academicYear) return;
+      if (filters.carrera && group.carrera !== filters.carrera) return;
+
+      const cuatriLabel = CUATRIMESTRES.find(c => c.value === a.cuatrimestre)?.label || `${a.cuatrimestre}er Cuatrimestre`;
+      const groupKey = `${group.carrera} - ${cuatriLabel}`;
+      
+      if (!grouped.has(groupKey)) {
+        grouped.set(groupKey, {
+          label: groupKey,
+          moduloLabel: filters.modulo ? `Módulo ${filters.modulo}` : `Módulo ${a.modulo}`,
+          assignments: [],
         });
       }
+      
+      grouped.get(groupKey).assignments.push(a);
     });
     
-    return Array.from(grouped.values());
-  }, [teachers, assignments, filters, refreshTick]);
+    // Convertir a array y ordenar por día y hora
+    const result = Array.from(grouped.values());
+    result.forEach(g => {
+      g.assignments.sort((a: any, b: any) => {
+        if (a.scheduleDay !== b.scheduleDay) return a.scheduleDay - b.scheduleDay;
+        return a.startTime.localeCompare(b.startTime);
+      });
+    });
+    
+    return result;
+  }, [assignments, filters, refreshTick]);
 
-  const filteredTeachers = teacherAssignments.filter(({ teacher }) => {
+  // Aplicar filtro de búsqueda de docente
+  const filteredGroups = useMemo(() => {
+    if (!searchTerm) return groupedAssignments;
     const search = searchTerm.toLowerCase();
-    return (
-      teacher.firstName.toLowerCase().includes(search) ||
-      teacher.lastName.toLowerCase().includes(search)
-    );
-  });
+    
+    return groupedAssignments.map(g => {
+      const filteredAsgs = g.assignments.filter((a: any) => {
+        const teacher = teachers.find(t => t.id === a.teacherId);
+        if (!teacher) return false;
+        return (
+          teacher.firstName.toLowerCase().includes(search) ||
+          teacher.lastName.toLowerCase().includes(search)
+        );
+      });
+      return { ...g, assignments: filteredAsgs };
+    }).filter(g => g.assignments.length > 0);
+  }, [groupedAssignments, teachers, searchTerm]);
 
   return (
     <div className="min-h-screen bg-transparent p-6">
@@ -179,98 +194,84 @@ export default function GruposPage() {
           </div>
         </div>
 
-        {/* Tabla Estilo Excel */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden border border-blue-600">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                {/* Header Superior: Módulo */}
-                <tr className="bg-blue-600 text-white border-b border-blue-700">
-                  <th className="px-4 py-3 text-center border-r border-blue-500 w-1/4 font-bold uppercase tracking-wider">
-                    Docente
-                  </th>
-                  <th colSpan={3} className="px-4 py-3 text-center font-bold uppercase tracking-wider">
-                    Asignaciones {filters.modulo ? `- Módulo ${filters.modulo}` : '(Todos los módulos)'}
-                  </th>
-                </tr>
-                {/* Header Inferior: Columnas */}
-                <tr className="bg-blue-500 text-white border-b-2 border-blue-700">
-                  <th className="px-4 py-2 border-r border-blue-400"></th>
-                  <th className="px-4 py-2 text-center border-r border-blue-400 w-1/4 uppercase text-xs font-semibold">
-                    Asignatura
-                  </th>
-                  <th className="px-4 py-2 text-center border-r border-blue-400 w-1/4 uppercase text-xs font-semibold">
-                    Horario
-                  </th>
-                  <th className="px-4 py-2 text-center w-1/4 uppercase text-xs font-semibold">
-                    CTM (Carrera / Cuatrimestre)
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {filteredTeachers.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-12 text-center text-gray-500 bg-gray-50">
-                      No hay docentes con asignaciones para los filtros seleccionados
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTeachers.map(({ teacher, assignments }, index) => (
-                    <tr key={teacher.id} className="border-b border-gray-300">
-                      {/* Columna Docente */}
-                      <td className="px-4 py-4 border-r border-gray-300 bg-gray-100 font-bold text-gray-800 uppercase text-xs align-middle">
-                        <div className="flex items-center gap-3">
-                          <span className="text-gray-400 font-normal">{index + 1}</span>
-                          {teacher.firstName} {teacher.lastName}
-                        </div>
-                      </td>
-                      
-                      {/* Columnas de Asignaciones (Grid interno) */}
-                      <td colSpan={3} className="p-0">
-                        <table className="w-full h-full border-collapse">
-                          <tbody>
-                            {assignments.map((a, aIndex) => {
-                              const subject = getSubjectById(a.subjectId);
-                              const group = getGroupById(a.groupId);
-                              const cuatrimestreLabel = CUATRIMESTRES.find(c => c.value === a.cuatrimestre)?.label || `${a.cuatrimestre}er Cuatrimestre`;
-                              
-                              return (
-                                <tr 
-                                  key={a.id} 
-                                  className={cn(
-                                    "bg-[#5cdb5c] hover:bg-[#4bcc4b] transition-colors", // Verde estilo excel de la foto
-                                    aIndex < assignments.length - 1 ? "border-b border-gray-300/50" : ""
-                                  )}
-                                >
-                                  {/* Asignatura */}
-                                  <td className="px-4 py-2 border-r border-gray-300/50 w-1/3 text-gray-900 font-medium text-xs uppercase leading-relaxed">
-                                    {subject?.name}
-                                  </td>
-                                  
-                                  {/* Horario */}
-                                  <td className="px-4 py-2 border-r border-gray-300/50 w-1/3 text-gray-900 text-xs uppercase leading-relaxed">
-                                    {DAYS_OF_WEEK[a.scheduleDay]} DE {a.startTime} - {a.endTime}
-                                  </td>
-                                  
-                                  {/* CTM */}
-                                  <td className="px-4 py-2 w-1/3 text-gray-900 text-xs uppercase leading-relaxed">
-                                    <div className="flex flex-col">
-                                      <span className="font-semibold">{group?.carrera} {group?.grade}</span>
-                                      <span className="text-[10px] opacity-80">{cuatrimestreLabel}</span>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+        {/* Tablas de Asignaciones Agrupadas por Carrera/Cuatrimestre */}
+        <div className="flex flex-col gap-8">
+          {filteredGroups.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-12 text-center text-gray-500 border border-blue-600">
+              No hay asignaciones para los filtros seleccionados
+            </div>
+          ) : (
+            filteredGroups.map((g, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden border border-blue-600">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      {/* Header Superior: Grupo y Módulo */}
+                      <tr className="bg-blue-600 text-white border-b border-blue-700">
+                        <th colSpan={2} className="px-4 py-3 text-left border-r border-blue-500 w-1/2 font-bold uppercase tracking-wider">
+                          {g.label}
+                        </th>
+                        <th colSpan={2} className="px-4 py-3 text-left font-bold uppercase tracking-wider">
+                          {g.moduloLabel}
+                        </th>
+                      </tr>
+                      {/* Header Inferior: Columnas */}
+                      <tr className="bg-blue-500 text-white border-b-2 border-blue-700">
+                        <th className="px-4 py-2 text-center border-r border-blue-400 w-[30%] uppercase text-xs font-semibold">
+                          Asignatura
+                        </th>
+                        <th className="px-4 py-2 text-center border-r border-blue-400 w-[25%] uppercase text-xs font-semibold">
+                          Docente
+                        </th>
+                        <th className="px-4 py-2 text-center border-r border-blue-400 w-[25%] uppercase text-xs font-semibold">
+                          Horario
+                        </th>
+                        <th className="px-4 py-2 text-center w-[20%] uppercase text-xs font-semibold">
+                          Aula
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white">
+                      {g.assignments.map((a: any, aIndex: number) => {
+                        const teacher = teachers.find(t => t.id === a.teacherId);
+                        const subject = getSubjectById(a.subjectId);
+                        
+                        return (
+                          <tr 
+                            key={a.id} 
+                            className={cn(
+                              "bg-[#5cdb5c] hover:bg-[#4bcc4b] transition-colors", // Verde estilo excel
+                              aIndex < g.assignments.length - 1 ? "border-b border-gray-300/50" : ""
+                            )}
+                          >
+                            {/* Asignatura */}
+                            <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 font-medium text-xs uppercase leading-relaxed text-center">
+                              {subject?.name}
+                            </td>
+                            
+                            {/* Docente */}
+                            <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 text-xs uppercase leading-relaxed text-center">
+                              {teacher ? `${teacher.firstName} ${teacher.lastName}` : 'No asignado'}
+                            </td>
+                            
+                            {/* Horario */}
+                            <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 text-xs uppercase leading-relaxed text-center">
+                              {DAYS_OF_WEEK[a.scheduleDay]} {a.startTime} - {a.endTime}
+                            </td>
+                            
+                            {/* Aula */}
+                            <td className="px-4 py-3 text-gray-900 text-xs uppercase leading-relaxed text-center">
+                              {a.classroom || ''}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

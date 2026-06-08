@@ -46,10 +46,6 @@ export function HeaderUserMenu() {
       {/* Menú desplegable */}
       {isOpen && (
         <div className="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden z-50">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-800">Administrador</p>
-            <p className="text-xs text-gray-500 truncate">admin@institutotech.edu</p>
-          </div>
           <div className="py-1">
             <button
               onClick={handleLogout}
