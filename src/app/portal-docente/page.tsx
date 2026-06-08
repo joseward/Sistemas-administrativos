@@ -62,17 +62,6 @@ export default async function PortalDocentePage() {
             <h1 className="font-bold text-lg hidden sm:block">Portal del Docente</h1>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center bg-emerald-800/50 rounded-lg px-3 py-1.5 border border-emerald-600/30">
-              <span className="text-sm font-medium">✅ Sesión Activa</span>
-            </div>
-
-            <Link href="/login">
-              <button className="text-sm font-medium hover:text-emerald-200 transition-colors flex items-center gap-1">
-                Salir 🚪
-              </button>
-            </Link>
-          </div>
         </div>
       </header>
 

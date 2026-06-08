@@ -26,8 +26,8 @@ export function HeaderUserMenu() {
     } catch (e) {
       console.error('Error logging out');
     }
-    // Redirigir a la pantalla de login
-    router.push('/login');
+    // Redirigir forzando la recarga para limpiar el estado
+    window.location.href = '/login';
   };
 
   return (
