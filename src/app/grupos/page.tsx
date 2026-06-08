@@ -9,7 +9,8 @@ import {
   MOCK_GROUPS,
   DAYS_OF_WEEK,
   CUATRIMESTRES,
-  MOCK_CARRERAS,
+  MOCK_ACADEMIC_LEVELS,
+  MOCK_CAREERS,
   MOCK_BIMESTRES,
   MOCK_YEARS,
   getSubjectById,
@@ -24,7 +25,8 @@ export default function GruposPage() {
     modulo: '1',
     cuatrimestre: '',
     academicYear: '2026-2027',
-    carrera: '',
+    nivelAcademico: '',
+    carreraId: '',
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
@@ -64,7 +66,14 @@ export default function GruposPage() {
       if (!group) return;
       
       if (filters.academicYear && group.academicYear !== filters.academicYear) return;
-      if (filters.carrera && group.carrera !== filters.carrera) return;
+      
+      // Filtrar por nivel académico si aplica
+      if (filters.nivelAcademico) {
+        const groupCareer = MOCK_CAREERS.find(c => c.id === group.carreraId);
+        if (!groupCareer || groupCareer.academicLevelId !== filters.nivelAcademico) return;
+      }
+
+      if (filters.carreraId && group.carreraId !== filters.carreraId) return;
 
       const cuatriLabel = CUATRIMESTRES.find(c => c.value === a.cuatrimestre)?.label || `${a.cuatrimestre}er Cuatrimestre`;
       const groupKey = `${group.carrera} - ${cuatriLabel}`;
@@ -145,9 +154,9 @@ export default function GruposPage() {
               </svg>
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Select
-              label="Año"
+              label="Año Académico"
               value={filters.academicYear}
               onChange={(e) => setFilters({ ...filters, academicYear: e.target.value })}
               options={[
@@ -174,12 +183,26 @@ export default function GruposPage() {
               ]}
             />
             <Select
-              label="Carrera"
-              value={filters.carrera}
-              onChange={(e) => setFilters({ ...filters, carrera: e.target.value })}
+              label="Nivel Académico"
+              value={filters.nivelAcademico}
+              onChange={(e) => {
+                setFilters({ ...filters, nivelAcademico: e.target.value, carreraId: '' }); // Reset carrera on level change
+              }}
+              options={[
+                { value: '', label: 'Todos los niveles' },
+                ...MOCK_ACADEMIC_LEVELS.map(al => ({ value: al.id, label: al.name }))
+              ]}
+            />
+            <Select
+              label="Carrera / Programa"
+              value={filters.carreraId}
+              onChange={(e) => setFilters({ ...filters, carreraId: e.target.value })}
+              disabled={!filters.nivelAcademico && false} // Optional: disable if no level selected
               options={[
                 { value: '', label: 'Todas las carreras' },
-                ...MOCK_CARRERAS.map(c => ({ value: c, label: c }))
+                ...MOCK_CAREERS
+                  .filter(c => !filters.nivelAcademico || c.academicLevelId === filters.nivelAcademico)
+                  .map(c => ({ value: c.id, label: c.name }))
               ]}
             />
           </div>
