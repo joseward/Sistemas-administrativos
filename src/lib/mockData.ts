@@ -106,7 +106,61 @@ export const MOCK_TEACHERS: MockTeacher[] = [
 ];
 
 // ============================================
-// GRUPOS (actualizado con carrera y cuatrimestre)
+// NIVELES ACADÉMICOS Y CARRERAS
+// ============================================
+export interface MockAcademicLevel {
+  id: string;
+  name: string;
+}
+
+export const MOCK_ACADEMIC_LEVELS: MockAcademicLevel[] = [
+  { id: 'al-1', name: 'Licenciaturas Ejecutivas' },
+  { id: 'al-2', name: 'Maestrías Ejecutivas' },
+  { id: 'al-3', name: 'Especialidades Ejecutivas' },
+  { id: 'al-4', name: 'Diplomados Ejecutivos' },
+  { id: 'al-5', name: 'Bachillerato' },
+];
+
+export interface MockCareer {
+  id: string;
+  name: string;
+  academicLevelId: string;
+}
+
+export const MOCK_CAREERS: MockCareer[] = [
+  // Licenciaturas
+  { id: 'c-1', name: 'Administración de Empresas', academicLevelId: 'al-1' },
+  { id: 'c-2', name: 'Contaduría y Finanzas', academicLevelId: 'al-1' },
+  { id: 'c-3', name: 'Mercadotecnia', academicLevelId: 'al-1' },
+  { id: 'c-4', name: 'Informática Administrativa', academicLevelId: 'al-1' },
+  { id: 'c-5', name: 'Derecho', academicLevelId: 'al-1' },
+  { id: 'c-6', name: 'Ingeniería Industrial', academicLevelId: 'al-1' },
+  { id: 'c-7', name: 'Pedagogía', academicLevelId: 'al-1' },
+  { id: 'c-8', name: 'Administración de Empresas Turísticas', academicLevelId: 'al-1' },
+  { id: 'c-9', name: 'Ingeniería en Sistemas', academicLevelId: 'al-1' },
+  // Maestrías
+  { id: 'c-10', name: 'Educación', academicLevelId: 'al-2' },
+  { id: 'c-11', name: 'Administración', academicLevelId: 'al-2' },
+  { id: 'c-12', name: 'Gestión de Proyectos', academicLevelId: 'al-2' },
+  { id: 'c-13', name: 'Derecho Procesal Penal', academicLevelId: 'al-2' },
+  // Especialidades
+  { id: 'c-14', name: 'Comunicación Estratégica', academicLevelId: 'al-3' },
+  { id: 'c-15', name: 'Tecnología Educativa', academicLevelId: 'al-3' },
+  { id: 'c-16', name: 'Derecho Penal', academicLevelId: 'al-3' },
+  { id: 'c-17', name: 'Derecho Familiar', academicLevelId: 'al-3' },
+  { id: 'c-18', name: 'Derechos Humanos', academicLevelId: 'al-3' },
+  // Diplomados
+  { id: 'c-19', name: 'Inglés', academicLevelId: 'al-4' },
+  { id: 'c-20', name: 'Psicología Forense', academicLevelId: 'al-4' },
+  { id: 'c-21', name: 'Redes de Computadoras', academicLevelId: 'al-4' },
+  { id: 'c-22', name: 'Gestión en Contaduría y Finanzas', academicLevelId: 'al-4' },
+  // Bachillerato
+  { id: 'c-23', name: 'Preparatoria Escolarizada', academicLevelId: 'al-5' },
+  { id: 'c-24', name: 'Colbach', academicLevelId: 'al-5' },
+];
+
+// ============================================
+// GRUPOS (actualizado con carreraId)
 // ============================================
 export interface MockGroup {
   id: string;
@@ -115,44 +169,46 @@ export interface MockGroup {
   section?: string;
   totalStudents?: number;
   academicYear: string;
-  carrera?: string;       // CTM / Carrera
+  carreraId?: string;     // Relación a MockCareer
+  carrera?: string;       // Legacy name for UI
   cuatrimestre?: number;  // 1, 2, 3...
 }
 
 export const MOCK_GROUPS: MockGroup[] = [
-  { id: 'mock-g1', name: 'Contaduría y Finanzas 3', grade: 3, section: 'A', totalStudents: 32, academicYear: '2026-2027', carrera: 'Contaduría y Finanzas', cuatrimestre: 1 },
-  { id: 'mock-g2', name: 'Derecho 3', grade: 3, section: 'A', totalStudents: 30, academicYear: '2026-2027', carrera: 'Derecho', cuatrimestre: 1 },
-  { id: 'mock-g3', name: 'Administración 7', grade: 7, section: 'A', totalStudents: 28, academicYear: '2026-2027', carrera: 'Administración', cuatrimestre: 2 },
-  { id: 'mock-g4', name: 'Turismo 4', grade: 4, section: 'A', totalStudents: 25, academicYear: '2026-2027', carrera: 'Turismo', cuatrimestre: 1 },
-  { id: 'mock-g5', name: 'Administración 6', grade: 6, section: 'A', totalStudents: 22, academicYear: '2026-2027', carrera: 'Administración', cuatrimestre: 2 },
-  { id: 'mock-g6', name: 'Derecho 5', grade: 5, section: 'A', totalStudents: 27, academicYear: '2026-2027', carrera: 'Derecho', cuatrimestre: 1 },
+  { id: 'mock-g1', name: 'Contaduría 3', grade: 3, section: 'A', totalStudents: 32, academicYear: '2026-2027', carreraId: 'c-2', carrera: 'Contaduría y Finanzas', cuatrimestre: 1 },
+  { id: 'mock-g2', name: 'Derecho 3', grade: 3, section: 'A', totalStudents: 30, academicYear: '2026-2027', carreraId: 'c-5', carrera: 'Derecho', cuatrimestre: 1 },
+  { id: 'mock-g3', name: 'Admin Empresas 7', grade: 7, section: 'A', totalStudents: 28, academicYear: '2026-2027', carreraId: 'c-1', carrera: 'Administración de Empresas', cuatrimestre: 2 },
+  { id: 'mock-g4', name: 'Turismo 4', grade: 4, section: 'A', totalStudents: 25, academicYear: '2026-2027', carreraId: 'c-8', carrera: 'Administración de Empresas Turísticas', cuatrimestre: 1 },
+  { id: 'mock-g5', name: 'Ing. Sistemas 6', grade: 6, section: 'A', totalStudents: 22, academicYear: '2026-2027', carreraId: 'c-9', carrera: 'Ingeniería en Sistemas', cuatrimestre: 2 },
+  { id: 'mock-g6', name: 'Derecho 5', grade: 5, section: 'A', totalStudents: 27, academicYear: '2026-2027', carreraId: 'c-5', carrera: 'Derecho', cuatrimestre: 1 },
 ];
 
 // ============================================
-// MATERIAS (actualizado con más materias)
+// MATERIAS (actualizado con careerId opcional)
 // ============================================
 export interface MockSubject {
   id: string;
   name: string;
   code: string;
   credits?: number;
+  careerId?: string; // Para filtrar materias por carrera en el frontend
 }
 
 export const MOCK_SUBJECTS: MockSubject[] = [
-  { id: 'mock-s1', name: 'Matemáticas', code: 'MAT-101', credits: 5 },
-  { id: 'mock-s2', name: 'Ciencias Naturales', code: 'CNA-101', credits: 4 },
-  { id: 'mock-s3', name: 'Estudios Sociales', code: 'ESO-101', credits: 4 },
-  { id: 'mock-s4', name: 'Español', code: 'ESP-101', credits: 5 },
-  { id: 'mock-s5', name: 'Inglés', code: 'ING-101', credits: 3 },
-  { id: 'mock-s6', name: 'Derecho Fiscal', code: 'DER-201', credits: 4 },
-  { id: 'mock-s7', name: 'Derecho Civil I', code: 'DER-102', credits: 4 },
-  { id: 'mock-s8', name: 'Derecho de Amparo', code: 'DER-301', credits: 3 },
-  { id: 'mock-s9', name: 'Estadística II', code: 'EST-202', credits: 4 },
-  { id: 'mock-s10', name: 'Seminario de Finanzas', code: 'FIN-401', credits: 3 },
-  { id: 'mock-s11', name: 'Investigación de Mercados', code: 'MER-301', credits: 4 },
-  { id: 'mock-s12', name: 'Finanzas', code: 'FIN-201', credits: 5 },
-  { id: 'mock-s13', name: 'Formación de Emprendedores', code: 'EMP-101', credits: 3 },
-  { id: 'mock-s14', name: 'Control Administrativo', code: 'ADM-401', credits: 4 },
+  { id: 'mock-s1', name: 'Matemáticas', code: 'MAT-101', credits: 5, careerId: 'c-1' },
+  { id: 'mock-s2', name: 'Ciencias Naturales', code: 'CNA-101', credits: 4, careerId: 'c-23' },
+  { id: 'mock-s3', name: 'Estudios Sociales', code: 'ESO-101', credits: 4, careerId: 'c-23' },
+  { id: 'mock-s4', name: 'Español', code: 'ESP-101', credits: 5, careerId: 'c-23' },
+  { id: 'mock-s5', name: 'Inglés Ejecutivo', code: 'ING-101', credits: 3, careerId: 'c-19' },
+  { id: 'mock-s6', name: 'Derecho Fiscal', code: 'DER-201', credits: 4, careerId: 'c-5' },
+  { id: 'mock-s7', name: 'Derecho Civil I', code: 'DER-102', credits: 4, careerId: 'c-5' },
+  { id: 'mock-s8', name: 'Derecho de Amparo', code: 'DER-301', credits: 3, careerId: 'c-5' },
+  { id: 'mock-s9', name: 'Estadística II', code: 'EST-202', credits: 4, careerId: 'c-1' },
+  { id: 'mock-s10', name: 'Seminario de Finanzas', code: 'FIN-401', credits: 3, careerId: 'c-2' },
+  { id: 'mock-s11', name: 'Investigación de Mercados', code: 'MER-301', credits: 4, careerId: 'c-3' },
+  { id: 'mock-s12', name: 'Finanzas', code: 'FIN-201', credits: 5, careerId: 'c-2' },
+  { id: 'mock-s13', name: 'Formación de Emprendedores', code: 'EMP-101', credits: 3, careerId: 'c-1' },
+  { id: 'mock-s14', name: 'Control Administrativo', code: 'ADM-401', credits: 4, careerId: 'c-1' },
 ];
 
 // ============================================
@@ -243,12 +299,8 @@ export const MOCK_YEARS = [
 // ============================================
 // CARRERAS / PROGRAMAS (CTM)
 // ============================================
-export const MOCK_CARRERAS = [
-  'Contaduría y Finanzas',
-  'Derecho',
-  'Administración',
-  'Turismo',
-];
+// Dejamos MOCK_CARRERAS como un helper para retrocompatibilidad
+export const MOCK_CARRERAS = MOCK_CAREERS.map(c => c.name);
 
 // ============================================
 // HELPERS

@@ -8,6 +8,11 @@ import {
   MOCK_SUBJECTS,
   MOCK_GROUPS,
   DAYS_OF_WEEK,
+  CUATRIMESTRES,
+  MOCK_ACADEMIC_LEVELS,
+  MOCK_CAREERS,
+  MOCK_BIMESTRES,
+  MOCK_YEARS,
   TIME_SLOTS,
   getSubjectById,
   getGroupById,
@@ -33,6 +38,31 @@ export default function HorariosPage() {
   const [viewMode, setViewMode] = useState<'table' | 'week'>('week');
   const [filterTeacher, setFilterTeacher] = useState<string>('');
   const [filterGroup, setFilterGroup] = useState<string>('');
+
+  // Datos agrupados para los selects en línea
+  const groupedSubjects = useMemo(() => {
+    const map = new Map<string, typeof MOCK_SUBJECTS>();
+    MOCK_SUBJECTS.forEach(s => {
+      const career = MOCK_CAREERS.find(c => c.id === s.careerId);
+      const level = career ? MOCK_ACADEMIC_LEVELS.find(l => l.id === career.academicLevelId) : null;
+      const key = career ? `${level?.name} - ${career.name}` : 'Materias Generales';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
+    });
+    return Array.from(map.entries());
+  }, []);
+
+  const groupedGroups = useMemo(() => {
+    const map = new Map<string, typeof MOCK_GROUPS>();
+    MOCK_GROUPS.forEach(g => {
+      const career = MOCK_CAREERS.find(c => c.id === g.carreraId);
+      const level = career ? MOCK_ACADEMIC_LEVELS.find(l => l.id === career.academicLevelId) : null;
+      const key = career ? `${level?.name} - ${career.name}` : 'Grupos Generales';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(g);
+    });
+    return Array.from(map.entries());
+  }, []);
 
   useEffect(() => {
     fetch('/api/teachers')
@@ -422,8 +452,12 @@ export default function HorariosPage() {
                                   }}
                                 >
                                   <option value="">-- Seleccionar Materia --</option>
-                                  {MOCK_SUBJECTS.map((s) => (
-                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                  {groupedSubjects.map(([groupName, subjects]) => (
+                                    <optgroup key={groupName} label={groupName}>
+                                      {subjects.map((s) => (
+                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                      ))}
+                                    </optgroup>
                                   ))}
                                 </select>
                               </td>
@@ -438,8 +472,12 @@ export default function HorariosPage() {
                                   }}
                                 >
                                   <option value="">-- Seleccionar Grupo --</option>
-                                  {MOCK_GROUPS.map((g) => (
-                                    <option key={g.id} value={g.id}>{g.name}</option>
+                                  {groupedGroups.map(([groupName, groups]) => (
+                                    <optgroup key={groupName} label={groupName}>
+                                      {groups.map((g) => (
+                                        <option key={g.id} value={g.id}>{g.name}</option>
+                                      ))}
+                                    </optgroup>
                                   ))}
                                 </select>
                               </td>
