@@ -19,7 +19,7 @@ export default function RootLayout({
     <html lang="es">
       <body className={`${inter.className} bg-gray-50`}>
         {/* Global Header Brand */}
-        <header className="bg-[#061266] text-white border-b-4 border-[#fdb515] sticky top-0 z-50 shadow-md print:hidden">
+        <header className="bg-[#061266] text-white border-b-4 border-[#fdb515] sticky top-0 z-[60] shadow-md print:hidden">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <img 

@@ -10,14 +10,10 @@ interface TeacherScheduleEditorProps {
 
 interface RowData {
   id: string;
-  mod1_subject: string;
-  mod1_schedule: string;
-  mod1_ctm: string;
-  mod1_available: boolean;
-  mod2_subject: string;
-  mod2_schedule: string;
-  mod2_ctm: string;
-  mod2_available: boolean;
+  available: boolean;
+  subject: string;
+  time: string;
+  day: string;
 }
 
 export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps) {
@@ -33,26 +29,17 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
         const data = await res.json();
         if (data.success) {
           const teacherAssignments = data.data;
-          const mod1 = teacherAssignments.filter((a: any) => a.modulo === 1);
-          const mod2 = teacherAssignments.filter((a: any) => a.modulo === 2);
-
-          const maxRows = Math.max(mod1.length, mod2.length, 3);
+          const maxRows = Math.max(teacherAssignments.length, 3);
           const initialRows: RowData[] = [];
 
           for (let i = 0; i < maxRows; i++) {
-            const a1 = mod1[i];
-            const a2 = mod2[i];
-
+            const a = teacherAssignments[i];
             initialRows.push({
               id: `row-${Date.now()}-${i}`,
-              mod1_subject: a1?.subjectId || '',
-              mod1_schedule: a1 && a1.startTime && a1.endTime ? `${a1.scheduleDay === 1 ? 'LUNES' : a1.scheduleDay === 2 ? 'MARTES' : a1.scheduleDay === 3 ? 'MIERCOLES' : a1.scheduleDay === 4 ? 'JUEVES' : a1.scheduleDay === 5 ? 'VIERNES' : a1.scheduleDay === 6 ? 'SABADO' : 'DOMINGO'} ${a1.startTime}-${a1.endTime}` : '',
-              mod1_ctm: a1?.groupId || '',
-              mod1_available: a1?.isAvailable ?? false,
-              mod2_subject: a2?.subjectId || '',
-              mod2_schedule: a2 && a2.startTime && a2.endTime ? `${a2.scheduleDay === 1 ? 'LUNES' : a2.scheduleDay === 2 ? 'MARTES' : a2.scheduleDay === 3 ? 'MIERCOLES' : a2.scheduleDay === 4 ? 'JUEVES' : a2.scheduleDay === 5 ? 'VIERNES' : a2.scheduleDay === 6 ? 'SABADO' : 'DOMINGO'} ${a2.startTime}-${a2.endTime}` : '',
-              mod2_ctm: a2?.groupId || '',
-              mod2_available: a2?.isAvailable ?? false,
+              available: a?.isAvailable ?? false,
+              subject: a?.subjectId || '',
+              time: a && a.startTime && a.endTime ? `${a.startTime}-${a.endTime}` : '',
+              day: a?.scheduleDay ? String(a.scheduleDay) : '',
             });
           }
           setRows(initialRows);
@@ -74,8 +61,7 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
   const addRow = () => {
     setRows([...rows, {
       id: `row-${Date.now()}`,
-      mod1_subject: '', mod1_schedule: '', mod1_ctm: '', mod1_available: false,
-      mod2_subject: '', mod2_schedule: '', mod2_ctm: '', mod2_available: false
+      available: false, subject: '', time: '', day: ''
     }]);
   };
 
@@ -91,49 +77,26 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
     try {
       const newAssignments: any[] = [];
       
-      const parseSchedule = (text: string) => {
-        const txt = text.toUpperCase();
-        let day = 1;
-        if (txt.includes('MARTES')) day = 2;
-        else if (txt.includes('MIERCOLES')) day = 3;
-        else if (txt.includes('JUEVES')) day = 4;
-        else if (txt.includes('VIERNES')) day = 5;
-        else if (txt.includes('SABADO')) day = 6;
-        else if (txt.includes('DOMINGO')) day = 0;
-
+      const parseTime = (text: string) => {
         const timeMatch = text.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
         return {
-          day,
           start: timeMatch ? timeMatch[1] : '08:00',
           end: timeMatch ? timeMatch[2] : '09:30'
         };
       };
 
       rows.forEach(r => {
-        if (r.mod1_subject && r.mod1_schedule) {
-          const sched = parseSchedule(r.mod1_schedule);
+        if (r.subject && r.time && r.day) {
+          const parsed = parseTime(r.time);
           newAssignments.push({
-            subjectId: r.mod1_subject,
-            groupId: r.mod1_ctm || 'mock-g1',
-            scheduleDay: sched.day,
-            startTime: sched.start,
-            endTime: sched.end,
-            modulo: 1,
-            cuatrimestre: 1,
-            isAvailable: r.mod1_available
-          });
-        }
-        if (r.mod2_subject && r.mod2_schedule) {
-          const sched = parseSchedule(r.mod2_schedule);
-          newAssignments.push({
-            subjectId: r.mod2_subject,
-            groupId: r.mod2_ctm || 'mock-g1',
-            scheduleDay: sched.day,
-            startTime: sched.start,
-            endTime: sched.end,
-            modulo: 2,
-            cuatrimestre: 1,
-            isAvailable: r.mod2_available
+            subjectId: r.subject,
+            groupId: 'mock-g1', // Default ya que se eliminó CTM del UI
+            scheduleDay: Number(r.day),
+            startTime: parsed.start,
+            endTime: parsed.end,
+            modulo: 1, // Default
+            cuatrimestre: 1, // Default
+            isAvailable: r.available
           });
         }
       });
@@ -190,101 +153,60 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
         <div className="min-w-[1000px] print:min-w-0 print:w-full">
           <table className="w-full border-collapse text-sm print:text-xs">
             <thead>
-              <tr className="bg-blue-600 text-white uppercase text-[10px] print:bg-gray-100 print:text-gray-800">
+              <tr className="bg-blue-600 text-white uppercase text-xs print:bg-gray-100 print:text-gray-800">
                 <th className="p-3 border border-blue-700 print:hidden text-center w-12"> Disp. </th>
-                <th className="p-3 border border-blue-700 print:border-gray-300">Asignatura (Mod 1)</th>
-                <th className="p-3 border border-blue-700 print:border-gray-300">Horario (Mod 1)</th>
-                <th className="p-3 border border-blue-700 print:border-gray-300">CTM (Mod 1)</th>
-                <th className="p-3 border border-blue-700 print:hidden text-center w-12"> Disp. </th>
-                <th className="p-3 border border-blue-700 print:border-gray-300">Asignatura (Mod 2)</th>
-                <th className="p-3 border border-blue-700 print:border-gray-300">Horario (Mod 2)</th>
-                <th className="p-3 border border-blue-700 print:border-gray-300">CTM (Mod 2)</th>
-                <th className="bg-transparent border-none print:hidden"></th>
+                <th className="p-3 border border-blue-700 print:border-gray-300">Asignatura</th>
+                <th className="p-3 border border-blue-700 print:border-gray-300">Día de la Semana</th>
+                <th className="p-3 border border-blue-700 print:border-gray-300">Horario</th>
+                <th className="bg-transparent border-none print:hidden w-12"></th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row, index) => (
                 <tr key={row.id} className="hover:bg-gray-50 group print:break-inside-avoid">
-                  {/* Módulo 1 */}
-                  <td className={`p-1 border border-gray-200 text-center print:hidden ${row.mod1_available ? 'bg-emerald-100/50' : ''}`}>
+                  <td className={`p-1 border border-gray-200 text-center print:hidden ${row.available ? 'bg-emerald-100/50' : ''}`}>
                     <button 
-                      onClick={() => handleRowChange(index, 'mod1_available', !row.mod1_available)}
-                      className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center border transition-all ${row.mod1_available ? 'bg-emerald-500 border-emerald-600 text-white shadow-md' : 'bg-white border-gray-300 text-transparent hover:border-emerald-400'}`}
-                      title="Confirmar disponibilidad (Mod 1)"
+                      onClick={() => handleRowChange(index, 'available', !row.available)}
+                      className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center border transition-all ${row.available ? 'bg-emerald-500 border-emerald-600 text-white shadow-md' : 'bg-white border-gray-300 text-transparent hover:border-emerald-400'}`}
+                      title="Confirmar disponibilidad"
                     >
                       ✓
                     </button>
                   </td>
                   <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2">
                     <select 
-                      value={row.mod1_subject} 
-                      onChange={e => handleRowChange(index, 'mod1_subject', e.target.value)}
+                      value={row.subject} 
+                      onChange={e => handleRowChange(index, 'subject', e.target.value)}
                       className="w-full p-2 bg-transparent outline-none text-xs print:appearance-none print:p-0"
                     >
                       <option value="">Selecciona...</option>
-                      {MOCK_SUBJECTS.map(s => <option key={`m1-${s.id}`} value={s.id}>{s.name}</option>)}
+                      {MOCK_SUBJECTS.map(s => <option key={`s-${s.id}`} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </td>
+                  <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2">
+                    <select 
+                      value={row.day} 
+                      onChange={e => handleRowChange(index, 'day', e.target.value)}
+                      className="w-full p-2 bg-transparent outline-none text-xs uppercase print:appearance-none print:p-0"
+                    >
+                      <option value="">Selecciona...</option>
+                      <option value="1">LUNES</option>
+                      <option value="2">MARTES</option>
+                      <option value="3">MIÉRCOLES</option>
+                      <option value="4">JUEVES</option>
+                      <option value="5">VIERNES</option>
+                      <option value="6">SÁBADO</option>
+                      <option value="0">DOMINGO</option>
                     </select>
                   </td>
                   <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2">
                     <input 
                       type="text" 
-                      placeholder="Ej. SABADO 8:00-9:30" 
-                      value={row.mod1_schedule}
-                      onChange={e => handleRowChange(index, 'mod1_schedule', e.target.value)}
+                      placeholder="Ej. 08:00-09:30" 
+                      value={row.time}
+                      onChange={e => handleRowChange(index, 'time', e.target.value)}
                       className="w-full p-2 bg-transparent outline-none text-xs uppercase print:p-0"
                     />
-                  </td>
-                  <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2">
-                    <select 
-                      value={row.mod1_ctm} 
-                      onChange={e => handleRowChange(index, 'mod1_ctm', e.target.value)}
-                      className="w-full p-2 bg-transparent outline-none text-xs uppercase print:appearance-none print:p-0"
-                    >
-                      <option value="">Selecciona...</option>
-                      {MOCK_CARRERAS.map((c, i) => <option key={`c1-${i}`} value={`mock-g${i+1}`}>{c}</option>)}
-                    </select>
-                  </td>
-
-                  {/* Columna Central de Disponibilidad (Mod 2) */}
-                  <td className={`p-1 border border-gray-200 text-center print:hidden ${row.mod2_available ? 'bg-emerald-100/50' : 'bg-[#f4fbef]/30'}`}>
-                    <button 
-                      onClick={() => handleRowChange(index, 'mod2_available', !row.mod2_available)}
-                      className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center border transition-all ${row.mod2_available ? 'bg-emerald-500 border-emerald-600 text-white shadow-md' : 'bg-white border-gray-300 text-transparent hover:border-emerald-400'}`}
-                      title="Confirmar disponibilidad (Mod 2)"
-                    >
-                      ✓
-                    </button>
-                  </td>
-
-                  {/* Módulo 2 */}
-                  <td className="p-1 border border-gray-200 bg-[#f4fbef]/30 print:bg-transparent print:border-gray-300 print:p-2">
-                    <select 
-                      value={row.mod2_subject} 
-                      onChange={e => handleRowChange(index, 'mod2_subject', e.target.value)}
-                      className="w-full p-2 bg-transparent outline-none text-xs print:appearance-none print:p-0"
-                    >
-                      <option value="">Selecciona...</option>
-                      {MOCK_SUBJECTS.map(s => <option key={`m2-${s.id}`} value={s.id}>{s.name}</option>)}
-                    </select>
-                  </td>
-                  <td className="p-1 border border-gray-200 bg-[#f4fbef]/30 print:bg-transparent print:border-gray-300 print:p-2">
-                    <input 
-                      type="text" 
-                      placeholder="Ej. DOMINGO 9:40-11:10" 
-                      value={row.mod2_schedule}
-                      onChange={e => handleRowChange(index, 'mod2_schedule', e.target.value)}
-                      className="w-full p-2 bg-transparent outline-none text-xs uppercase print:p-0"
-                    />
-                  </td>
-                  <td className="p-1 border border-gray-200 bg-[#f4fbef]/30 print:bg-transparent print:border-gray-300 print:p-2">
-                    <select 
-                      value={row.mod2_ctm} 
-                      onChange={e => handleRowChange(index, 'mod2_ctm', e.target.value)}
-                      className="w-full p-2 bg-transparent outline-none text-xs uppercase print:appearance-none print:p-0"
-                    >
-                      <option value="">Selecciona...</option>
-                      {MOCK_CARRERAS.map((c, i) => <option key={`c2-${i}`} value={`mock-g${i+1}`}>{c}</option>)}
-                    </select>
                   </td>
                   <td className="p-1 text-center border border-transparent print:hidden">
                     <button onClick={() => removeRow(index)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-2">
