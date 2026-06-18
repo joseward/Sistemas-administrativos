@@ -18,6 +18,8 @@ import {
 } from '@/lib/mockData';
 import { Select } from '@/components/ui/Select';
 import { CatalogManagerModal } from '@/components/grupos/CatalogManagerModal';
+import { TemplateCreatorModal } from '@/components/grupos/TemplateCreatorModal';
+import { MOCK_GROUP_TEMPLATES, MockGroupTemplate } from '@/lib/mockData';
 
 export default function GruposPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -30,9 +32,11 @@ export default function GruposPage() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
 
   const [assignments, setAssignments] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<MockGroupTemplate[]>(MOCK_GROUP_TEMPLATES);
 
   useEffect(() => {
     fetch('/api/teachers')
@@ -54,17 +58,17 @@ export default function GruposPage() {
       .catch(err => console.error("Error fetching assignments", err));
   }, []);
 
-  // Agrupar asignaciones por grupo/carrera para la tabla
+  // Construir las tablas a partir de las Plantillas
   const groupedAssignments = useMemo(() => {
     const grouped = new Map();
     
-    assignments.forEach((a) => {
-      if (filters.modulo && a.modulo !== Number(filters.modulo)) return;
-      if (filters.cuatrimestre && a.cuatrimestre !== Number(filters.cuatrimestre)) return;
+    templates.forEach((tpl) => {
+      if (filters.modulo && tpl.modulo !== Number(filters.modulo)) return;
       
-      const group = getGroupById(a.groupId);
+      const group = getGroupById(tpl.groupId);
       if (!group) return;
       
+      if (filters.cuatrimestre && group.cuatrimestre !== Number(filters.cuatrimestre)) return;
       if (filters.academicYear && group.academicYear !== filters.academicYear) return;
       
       // Filtrar por nivel académico si aplica
@@ -75,31 +79,57 @@ export default function GruposPage() {
 
       if (filters.carreraId && group.carreraId !== filters.carreraId) return;
 
-      const cuatriLabel = CUATRIMESTRES.find(c => c.value === a.cuatrimestre)?.label || `${a.cuatrimestre}er Cuatrimestre`;
-      const groupKey = `${group.carrera} - ${cuatriLabel}`;
+      const cuatriLabel = CUATRIMESTRES.find(c => c.value === group.cuatrimestre)?.label || `${group.cuatrimestre}er Cuatrimestre`;
+      const groupKey = `${group.carrera} - ${cuatriLabel} - Grupo ${group.name}`;
       
       if (!grouped.has(groupKey)) {
         grouped.set(groupKey, {
           label: groupKey,
-          moduloLabel: filters.modulo ? `Módulo ${filters.modulo}` : `Módulo ${a.modulo}`,
+          moduloLabel: `Módulo ${tpl.modulo}`,
           assignments: [],
         });
       }
       
-      grouped.get(groupKey).assignments.push(a);
+      // Para cada materia en la plantilla, buscar si hay una asignación real
+      tpl.subjectIds.forEach(subjectId => {
+        // Buscar asignación
+        const assignment = assignments.find(a => 
+          a.groupId === tpl.groupId && 
+          a.modulo === tpl.modulo && 
+          a.subjectId === subjectId
+        );
+
+        if (assignment) {
+          grouped.get(groupKey).assignments.push(assignment);
+        } else {
+          // Si no hay, creamos un registro "vacío" para mostrar en la tabla
+          grouped.get(groupKey).assignments.push({
+            id: `unassigned-${tpl.id}-${subjectId}`,
+            subjectId,
+            teacherId: null,
+            groupId: tpl.groupId,
+            modulo: tpl.modulo,
+            classroom: tpl.classroom,
+            scheduleDay: -1,
+            startTime: '',
+            endTime: ''
+          });
+        }
+      });
     });
     
-    // Convertir a array y ordenar por día y hora
+    // Convertir a array y ordenar
     const result = Array.from(grouped.values());
     result.forEach(g => {
       g.assignments.sort((a: any, b: any) => {
+        // Poner los asignados primero, ordenados por día
         if (a.scheduleDay !== b.scheduleDay) return a.scheduleDay - b.scheduleDay;
         return a.startTime.localeCompare(b.startTime);
       });
     });
     
     return result;
-  }, [assignments, filters, refreshTick]);
+  }, [templates, assignments, filters, refreshTick]);
 
   // Aplicar filtro de búsqueda de docente
   const filteredGroups = useMemo(() => {
@@ -132,11 +162,16 @@ export default function GruposPage() {
         </Link>
 
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-4xl font-bold text-[#061266]">👥 Grupos Académicos y Asignaciones</h1>
-          <p className="text-gray-600 mt-2">
-            Vista general de asignaciones por docente, materia, horario y CTM (Carrera).
-          </p>
+        <div className="mb-6 flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl font-bold text-[#061266]">👥 Grupos Académicos y Asignaciones</h1>
+            <p className="text-gray-600 mt-2">
+              Vista general de asignaciones por docente, materia, horario y CTM (Carrera).
+            </p>
+          </div>
+          <Button onClick={() => setIsTemplateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+            + Nueva Plantilla
+          </Button>
         </div>
 
         {/* Barra de Filtros (Pestañas/Desplegables) */}
@@ -274,17 +309,17 @@ export default function GruposPage() {
                             
                             {/* Docente */}
                             <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 text-xs uppercase leading-relaxed text-center">
-                              {teacher ? `${teacher.firstName} ${teacher.lastName}` : 'No asignado'}
+                              {teacher ? `${teacher.firstName} ${teacher.lastName}` : <span className="text-red-600 font-bold">Pendiente</span>}
                             </td>
                             
                             {/* Horario */}
                             <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 text-xs uppercase leading-relaxed text-center">
-                              {DAYS_OF_WEEK[a.scheduleDay]} {a.startTime} - {a.endTime}
+                              {a.scheduleDay !== -1 ? `${DAYS_OF_WEEK[a.scheduleDay]} ${a.startTime} - ${a.endTime}` : <span className="text-gray-400">---</span>}
                             </td>
                             
                             {/* Aula */}
                             <td className="px-4 py-3 text-gray-900 text-xs uppercase leading-relaxed text-center">
-                              {a.classroom || ''}
+                              {a.classroom || <span className="text-gray-400">---</span>}
                             </td>
                           </tr>
                         );
@@ -302,6 +337,20 @@ export default function GruposPage() {
         isOpen={isCatalogOpen} 
         onClose={() => setIsCatalogOpen(false)} 
         onSuccess={() => setRefreshTick(t => t + 1)}
+      />
+
+      <TemplateCreatorModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        onSave={(newTemplate) => {
+          const tpl: MockGroupTemplate = {
+            id: `tpl-${Date.now()}`,
+            ...newTemplate
+          };
+          // En la vida real, se guarda en DB. Aquí lo añadimos al estado en memoria.
+          MOCK_GROUP_TEMPLATES.push(tpl);
+          setTemplates([...templates, tpl]);
+        }}
       />
     </div>
   );

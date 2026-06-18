@@ -94,6 +94,7 @@ Object.entries(RAW_CAREER_SUBJECTS).forEach(([careerId, cuatrimestres]) => {
         code: `C${cuatrimestreNum}-${subjectName.substring(0, 3).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}${subIdx}`,
         credits: 4,
         careerId: careerId,
+        cuatrimestre: cuatrimestreNum,
       });
     });
   });
