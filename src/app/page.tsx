@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { DashboardMetrics } from '@/components/dashboard/DashboardMetrics';
 
 export default function Home() {
   return (
@@ -15,6 +16,9 @@ export default function Home() {
             Gestión eficiente de docentes, horarios, grupos y asistencia
           </p>
         </div>
+
+        {/* Panel de Métricas (Semáforo) */}
+        <DashboardMetrics />
 
         {/* Grid de Módulos */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
