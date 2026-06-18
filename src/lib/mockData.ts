@@ -5,6 +5,8 @@
  * para mantenerse sincronizadas.
  */
 
+import { GENERATED_SUBJECTS } from './catalogoMaterias';
+
 // ============================================
 // USUARIOS (Backend/Admin y Frontend/Docentes)
 // ============================================
@@ -209,6 +211,7 @@ export const MOCK_SUBJECTS: MockSubject[] = [
   { id: 'mock-s12', name: 'Finanzas', code: 'FIN-201', credits: 5, careerId: 'c-2' },
   { id: 'mock-s13', name: 'Formación de Emprendedores', code: 'EMP-101', credits: 3, careerId: 'c-1' },
   { id: 'mock-s14', name: 'Control Administrativo', code: 'ADM-401', credits: 4, careerId: 'c-1' },
+  ...GENERATED_SUBJECTS,
 ];
 
 // ============================================
