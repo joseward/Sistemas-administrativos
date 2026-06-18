@@ -2,7 +2,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { Button, Badge, Modal, Select, Input } from '@/components/ui';
+import { Button, Badge, Modal, Input } from '@/components/ui';
+import { Select } from '@/components/ui/Select';
+import { PrintGroups } from '@/components/horarios/PrintGroups';
 import { cn } from '@/lib/utils';
 import {
   MOCK_SUBJECTS,
@@ -184,11 +186,24 @@ export default function HorariosPage() {
       if (
         existing.groupId === newAssignment.groupId &&
         existing.scheduleDay === newAssignment.scheduleDay &&
-        existing.groupId !== 'mock-g1'
+        existing.groupId !== 'mock-g1' &&
+        !existing.isAvailable
       ) {
         if (newAssignment.startTime < existing.endTime && newAssignment.endTime > existing.startTime) {
           const group = getGroupById(existing.groupId);
           return `Conflicto: El grupo ${group?.name} ya tiene clase de ${existing.startTime} a ${existing.endTime} el ${DAYS_OF_WEEK[existing.scheduleDay]}`;
+        }
+      }
+
+      // Verificar conflicto de aula (Control Físico de Aulas)
+      if (
+        newAssignment.classroom &&
+        existing.classroom === newAssignment.classroom &&
+        existing.scheduleDay === newAssignment.scheduleDay &&
+        !existing.isAvailable
+      ) {
+        if (newAssignment.startTime < existing.endTime && newAssignment.endTime > existing.startTime) {
+          return `Conflicto de Aula: El ${newAssignment.classroom} ya está ocupado de ${existing.startTime} a ${existing.endTime} el ${DAYS_OF_WEEK[existing.scheduleDay]}.`;
         }
       }
     }
@@ -248,6 +263,36 @@ export default function HorariosPage() {
     });
   };
 
+  const getSuggestedTeachers = () => {
+    if (formData.scheduleDay === '' || !formData.startTime || !formData.endTime) return [];
+    
+    return activeTeachers.filter(t => {
+      // 1. Check if teacher marked this time as available
+      const hasAvailability = assignments.some(a => 
+        a.teacherId === t.id && 
+        a.isAvailable && 
+        a.scheduleDay === parseInt(formData.scheduleDay) &&
+        a.startTime <= formData.startTime && 
+        a.endTime >= formData.endTime
+      );
+      if (!hasAvailability) return false;
+
+      // 2. Check if teacher is already booked
+      const isBooked = assignments.some(a => 
+        a.teacherId === t.id && 
+        !a.isAvailable && 
+        a.scheduleDay === parseInt(formData.scheduleDay) &&
+        a.subjectId !== 'mock-s1' && // ignore mock-s1 availability slots
+        !(formData.endTime <= a.startTime || formData.startTime >= a.endTime)
+      );
+      if (isBooked) return false;
+
+      return true;
+    });
+  };
+
+  const suggestedTeachers = getSuggestedTeachers();
+
   const handleDelete = (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar esta asignación?')) {
       setAssignments(assignments.filter((a) => a.id !== id));
@@ -266,7 +311,8 @@ export default function HorariosPage() {
   const activeTeachers = getActiveTeachers();
 
   return (
-    <div className="min-h-screen bg-transparent p-6">
+    <>
+    <div className="min-h-screen bg-transparent p-6 print:hidden">
       <div className="max-w-7xl mx-auto">
         {/* Botón Regresar */}
         <Link
@@ -285,13 +331,23 @@ export default function HorariosPage() {
               Asigna horarios vinculando Maestro → Materia → Grupo. Se validan conflictos automáticamente.
             </p>
           </div>
-          <Button
-            size="lg"
-            onClick={() => setIsFormOpen(true)}
-            className="shadow-lg"
-          >
-            + Nueva Asignación
-          </Button>
+          <div className="flex gap-4">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => window.print()}
+              className="shadow-sm border-blue-600 text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+            >
+              📄 Generar PDFs (Grupos)
+            </Button>
+            <Button
+              size="lg"
+              onClick={() => setIsFormOpen(true)}
+              className="shadow-lg"
+            >
+              + Nueva Asignación
+            </Button>
+          </div>
         </div>
 
         {/* Filtros y controles */}
@@ -616,18 +672,46 @@ export default function HorariosPage() {
 
           {/* Maestro */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Maestro *</label>
+            <div className="flex justify-between items-end mb-1">
+              <label className="block text-sm font-medium text-gray-700">Maestro *</label>
+              {formData.scheduleDay !== '' && formData.startTime && formData.endTime && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (suggestedTeachers.length > 0) {
+                      setFormData(prev => ({ ...prev, teacherId: suggestedTeachers[0].id }));
+                    } else {
+                      setFormError('No hay maestros disponibles para este horario.');
+                    }
+                  }}
+                  className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 bg-emerald-50 px-2 py-1 rounded"
+                >
+                  ✨ Sugerir Maestro
+                </button>
+              )}
+            </div>
             <select
               value={formData.teacherId}
               onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Seleccionar maestro...</option>
-              {activeTeachers.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.firstName} {t.lastName} — {t.specialization}
-                </option>
-              ))}
+              {suggestedTeachers.length > 0 && formData.scheduleDay !== '' && (
+                <optgroup label="✅ Maestros Disponibles (Sugeridos)">
+                  {suggestedTeachers.map(t => (
+                    <option key={`sug-${t.id}`} value={t.id}>
+                      {t.firstName} {t.lastName} — {t.specialization}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Todos los maestros">
+                {activeTeachers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.firstName} {t.lastName} — {t.specialization}
+                  </option>
+                ))}
+              </optgroup>
             </select>
             {activeTeachers.length === 0 && (
               <p className="text-xs text-amber-600 mt-1">
@@ -704,5 +788,8 @@ export default function HorariosPage() {
         </div>
       </Modal>
     </div>
+    
+    <PrintGroups assignments={assignments} />
+    </>
   );
 }

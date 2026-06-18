@@ -335,12 +335,11 @@ export const MOCK_CARRERAS = MOCK_CAREERS.map(c => c.name);
 
 export const DAYS_OF_WEEK = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-export const TIME_SLOTS = [
-  '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
-  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
-  '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
-  '16:00', '16:30', '17:00',
-];
+export const TIME_SLOTS = Array.from({ length: (24 - 7) * 6 }, (_, i) => {
+  const hours = Math.floor(i / 6) + 7;
+  const minutes = (i % 6) * 10;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+});
 
 /** Obtener maestro por ID */
 export function getTeacherById(id: string): MockTeacher | undefined {

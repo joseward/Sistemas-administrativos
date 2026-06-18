@@ -86,6 +86,8 @@ export default function GruposPage() {
         grouped.set(groupKey, {
           label: groupKey,
           moduloLabel: `Módulo ${tpl.modulo}`,
+          template: tpl,
+          group: group,
           assignments: [],
         });
       }
@@ -148,6 +150,43 @@ export default function GruposPage() {
       return { ...g, assignments: filteredAsgs };
     }).filter(g => g.assignments.length > 0);
   }, [groupedAssignments, teachers, searchTerm]);
+
+  const handlePromote = (group: any, template: MockGroupTemplate) => {
+    const currentCuatri = group.cuatrimestre;
+    const nextCuatri = currentCuatri + 1;
+    
+    // Buscar materias del siguiente cuatrimestre
+    const nextSubjects = MOCK_SUBJECTS.filter(s => 
+      s.carreraId === group.carreraId && 
+      s.cuatrimestre === nextCuatri
+    );
+
+    if (nextSubjects.length === 0) {
+      alert(`No hay materias registradas en el catálogo para el Cuatrimestre ${nextCuatri}.`);
+      return;
+    }
+
+    // Crear o usar el grupo
+    const newGroupId = `mock-g-${Date.now()}`;
+    const newGroup = {
+      ...group,
+      id: newGroupId,
+      cuatrimestre: nextCuatri
+    };
+    MOCK_GROUPS.push(newGroup); // Guardar en memoria de sesión
+
+    const newTemplate: MockGroupTemplate = {
+      id: `tpl-${Date.now()}`,
+      groupId: newGroupId,
+      modulo: template.modulo, // Clonar al mismo módulo
+      subjectIds: nextSubjects.map(s => s.id), // Cargar materias nuevas
+      classroom: template.classroom, // Conservar aula
+      createdAt: new Date().toISOString()
+    };
+
+    setTemplates([...templates, newTemplate]);
+    alert(`✅ Promovido exitosamente a Cuatrimestre ${nextCuatri}. Se cargaron ${nextSubjects.length} materias.`);
+  };
 
   return (
     <div className="min-h-screen bg-transparent p-6">
@@ -267,7 +306,15 @@ export default function GruposPage() {
                       {/* Header Superior: Grupo y Módulo */}
                       <tr className="bg-blue-600 text-white border-b border-blue-700">
                         <th colSpan={2} className="px-4 py-3 text-left border-r border-blue-500 w-1/2 font-bold uppercase tracking-wider">
-                          {g.label}
+                          <div className="flex justify-between items-center">
+                            <span>{g.label}</span>
+                            <button 
+                              onClick={() => handlePromote(g.group, g.template)}
+                              className="bg-white text-blue-600 hover:bg-blue-50 text-xs px-3 py-1 rounded shadow-sm flex items-center gap-1 transition-colors"
+                            >
+                              🚀 Promover al Sig. Cuatrimestre
+                            </button>
+                          </div>
                         </th>
                         <th colSpan={2} className="px-4 py-3 text-left font-bold uppercase tracking-wider">
                           {g.moduloLabel}
