@@ -331,7 +331,6 @@ export default function HorariosPage() {
               Asigna horarios vinculando Maestro → Materia → Grupo. Se validan conflictos automáticamente.
             </p>
           </div>
-          </div>
           <div className="flex gap-4">
             <Button
               size="lg"
