@@ -16,6 +16,7 @@ import {
   TIME_SLOTS,
   getSubjectById,
   getGroupById,
+  MOCK_GROUP_TEMPLATES,
   type MockScheduleAssignment,
 } from '@/lib/mockData';
 
@@ -64,6 +65,50 @@ export default function HorariosPage() {
     return Array.from(map.entries());
   }, []);
 
+  // Calcular las opciones de plantillas pendientes
+  const availableTemplateSlots = useMemo(() => {
+    const options: any[] = [];
+    
+    MOCK_GROUP_TEMPLATES.forEach(tpl => {
+      const group = getGroupById(tpl.groupId);
+      if (!group) return;
+
+      const career = MOCK_CAREERS.find(c => c.id === group.carreraId);
+      const level = career ? MOCK_ACADEMIC_LEVELS.find(l => l.id === career.academicLevelId) : null;
+      const groupName = career ? `${level?.name} - ${career.name}` : 'Generales';
+
+      tpl.subjectIds.forEach(subjectId => {
+        // Verificar si esta materia de esta plantilla ya está asignada en assignments
+        const isAssigned = assignments.some(a => 
+          a.groupId === tpl.groupId &&
+          a.modulo === tpl.modulo &&
+          a.subjectId === subjectId &&
+          a.teacherId && a.teacherId !== 'mock-t-unassigned'
+        );
+
+        if (!isAssigned) {
+          const subject = getSubjectById(subjectId);
+          options.push({
+            id: `${tpl.id}_${subjectId}`,
+            label: `Mód ${tpl.modulo} | ${group.name} - ${subject?.name} (${tpl.classroom})`,
+            groupCategory: groupName,
+            tpl,
+            subjectId
+          });
+        }
+      });
+    });
+
+    // Agrupar las opciones por categoría de carrera
+    const grouped = new Map<string, typeof options>();
+    options.forEach(opt => {
+      if (!grouped.has(opt.groupCategory)) grouped.set(opt.groupCategory, []);
+      grouped.get(opt.groupCategory)!.push(opt);
+    });
+
+    return Array.from(grouped.entries());
+  }, [assignments]);
+
   useEffect(() => {
     fetch('/api/teachers')
       .then(res => res.json())
@@ -91,12 +136,10 @@ export default function HorariosPage() {
   // Estado del formulario de nueva asignación
   const [formData, setFormData] = useState({
     teacherId: '',
-    subjectId: '',
-    groupId: '',
+    templateSlotId: '',
     scheduleDay: '',
     startTime: '',
     endTime: '',
-    classroom: '',
   });
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -156,7 +199,7 @@ export default function HorariosPage() {
     setFormError(null);
 
     // Validar campos
-    if (!formData.teacherId || !formData.subjectId || !formData.groupId ||
+    if (!formData.teacherId || !formData.templateSlotId || 
         formData.scheduleDay === '' || !formData.startTime || !formData.endTime) {
       setFormError('Todos los campos marcados con * son obligatorios');
       return;
@@ -167,15 +210,24 @@ export default function HorariosPage() {
       return;
     }
 
+    const [tplId, subjectId] = formData.templateSlotId.split('_');
+    const tpl = MOCK_GROUP_TEMPLATES.find(t => t.id === tplId);
+    
+    if (!tpl) {
+      setFormError('Plantilla inválida');
+      return;
+    }
+
     const newAssignment: MockScheduleAssignment = {
       id: `mock-a${Date.now()}`,
       teacherId: formData.teacherId,
-      subjectId: formData.subjectId,
-      groupId: formData.groupId,
+      subjectId: subjectId,
+      groupId: tpl.groupId,
       scheduleDay: parseInt(formData.scheduleDay),
       startTime: formData.startTime,
       endTime: formData.endTime,
-      classroom: formData.classroom || undefined,
+      classroom: tpl.classroom,
+      modulo: tpl.modulo
     };
 
     // Verificar conflictos
@@ -189,12 +241,10 @@ export default function HorariosPage() {
     setIsFormOpen(false);
     setFormData({
       teacherId: '',
-      subjectId: '',
-      groupId: '',
+      templateSlotId: '',
       scheduleDay: '',
       startTime: '',
       endTime: '',
-      classroom: '',
     });
   };
 
@@ -293,10 +343,14 @@ export default function HorariosPage() {
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Todos los grupos</option>
-              {MOCK_GROUPS.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
+              {groupedGroups.map(([groupName, groups]) => (
+                <optgroup key={groupName} label={groupName}>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
 
@@ -424,7 +478,7 @@ export default function HorariosPage() {
                   <tbody>
                     {filteredAssignments.filter(a => a.isAvailable).length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-12 text-center text-gray-500 bg-gray-50">
+                        <td colSpan={3} className="px-4 py-12 text-center text-gray-500 bg-gray-50">
                           Este docente no ha enviado su disponibilidad o no tiene horarios registrados.
                         </td>
                       </tr>
@@ -433,66 +487,68 @@ export default function HorariosPage() {
                         .filter(a => a.isAvailable)
                         .sort((a, b) => a.scheduleDay - b.scheduleDay || a.startTime.localeCompare(b.startTime))
                         .map((a) => {
+                          const isAssigned = a.subjectId && a.subjectId !== 'mock-s1';
+                          const assignedSubject = isAssigned ? getSubjectById(a.subjectId) : null;
+                          const assignedGroup = isAssigned ? getGroupById(a.groupId) : null;
+
                           return (
                             <tr key={a.id} className="border-b border-gray-200 bg-[#5cdb5c]/20 hover:bg-[#5cdb5c]/40 transition-colors">
-                              <td className="px-4 py-4 font-bold text-emerald-900 uppercase">
+                              <td className="px-4 py-4 font-bold text-emerald-900 uppercase w-[15%]">
                                 {DAYS_OF_WEEK[a.scheduleDay]}
                               </td>
-                              <td className="px-4 py-4 text-emerald-800 font-mono font-semibold">
+                              <td className="px-4 py-4 text-emerald-800 font-mono font-semibold w-[20%]">
                                 {a.startTime} — {a.endTime}
                               </td>
-                              <td className="px-4 py-2">
+                              <td colSpan={3} className="px-4 py-2 w-[65%]">
                                 <select
-                                  className="w-full px-2 py-1.5 border border-emerald-300 rounded bg-white text-gray-800 text-xs focus:ring-2 focus:ring-emerald-500"
-                                  value={a.subjectId && a.subjectId !== 'mock-s1' ? a.subjectId : ''}
+                                  className="w-full px-2 py-2 border border-emerald-400 rounded bg-white text-gray-800 text-sm font-medium focus:ring-2 focus:ring-emerald-500"
+                                  value={isAssigned ? "assigned" : ""}
                                   onChange={(e) => {
+                                    const val = e.target.value;
                                     const newAsg = [...assignments];
                                     const index = newAsg.findIndex(asg => asg.id === a.id);
-                                    if(index !== -1) { newAsg[index].subjectId = e.target.value; setAssignments(newAsg); }
+                                    if(index !== -1) {
+                                      if (val === "") {
+                                        // Desasignar
+                                        newAsg[index].subjectId = '';
+                                        newAsg[index].groupId = '';
+                                        newAsg[index].classroom = '';
+                                        newAsg[index].modulo = undefined;
+                                      } else {
+                                        // Asignar de plantilla
+                                        const [tplId, subjId] = val.split('_');
+                                        const tpl = MOCK_GROUP_TEMPLATES.find(t => t.id === tplId);
+                                        if (tpl) {
+                                          newAsg[index].subjectId = subjId;
+                                          newAsg[index].groupId = tpl.groupId;
+                                          newAsg[index].classroom = tpl.classroom;
+                                          newAsg[index].modulo = tpl.modulo;
+                                        }
+                                      }
+                                      setAssignments(newAsg);
+                                    }
                                   }}
                                 >
-                                  <option value="">-- Seleccionar Materia --</option>
-                                  {groupedSubjects.map(([groupName, subjects]) => (
-                                    <optgroup key={groupName} label={groupName}>
-                                      {subjects.map((s) => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                  {isAssigned ? (
+                                    <>
+                                      <option value="assigned">
+                                        Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})
+                                      </option>
+                                      <option value="">-- Desasignar / Liberar Horario --</option>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <option value="">-- Asignar desde Plantilla Pendiente --</option>
+                                      {availableTemplateSlots.map(([groupName, options]) => (
+                                        <optgroup key={groupName} label={groupName}>
+                                          {options.map((opt: any) => (
+                                            <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                          ))}
+                                        </optgroup>
                                       ))}
-                                    </optgroup>
-                                  ))}
+                                    </>
+                                  )}
                                 </select>
-                              </td>
-                              <td className="px-4 py-2">
-                                <select
-                                  className="w-full px-2 py-1.5 border border-emerald-300 rounded bg-white text-gray-800 text-xs focus:ring-2 focus:ring-emerald-500"
-                                  value={a.groupId && a.groupId !== 'mock-g1' ? a.groupId : ''}
-                                  onChange={(e) => {
-                                    const newAsg = [...assignments];
-                                    const index = newAsg.findIndex(asg => asg.id === a.id);
-                                    if(index !== -1) { newAsg[index].groupId = e.target.value; setAssignments(newAsg); }
-                                  }}
-                                >
-                                  <option value="">-- Seleccionar Grupo --</option>
-                                  {groupedGroups.map(([groupName, groups]) => (
-                                    <optgroup key={groupName} label={groupName}>
-                                      {groups.map((g) => (
-                                        <option key={g.id} value={g.id}>{g.name}</option>
-                                      ))}
-                                    </optgroup>
-                                  ))}
-                                </select>
-                              </td>
-                              <td className="px-4 py-2">
-                                <input
-                                  type="text"
-                                  placeholder="Ej. Aula 101"
-                                  className="w-full px-2 py-1.5 border border-emerald-300 rounded bg-white text-gray-800 text-xs focus:ring-2 focus:ring-emerald-500"
-                                  value={a.classroom || ''}
-                                  onChange={(e) => {
-                                    const newAsg = [...assignments];
-                                    const index = newAsg.findIndex(asg => asg.id === a.id);
-                                    if(index !== -1) { newAsg[index].classroom = e.target.value; setAssignments(newAsg); }
-                                  }}
-                                />
                               </td>
                             </tr>
                           );
@@ -580,36 +636,21 @@ export default function HorariosPage() {
             )}
           </div>
 
-          {/* Materia */}
+          {/* Plantilla */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Materia *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Materia desde Plantilla *</label>
             <select
-              value={formData.subjectId}
-              onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
+              value={formData.templateSlotId}
+              onChange={(e) => setFormData({ ...formData, templateSlotId: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">Seleccionar materia...</option>
-              {MOCK_SUBJECTS.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.code})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Grupo */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Grupo *</label>
-            <select
-              value={formData.groupId}
-              onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Seleccionar grupo...</option>
-              {MOCK_GROUPS.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name} — Grado {g.grade} ({g.totalStudents} alumnos)
-                </option>
+              <option value="">Seleccionar materia de plantilla...</option>
+              {availableTemplateSlots.map(([groupName, options]) => (
+                <optgroup key={groupName} label={groupName}>
+                  {options.map((opt: any) => (
+                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -660,14 +701,6 @@ export default function HorariosPage() {
               </select>
             </div>
           </div>
-
-          {/* Aula */}
-          <Input
-            label="Aula / Salón (opcional)"
-            placeholder="Ej: Aula 101, Lab. Ciencias"
-            value={formData.classroom}
-            onChange={(e) => setFormData({ ...formData, classroom: e.target.value })}
-          />
         </div>
       </Modal>
     </div>

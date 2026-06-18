@@ -194,6 +194,7 @@ export interface MockSubject {
   code: string;
   credits?: number;
   careerId?: string; // Para filtrar materias por carrera en el frontend
+  cuatrimestre?: number; // Para plantillas
 }
 
 export const MOCK_SUBJECTS: MockSubject[] = [
@@ -208,10 +209,33 @@ export const MOCK_SUBJECTS: MockSubject[] = [
   { id: 'mock-s9', name: 'Estadística II', code: 'EST-202', credits: 4, careerId: 'c-1' },
   { id: 'mock-s10', name: 'Seminario de Finanzas', code: 'FIN-401', credits: 3, careerId: 'c-2' },
   { id: 'mock-s11', name: 'Investigación de Mercados', code: 'MER-301', credits: 4, careerId: 'c-3' },
-  { id: 'mock-s12', name: 'Finanzas', code: 'FIN-201', credits: 5, careerId: 'c-2' },
-  { id: 'mock-s13', name: 'Formación de Emprendedores', code: 'EMP-101', credits: 3, careerId: 'c-1' },
-  { id: 'mock-s14', name: 'Control Administrativo', code: 'ADM-401', credits: 4, careerId: 'c-1' },
+  { id: 'mock-s12', name: 'Finanzas', code: 'FIN-201', credits: 5, careerId: 'c-2', cuatrimestre: 3 },
+  { id: 'mock-s13', name: 'Formación de Emprendedores', code: 'EMP-101', credits: 3, careerId: 'c-1', cuatrimestre: 9 },
+  { id: 'mock-s14', name: 'Control Administrativo', code: 'ADM-401', credits: 4, careerId: 'c-1', cuatrimestre: 5 },
   ...GENERATED_SUBJECTS,
+];
+
+// ============================================
+// PLANTILLAS DE GRUPO (NUEVO FLUJO)
+// ============================================
+export interface MockGroupTemplate {
+  id: string;
+  groupId: string;       // Relacionado con MockGroup.id
+  modulo: number;        // 1 o 2 (Bimestre)
+  classroom: string;     // Aula fija
+  subjectIds: string[];  // Materias que deben impartirse a este grupo en este módulo
+}
+
+// Empezamos con una base vacía o un ejemplo
+export const MOCK_GROUP_TEMPLATES: MockGroupTemplate[] = [
+  {
+    id: 'tpl-1',
+    groupId: 'mock-g2', // Derecho 3
+    modulo: 1,
+    classroom: 'Salón 101',
+    // Tomamos algunas materias de Derecho (c-5) cuatrimestre 3
+    subjectIds: ['mock-s-c-5-3-0', 'mock-s-c-5-3-1', 'mock-s-c-5-3-2'],
+  }
 ];
 
 // ============================================
