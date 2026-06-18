@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui';
-import { MOCK_SUBJECTS, MOCK_CARRERAS } from '@/lib/mockData';
+import { MOCK_SUBJECTS, TIME_SLOTS } from '@/lib/mockData';
 
 interface TeacherScheduleEditorProps {
   teacherId: string;
@@ -12,7 +12,8 @@ interface RowData {
   id: string;
   available: boolean;
   subject: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   day: string;
 }
 
@@ -38,8 +39,9 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
               id: `row-${Date.now()}-${i}`,
               available: a?.isAvailable ?? false,
               subject: a?.subjectId || '',
-              time: a && a.startTime && a.endTime ? `${a.startTime}-${a.endTime}` : '',
-              day: a?.scheduleDay ? String(a.scheduleDay) : '',
+              startTime: a?.startTime || '',
+              endTime: a?.endTime || '',
+              day: a?.scheduleDay !== undefined ? String(a.scheduleDay) : '',
             });
           }
           setRows(initialRows);
@@ -61,7 +63,7 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
   const addRow = () => {
     setRows([...rows, {
       id: `row-${Date.now()}`,
-      available: false, subject: '', time: '', day: ''
+      available: false, subject: '', startTime: '', endTime: '', day: ''
     }]);
   };
 
@@ -77,23 +79,14 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
     try {
       const newAssignments: any[] = [];
       
-      const parseTime = (text: string) => {
-        const timeMatch = text.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
-        return {
-          start: timeMatch ? timeMatch[1] : '08:00',
-          end: timeMatch ? timeMatch[2] : '09:30'
-        };
-      };
-
       rows.forEach(r => {
-        if (r.subject && r.time && r.day) {
-          const parsed = parseTime(r.time);
+        if (r.subject && r.startTime && r.endTime && r.day) {
           newAssignments.push({
             subjectId: r.subject,
             groupId: 'mock-g1', // Default ya que se eliminó CTM del UI
             scheduleDay: Number(r.day),
-            startTime: parsed.start,
-            endTime: parsed.end,
+            startTime: r.startTime,
+            endTime: r.endTime,
             modulo: 1, // Default
             cuatrimestre: 1, // Default
             isAvailable: r.available
@@ -199,14 +192,26 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
                       <option value="0">DOMINGO</option>
                     </select>
                   </td>
-                  <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2">
-                    <input 
-                      type="text" 
-                      placeholder="Ej. 08:00-09:30" 
-                      value={row.time}
-                      onChange={e => handleRowChange(index, 'time', e.target.value)}
-                      className="w-full p-2 bg-transparent outline-none text-xs uppercase print:p-0"
-                    />
+                  <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2 min-w-[200px]">
+                    <div className="flex items-center gap-1">
+                      <select
+                        value={row.startTime}
+                        onChange={e => handleRowChange(index, 'startTime', e.target.value)}
+                        className="w-full p-2 bg-transparent outline-none text-xs print:appearance-none print:p-0"
+                      >
+                        <option value="">Inicio...</option>
+                        {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <span className="text-gray-400 font-bold">-</span>
+                      <select
+                        value={row.endTime}
+                        onChange={e => handleRowChange(index, 'endTime', e.target.value)}
+                        className="w-full p-2 bg-transparent outline-none text-xs print:appearance-none print:p-0"
+                      >
+                        <option value="">Fin...</option>
+                        {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
                   </td>
                   <td className="p-1 text-center border border-transparent print:hidden">
                     <button onClick={() => removeRow(index)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-2">
