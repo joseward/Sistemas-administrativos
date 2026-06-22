@@ -4,7 +4,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Button, Badge, Modal, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 import { PrintGroups } from '@/components/horarios/PrintGroups';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import { cn } from '@/lib/utils';
 import {
   MOCK_SUBJECTS,
@@ -38,6 +41,10 @@ export default function HorariosPage() {
   const [loadingTeachers, setLoadingTeachers] = useState(true);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  
+  // Assign Preview State
+  const [assignPreview, setAssignPreview] = useState<Omit<MockScheduleAssignment, 'id'> | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'week'>('week');
   const [filterTeacher, setFilterTeacher] = useState<string>('');
   const [filterGroup, setFilterGroup] = useState<string>('');
@@ -132,6 +139,27 @@ export default function HorariosPage() {
       .catch(err => console.error("Error fetching assignments", err));
   }, []);
 
+  useEffect(() => {
+    const handleStartTour = (e: any) => {
+      if (e.detail.tourId === 'horarios-tour') {
+        const driverObj = driver({
+          showProgress: true,
+          nextBtnText: 'Siguiente →',
+          prevBtnText: '← Anterior',
+          doneBtnText: '¡Entendido!',
+          steps: [
+            { element: '#btn-nueva-asignacion', popover: { title: 'Nueva Asignación', description: 'Comienza haciendo clic aquí para cruzar un Maestro con una Materia de una Plantilla.', side: "left", align: 'start' }},
+            { element: '#btn-generar-pdfs', popover: { title: 'Imprimir Horarios', description: 'Una vez asignados, usa este botón para generar los PDFs formateados por cada grupo listos para descargar.', side: "bottom", align: 'start' }},
+            { element: '#filtros-horarios', popover: { title: 'Filtros Flexibles', description: 'Puedes ver cómo queda el horario filtrando por Maestro o por Grupo en estas vistas.', side: "bottom", align: 'start' }}
+          ]
+        });
+        driverObj.drive();
+      }
+    };
+    window.addEventListener('start-tour', handleStartTour);
+    return () => window.removeEventListener('start-tour', handleStartTour);
+  }, []);
+
   const getTeacherById = (id: string) => teachers.find((t) => t.id === id);
   const getActiveTeachers = () => teachers.filter((t) => t.contractStatus === 'active');
 
@@ -143,7 +171,6 @@ export default function HorariosPage() {
     startTime: '',
     endTime: '',
   });
-  const [formError, setFormError] = useState<string | null>(null);
 
   // Filtrar asignaciones
   const filteredAssignments = useMemo(() => {
@@ -245,15 +272,20 @@ export default function HorariosPage() {
       modulo: tpl.modulo
     };
 
-    // Verificar conflictos
     const conflict = checkConflict(newAssignment);
     if (conflict) {
       setFormError(conflict);
       return;
     }
 
-    setAssignments([...assignments, newAssignment]);
+    setAssignPreview(newAssignment);
+  };
+
+  const confirmAssignment = () => {
+    if (!assignPreview) return;
+    setAssignments([...assignments, assignPreview as any]);
     setIsFormOpen(false);
+    setAssignPreview(null);
     setFormData({
       teacherId: '',
       templateSlotId: '',
@@ -332,18 +364,28 @@ export default function HorariosPage() {
             </p>
           </div>
           <div className="flex gap-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  id="btn-generar-pdfs"
+                  size="lg"
+                  variant="outline"
+                  onClick={() => window.print()}
+                  className="shadow-sm border-blue-600 text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                >
+                  📄 Generar PDFs (Grupos)
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Abre la vista de impresión lista para descargar los PDF de cada grupo por separado.
+              </TooltipContent>
+            </Tooltip>
+            
             <Button
-              size="lg"
-              variant="outline"
-              onClick={() => window.print()}
-              className="shadow-sm border-blue-600 text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-            >
-              📄 Generar PDFs (Grupos)
-            </Button>
-            <Button
+              id="btn-nueva-asignacion"
               size="lg"
               onClick={() => setIsFormOpen(true)}
-              className="shadow-lg"
+              className="shadow-lg bg-[#1877f2] hover:bg-blue-600"
             >
               + Nueva Asignación
             </Button>
@@ -351,7 +393,7 @@ export default function HorariosPage() {
         </div>
 
         {/* Filtros y controles */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div id="filtros-horarios" className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex flex-wrap items-center gap-4">
             {/* Toggle de vista */}
             <div className="flex rounded-lg border border-gray-300 overflow-hidden">
@@ -534,8 +576,14 @@ export default function HorariosPage() {
                   <tbody>
                     {filteredAssignments.filter(a => a.isAvailable).length === 0 ? (
                       <tr>
-                        <td colSpan={3} className="px-4 py-12 text-center text-gray-500 bg-gray-50">
-                          Este docente no ha enviado su disponibilidad o no tiene horarios registrados.
+                        <td colSpan={5} className="px-4 py-16 text-center">
+                          <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-gray-500">
+                            <div className="text-6xl mb-4">🗓️</div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-2">No hay horarios disponibles</h3>
+                            <p className="text-sm">
+                              Este docente no ha enviado su disponibilidad o no tienes grupos seleccionados con materias asignables.
+                            </p>
+                          </div>
                         </td>
                       </tr>
                     ) : (
@@ -787,6 +835,58 @@ export default function HorariosPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal de Vista Previa de Asignación */}
+      {assignPreview && (
+        <Modal 
+          isOpen={!!assignPreview} 
+          onClose={() => setAssignPreview(null)} 
+          title="✨ Vista Previa de Asignación"
+        >
+          <div className="p-6">
+            <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-6 rounded-r-lg">
+              <h3 className="text-emerald-800 font-bold mb-1">¡Todo en orden!</h3>
+              <p className="text-sm text-emerald-700">
+                El sistema verificó que no hay choques de horario ni conflictos de aula.
+              </p>
+            </div>
+
+            <div className="space-y-4 mb-8 bg-gray-50 p-4 rounded-xl border border-gray-100">
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-gray-500 text-sm">Maestro:</span>
+                <span className="font-bold">{getTeacherById(assignPreview.teacherId)?.firstName} {getTeacherById(assignPreview.teacherId)?.lastName}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-gray-500 text-sm">Materia:</span>
+                <span className="font-bold">{getSubjectById(assignPreview.subjectId)?.name}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-gray-500 text-sm">Grupo:</span>
+                <span className="font-bold">{getGroupById(assignPreview.groupId)?.name}</span>
+              </div>
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-gray-500 text-sm">Horario:</span>
+                <span className="font-bold text-blue-600 uppercase">
+                  {DAYS_OF_WEEK[assignPreview.scheduleDay]} de {assignPreview.startTime} a {assignPreview.endTime}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500 text-sm">Aula:</span>
+                <span className="font-bold">{assignPreview.classroom || 'No especificada'}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setAssignPreview(null)}>
+                Modificar
+              </Button>
+              <Button onClick={confirmAssignment} className="bg-[#1877f2] hover:bg-blue-600 text-white">
+                Confirmar y Asignar
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
     
     <PrintGroups assignments={assignments} />
