@@ -7,6 +7,11 @@ export function ContextualAssistant() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
+  // Ocultar asistente en la página de login
+  if (pathname.includes('/login')) {
+    return null;
+  }
+
   // Diccionario de conocimiento contextual
   const getContextualHelp = () => {
     if (pathname.includes('/horarios')) {
