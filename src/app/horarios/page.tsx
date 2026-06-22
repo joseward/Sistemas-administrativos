@@ -171,7 +171,6 @@ export default function HorariosPage() {
     startTime: '',
     endTime: '',
   });
-  const [formError, setFormError] = useState<string | null>(null);
 
   // Filtrar asignaciones
   const filteredAssignments = useMemo(() => {
