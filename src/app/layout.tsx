@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { HeaderUserMenu } from '@/components/layout/HeaderUserMenu';
+import { ContextualAssistant } from '@/components/layout/ContextualAssistant';
+import { TooltipProvider } from '@/components/ui/Tooltip';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -35,7 +37,12 @@ export default function RootLayout({
         </header>
 
         {/* Main Content */}
-        <main>{children}</main>
+        <TooltipProvider>
+          <main>{children}</main>
+        </TooltipProvider>
+
+        {/* Global Floating Assistant */}
+        <ContextualAssistant />
       </body>
     </html>
   );

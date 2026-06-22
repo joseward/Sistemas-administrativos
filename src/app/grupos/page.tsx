@@ -4,6 +4,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Button, Badge, Modal, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import {
   MOCK_SUBJECTS,
   MOCK_GROUPS,
@@ -34,6 +36,9 @@ export default function GruposPage() {
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
+  
+  // Promote Preview State
+  const [promotePreview, setPromotePreview] = useState<{group: any, template: MockGroupTemplate, nextCuatri: number, nextSubjects: any[]} | null>(null);
 
   const [assignments, setAssignments] = useState<any[]>([]);
   const [templates, setTemplates] = useState<MockGroupTemplate[]>(MOCK_GROUP_TEMPLATES);
@@ -56,6 +61,27 @@ export default function GruposPage() {
         }
       })
       .catch(err => console.error("Error fetching assignments", err));
+  }, []);
+
+  useEffect(() => {
+    const handleStartTour = (e: any) => {
+      if (e.detail.tourId === 'grupos-tour') {
+        const driverObj = driver({
+          showProgress: true,
+          nextBtnText: 'Siguiente →',
+          prevBtnText: '← Anterior',
+          doneBtnText: '¡Entendido!',
+          steps: [
+            { element: '#btn-nueva-plantilla', popover: { title: 'Nueva Plantilla', description: 'Usa este botón para crear la primera plantilla de un grupo desde cero. Es el primer paso para organizar el ciclo.', side: "left", align: 'start' }},
+            { element: '#filtros-grupos', popover: { title: 'Filtros Inteligentes', description: 'Encuentra rápido tus grupos filtrando por carrera, cuatrimestre o módulo.', side: "bottom", align: 'start' }},
+            { element: '#btn-promover-0', popover: { title: 'Promover Cuatrimestre', description: 'Cuando termine el módulo, presiona aquí para clonar las materias al siguiente nivel automáticamente.', side: "left", align: 'start' }}
+          ]
+        });
+        driverObj.drive();
+      }
+    };
+    window.addEventListener('start-tour', handleStartTour);
+    return () => window.removeEventListener('start-tour', handleStartTour);
   }, []);
 
   // Construir las tablas a partir de las Plantillas
@@ -151,7 +177,7 @@ export default function GruposPage() {
     }).filter(g => g.assignments.length > 0);
   }, [groupedAssignments, teachers, searchTerm]);
 
-  const handlePromote = (group: any, template: MockGroupTemplate) => {
+  const handlePromoteClick = (group: any, template: MockGroupTemplate) => {
     const currentCuatri = group.cuatrimestre;
     const nextCuatri = currentCuatri + 1;
     
@@ -161,8 +187,18 @@ export default function GruposPage() {
       s.cuatrimestre === nextCuatri
     );
 
+    setPromotePreview({
+      group, template, nextCuatri, nextSubjects
+    });
+  };
+
+  const confirmPromote = () => {
+    if (!promotePreview) return;
+    const { group, template, nextCuatri, nextSubjects } = promotePreview;
+
     if (nextSubjects.length === 0) {
       alert(`No hay materias registradas en el catálogo para el Cuatrimestre ${nextCuatri}.`);
+      setPromotePreview(null);
       return;
     }
 
@@ -185,7 +221,7 @@ export default function GruposPage() {
     };
 
     setTemplates([...templates, newTemplate]);
-    alert(`✅ Promovido exitosamente a Cuatrimestre ${nextCuatri}. Se cargaron ${nextSubjects.length} materias.`);
+    setPromotePreview(null);
   };
 
   return (
@@ -203,18 +239,23 @@ export default function GruposPage() {
         {/* Header */}
         <div className="mb-6 flex justify-between items-end">
           <div>
-            <h1 className="text-4xl font-bold text-[#061266]">👥 Grupos Académicos y Asignaciones</h1>
+            <h1 className="text-4xl font-bold text-[#061266]">👥 Grupos Académicos</h1>
             <p className="text-gray-600 mt-2">
-              Vista general de asignaciones por docente, materia, horario y CTM (Carrera).
+              Gestiona las plantillas de grupos y las materias asignadas.
             </p>
           </div>
-          <Button onClick={() => setIsTemplateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-            + Nueva Plantilla
-          </Button>
+          <div className="flex gap-4">
+            <Button id="btn-nueva-plantilla" onClick={() => setIsTemplateModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2">
+              <span className="text-lg">+</span> Nueva Plantilla
+            </Button>
+            <Button onClick={() => setIsCatalogOpen(true)} className="bg-[#061266] text-white">
+              Catálogo de Materias
+            </Button>
+          </div>
         </div>
 
-        {/* Barra de Filtros (Pestañas/Desplegables) */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {/* Filtros */}
+        <div id="filtros-grupos" className="bg-white rounded-lg shadow-md p-6 mb-8 border-t-4 border-[#fdb515]">
           <div className="flex items-center justify-between border-b pb-2 mb-4">
             <h2 className="text-lg font-bold text-gray-800">Filtros de Período Académico</h2>
             <button 
@@ -294,8 +335,31 @@ export default function GruposPage() {
         {/* Tablas de Asignaciones Agrupadas por Carrera/Cuatrimestre */}
         <div className="flex flex-col gap-8">
           {filteredGroups.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-md p-12 text-center text-gray-500 border border-blue-600">
-              No hay asignaciones para los filtros seleccionados
+            <div className="bg-white rounded-2xl shadow-sm p-12 text-center border-2 border-dashed border-blue-200">
+              <div className="text-6xl mb-4">🏫</div>
+              <h3 className="text-2xl font-bold text-[#061266] mb-2">¡Empecemos a organizar tus grupos!</h3>
+              <p className="text-gray-600 max-w-lg mx-auto mb-8">
+                Las plantillas te permiten definir qué materias lleva cada grupo en el cuatrimestre, facilitando la asignación de maestros después.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left max-w-3xl mx-auto mb-8">
+                <div className="bg-blue-50 p-4 rounded-xl">
+                  <div className="text-blue-600 font-bold mb-2">1. Crea una plantilla</div>
+                  <p className="text-sm text-gray-600">Haz clic en "+ Nueva Plantilla" y selecciona la carrera y cuatrimestre.</p>
+                </div>
+                <div className="bg-emerald-50 p-4 rounded-xl">
+                  <div className="text-emerald-600 font-bold mb-2">2. Carga automática</div>
+                  <p className="text-sm text-gray-600">El sistema cargará automáticamente todas las materias del catálogo oficial.</p>
+                </div>
+                <div className="bg-amber-50 p-4 rounded-xl">
+                  <div className="text-amber-600 font-bold mb-2">3. Asigna maestros</div>
+                  <p className="text-sm text-gray-600">Ve a la sección "Horarios" para cruzar maestros con estas materias.</p>
+                </div>
+              </div>
+              
+              <Button onClick={() => setIsTemplateModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                Crear Primera Plantilla
+              </Button>
             </div>
           ) : (
             filteredGroups.map((g, index) => (
@@ -309,7 +373,8 @@ export default function GruposPage() {
                           <div className="flex justify-between items-center">
                             <span>{g.label}</span>
                             <button 
-                              onClick={() => handlePromote(g.group, g.template)}
+                              id={`btn-promover-${index}`}
+                              onClick={() => handlePromoteClick(g.group, g.template)}
                               className="bg-white text-blue-600 hover:bg-blue-50 text-xs px-3 py-1 rounded shadow-sm flex items-center gap-1 transition-colors"
                             >
                               🚀 Promover al Sig. Cuatrimestre
@@ -399,6 +464,71 @@ export default function GruposPage() {
           setTemplates([...templates, tpl]);
         }}
       />
+
+      {/* Modal de Vista Previa de Promoción */}
+      {promotePreview && (
+        <Modal 
+          isOpen={!!promotePreview} 
+          onClose={() => setPromotePreview(null)} 
+          title="🚀 Vista Previa de Promoción"
+          maxWidth="max-w-2xl"
+        >
+          <div className="p-6">
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg">
+              <h3 className="text-amber-800 font-bold mb-1">Confirmación de Acción Automática</h3>
+              <p className="text-sm text-amber-700">
+                Estás a punto de promover este grupo. Se creará una <strong>nueva plantilla</strong> para el cuatrimestre siguiente sin afectar los datos actuales del cuatrimestre vigente.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <p className="text-xs text-gray-500 uppercase font-bold mb-1">De (Actual)</p>
+                <p className="font-semibold text-gray-900">{promotePreview.group.carrera}</p>
+                <p className="text-blue-600">Cuatrimestre {promotePreview.group.cuatrimestre}</p>
+              </div>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm relative">
+                <div className="absolute -left-5 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm border text-blue-500">
+                  →
+                </div>
+                <p className="text-xs text-blue-600 uppercase font-bold mb-1">Hacia (Nuevo)</p>
+                <p className="font-semibold text-gray-900">{promotePreview.group.carrera}</p>
+                <p className="text-emerald-600 font-bold">Cuatrimestre {promotePreview.nextCuatri}</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="font-bold text-gray-900 mb-2 border-b pb-2">
+                Nuevas materias a cargar ({promotePreview.nextSubjects.length}):
+              </p>
+              <ul className="grid grid-cols-2 gap-2 mt-3">
+                {promotePreview.nextSubjects.length > 0 ? (
+                  promotePreview.nextSubjects.map(sub => (
+                    <li key={sub.id} className="text-sm bg-gray-50 p-2 rounded flex items-center gap-2">
+                      <span className="text-emerald-500 text-xs">●</span> {sub.name}
+                    </li>
+                  ))
+                ) : (
+                  <li className="text-red-500 text-sm col-span-2">No se encontraron materias para este cuatrimestre en el catálogo. Se requiere dar de alta materias primero.</li>
+                )}
+              </ul>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8">
+              <Button variant="outline" onClick={() => setPromotePreview(null)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={confirmPromote} 
+                disabled={promotePreview.nextSubjects.length === 0}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                Confirmar y Clonar Plantilla
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
