@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { jwtVerify } from 'jose';
-import { MOCK_SUBJECTS } from '@/lib/mockData';
+import { MOCK_SUBJECTS, MOCK_GROUPS } from '@/lib/mockData';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
@@ -60,17 +60,19 @@ export async function POST(request: NextRequest) {
       // Asegurar que el grupo y las materias mock existan
       const school = await tx.school.findFirst();
       if (school) {
-        const mockGroup = await tx.group.findUnique({ where: { id: 'mock-g1' } });
-        if (!mockGroup) {
-          await tx.group.create({
-            data: {
-              id: 'mock-g1',
-              schoolId: school.id,
-              name: 'Grupo Principal (Defecto)',
-              grade: 1,
-              academicYear: '2026-2027'
-            }
-          });
+        for (const grp of MOCK_GROUPS) {
+          const existingGrp = await tx.group.findUnique({ where: { id: grp.id } });
+          if (!existingGrp) {
+            await tx.group.create({
+              data: {
+                id: grp.id,
+                schoolId: school.id,
+                name: grp.name,
+                grade: grp.grade,
+                academicYear: grp.academicYear || '2026-2027'
+              }
+            });
+          }
         }
         
         // Asegurar que las materias de MOCK_SUBJECTS existan
