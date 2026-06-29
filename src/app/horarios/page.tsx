@@ -140,8 +140,16 @@ export default function HorariosPage() {
         loaded.push(...assignmentsRes.data.map((a: any) => ({ ...a, isAvailable: false })));
       }
       if (availabilityRes.success) {
-        // Disponibilidad mapeada para que la interfaz la pinte verde
-        const availAsAssigns = availabilityRes.data.map((av: any) => ({
+        const realAssignments = assignmentsRes.success ? assignmentsRes.data : [];
+        const availAsAssigns = availabilityRes.data
+          .filter((av: any) => {
+            return !realAssignments.some((ra: any) => 
+              ra.teacherId === av.teacherId && 
+              ra.scheduleDay === av.dayOfWeek && 
+              ra.startTime === av.startTime
+            );
+          })
+          .map((av: any) => ({
           id: `avail_${av.id}`,
           teacherId: av.teacherId,
           subjectId: 'mock-s1',
@@ -653,7 +661,7 @@ export default function HorariosPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAssignments.filter(a => a.isAvailable).length === 0 ? (
+                    {filteredAssignments.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-4 py-16 text-center">
                           <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-gray-500">
@@ -667,7 +675,6 @@ export default function HorariosPage() {
                       </tr>
                     ) : (
                       [...filteredAssignments]
-                        .filter(a => a.isAvailable)
                         .sort((a, b) => a.scheduleDay - b.scheduleDay || a.startTime.localeCompare(b.startTime))
                         .map((a) => {
                           const isAssigned = a.subjectId && a.subjectId !== 'mock-s1';
