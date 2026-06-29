@@ -3,76 +3,65 @@ const prisma = new PrismaClient();
 
 async function test() {
   try {
-    const teacherId = "cm0gxj5q0000008lc6p0z0v9x"; // We need a real teacher ID. Let's find one.
     const teacher = await prisma.teacher.findFirst();
     if (!teacher) {
       console.log('No teachers found');
       return;
     }
-    console.log('Using teacher:', teacher.id);
-    
-    // Simulate the exact code from route.ts
-    await prisma.$transaction(async (tx) => {
-      const mockGroup = await tx.group.findUnique({ where: { id: 'mock-g1' } });
-      if (!mockGroup) {
-        const school = await tx.school.findFirst();
-        if (school) {
-          await tx.group.create({
-            data: {
-              id: 'mock-g1',
-              schoolId: school.id,
-              name: 'Grupo Principal (Defecto)',
-              grade: 1,
-              academicYear: '2026-2027'
-            }
-          });
-          console.log('Created mock-g1 group');
-        }
-      }
+    console.log('Teacher:', teacher.firstName, teacher.lastName, teacher.id);
 
+    const subjects = await prisma.subject.findMany();
+    console.log('Subjects in DB:', subjects.length);
+    if (subjects.length > 0) {
+      console.log('First subject:', subjects[0].name, subjects[0].id);
+    } else {
+        console.log('No subjects in DB!');
+        return;
+    }
+
+    const mockGroup = await prisma.group.findUnique({ where: { id: 'mock-g1' } });
+    console.log('Mock group exists:', !!mockGroup);
+
+    // Let's try to insert two assignments for the same subject
+    const assignments = [
+      {
+        teacherId: teacher.id,
+        subjectId: subjects[0].id,
+        groupId: 'mock-g1',
+        scheduleDay: 1,
+        startTime: '07:00',
+        endTime: '08:20',
+        academicYear: '2026-2027',
+        modulo: 1,
+        cuatrimestre: 1,
+        isAvailable: true
+      },
+      {
+        teacherId: teacher.id,
+        subjectId: subjects[0].id,
+        groupId: 'mock-g1',
+        scheduleDay: 2, // Tuesday
+        startTime: '07:00',
+        endTime: '08:20',
+        academicYear: '2026-2027',
+        modulo: 1,
+        cuatrimestre: 1,
+        isAvailable: true
+      }
+    ];
+
+    await prisma.$transaction(async (tx) => {
       await tx.teacherSubjectGroup.deleteMany({
         where: { teacherId: teacher.id }
       });
-      console.log('Deleted old assignments');
-
-      const subject = await tx.subject.findFirst();
-      if (!subject) {
-          console.log('No subject found');
-          return;
-      }
-
-      const assignments = [
-        {
-          subjectId: subject.id,
-          groupId: 'mock-g1',
-          scheduleDay: 1,
-          startTime: '07:00',
-          endTime: '08:20',
-          academicYear: '2026-2027',
-          modulo: 1,
-          cuatrimestre: 1,
-          isAvailable: true
-        }
-      ];
-
       await tx.teacherSubjectGroup.createMany({
-        data: assignments.map((a) => ({
-          teacherId: teacher.id,
-          subjectId: a.subjectId,
-          groupId: a.groupId,
-          scheduleDay: a.scheduleDay,
-          startTime: a.startTime,
-          endTime: a.endTime,
-          academicYear: a.academicYear || '2026-2027',
-          modulo: a.modulo,
-          cuatrimestre: a.cuatrimestre,
-          isAvailable: a.isAvailable
-        }))
+        data: assignments
       });
-      console.log('Created new assignments successfully');
     });
+    console.log('Transaction succeeded!');
+
   } catch (err) {
-    console.error('Error:', err);
+    console.error('Prisma Error:', err);
   } finally {
     await prisma.$disconnect();
   }
