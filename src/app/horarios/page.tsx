@@ -129,14 +129,33 @@ export default function HorariosPage() {
       .catch(err => console.error("Error fetching teachers", err))
       .finally(() => setLoadingTeachers(false));
 
-    fetch('/api/assignments')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setAssignments(data.data);
-        }
-      })
-      .catch(err => console.error("Error fetching assignments", err));
+    Promise.all([
+      fetch('/api/assignments').then(res => res.json()),
+      fetch('/api/availability').then(res => res.json())
+    ])
+    .then(([assignmentsRes, availabilityRes]) => {
+      let loaded: any[] = [];
+      if (assignmentsRes.success) {
+        // Asignaciones reales
+        loaded.push(...assignmentsRes.data.map((a: any) => ({ ...a, isAvailable: false })));
+      }
+      if (availabilityRes.success) {
+        // Disponibilidad mapeada para que la interfaz la pinte verde
+        const availAsAssigns = availabilityRes.data.map((av: any) => ({
+          id: `avail_${av.id}`,
+          teacherId: av.teacherId,
+          subjectId: 'mock-s1',
+          groupId: 'mock-g1',
+          scheduleDay: av.dayOfWeek,
+          startTime: av.startTime,
+          endTime: av.endTime,
+          isAvailable: true
+        }));
+        loaded.push(...availAsAssigns);
+      }
+      setAssignments(loaded);
+    })
+    .catch(err => console.error("Error fetching schedule data", err));
   }, []);
 
   useEffect(() => {
@@ -182,7 +201,7 @@ export default function HorariosPage() {
   }, [assignments, filterTeacher, filterGroup]);
 
   // Verificar conflictos de horario
-  const checkConflict = (newAssignment: Omit<MockScheduleAssignment, 'id'>): string | null => {
+  const checkConflict = (newAssignment: Omit<MockScheduleAssignment, 'id'>, checkList = assignments): string | null => {
     // 1. Validar que el maestro marcó este horario como disponible
     const isAvailable = assignments.some(a => 
       a.teacherId === newAssignment.teacherId &&
@@ -196,7 +215,7 @@ export default function HorariosPage() {
       return 'El docente tiene horario en otra universidad o no está disponible en este horario.';
     }
 
-    for (const existing of assignments) {
+    for (const existing of checkList) {
       // Si ya hay otra materia asignada al mismo maestro en esa hora (que no sea un slot de disponibilidad en blanco)
       if (
         existing.teacherId === newAssignment.teacherId &&
@@ -235,6 +254,52 @@ export default function HorariosPage() {
       }
     }
     return null;
+  };
+
+  
+  const handleAutoAssign = () => {
+    let currentList = [...assignments];
+    let newAssignedCount = 0;
+    
+    // Obtener las materias pendientes
+    const pending = availableTemplateSlots.flatMap(opt => opt[1]);
+    
+    for (const slot of pending) {
+      // Buscar disponibilidades (nodos verdes)
+      const availabilitiesOnly = currentList.filter(a => a.isAvailable === true);
+      let assigned = false;
+      
+      for (const av of availabilitiesOnly) {
+        const testA = {
+          teacherId: av.teacherId,
+          subjectId: slot.subjectId,
+          groupId: slot.tpl.groupId,
+          scheduleDay: av.scheduleDay,
+          startTime: av.startTime,
+          endTime: av.endTime,
+          classroom: slot.tpl.classroom,
+          modulo: slot.tpl.modulo
+        };
+        
+        if (!checkConflict(testA, currentList)) {
+          // Asignado!
+          currentList.push({
+            ...testA,
+            id: `mock-auto-${Date.now()}-${Math.random()}`
+          });
+          newAssignedCount++;
+          assigned = true;
+          break;
+        }
+      }
+    }
+    
+    if (newAssignedCount > 0) {
+      setAssignments(currentList);
+      alert(`✨ Magia completada: Se asignaron ${newAssignedCount} materias a los horarios disponibles.`);
+    } else {
+      alert('No se encontraron horarios compatibles para asignar automáticamente.');
+    }
   };
 
   const handleSubmit = () => {

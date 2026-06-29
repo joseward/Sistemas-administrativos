@@ -5,19 +5,25 @@ import { MOCK_GROUP_TEMPLATES, MOCK_TEACHERS } from '@/lib/mockData';
 
 export function DashboardMetrics() {
   const [assignments, setAssignments] = useState<any[]>([]);
+  const [availability, setAvailability] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/assignments')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setAssignments(data.data);
+    Promise.all([
+      fetch('/api/assignments').then(res => res.json()),
+      fetch('/api/availability').then(res => res.json())
+    ])
+      .then(([assignData, availData]) => {
+        if (assignData.success) {
+          setAssignments(assignData.data);
+        }
+        if (availData.success) {
+          setAvailability(availData.data);
         }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Error fetching assignments", err);
+        console.error("Error fetching dashboard metrics", err);
         setLoading(false);
       });
   }, []);
@@ -55,7 +61,7 @@ export function DashboardMetrics() {
   let missingAvailabilityCount = 0;
 
   activeTeachers.forEach(t => {
-    const hasAvailability = assignments.some(a => a.teacherId === t.id && a.isAvailable);
+    const hasAvailability = availability.some(a => a.teacherId === t.id);
     if (!hasAvailability) {
       missingAvailabilityCount++;
     }
