@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui';
-import { SearchableSelect } from '@/components/ui/SearchableSelect';
-import { MOCK_SUBJECTS, TIME_SLOTS } from '@/lib/mockData';
+import { TIME_SLOTS } from '@/lib/mockData';
 
 interface TeacherScheduleEditorProps {
   teacherId: string;
@@ -11,8 +10,6 @@ interface TeacherScheduleEditorProps {
 
 interface RowData {
   id: string;
-  available: boolean;
-  subject: string;
   startTime: string;
   endTime: string;
   day: string;
@@ -26,33 +23,31 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
 
   useEffect(() => {
     // Cargar datos reales desde la API
-    const loadAssignments = async () => {
+    const loadAvailability = async () => {
       try {
-        const res = await fetch(`/api/assignments?teacherId=${teacherId}`);
+        const res = await fetch(`/api/availability?teacherId=${teacherId}`);
         const data = await res.json();
         if (data.success) {
-          const teacherAssignments = data.data;
-          const maxRows = Math.max(teacherAssignments.length, 3);
+          const teacherAvailability = data.data;
+          const maxRows = Math.max(teacherAvailability.length, 3);
           const initialRows: RowData[] = [];
 
           for (let i = 0; i < maxRows; i++) {
-            const a = teacherAssignments[i];
+            const a = teacherAvailability[i];
             initialRows.push({
               id: `row-${Date.now()}-${i}`,
-              available: a?.isAvailable ?? false,
-              subject: a?.subjectId || '',
               startTime: a?.startTime || '',
               endTime: a?.endTime || '',
-              day: a?.scheduleDay !== undefined ? String(a.scheduleDay) : '',
+              day: a?.dayOfWeek !== undefined ? String(a.dayOfWeek) : '',
             });
           }
           setRows(initialRows);
         }
       } catch (err) {
-        console.error('Error al cargar horarios:', err);
+        console.error('Error al cargar disponibilidad:', err);
       }
     };
-    loadAssignments();
+    loadAvailability();
   }, [teacherId]);
 
   const handleRowChange = (index: number, field: keyof RowData, value: string | boolean) => {
@@ -65,7 +60,7 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
   const addRow = () => {
     setRows([...rows, {
       id: `row-${Date.now()}`,
-      available: false, subject: '', startTime: '', endTime: '', day: ''
+      startTime: '', endTime: '', day: ''
     }]);
   };
 
@@ -80,14 +75,14 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
     setSuccessMsg(null);
     setErrorMsg(null);
 
-    const newAssignments: any[] = [];
+    const newAvailability: any[] = [];
     let hasError = false;
     let filledRowsCount = 0;
     
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
-      const isPartiallyFilled = r.subject || r.startTime || r.endTime || r.day;
-      const isCompletelyFilled = r.subject && r.startTime && r.endTime && r.day;
+      const isPartiallyFilled = r.startTime || r.endTime || r.day;
+      const isCompletelyFilled = r.startTime && r.endTime && r.day;
 
       if (isCompletelyFilled) {
         if (r.startTime >= r.endTime) {
@@ -96,18 +91,13 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
           break;
         }
         filledRowsCount++;
-        newAssignments.push({
-          subjectId: r.subject,
-          groupId: 'mock-g1', // Default ya que se eliminó CTM del UI
-          scheduleDay: Number(r.day),
+        newAvailability.push({
+          dayOfWeek: Number(r.day),
           startTime: r.startTime,
-          endTime: r.endTime,
-          modulo: 1, // Default
-          cuatrimestre: 1, // Default
-          isAvailable: r.available
+          endTime: r.endTime
         });
       } else if (isPartiallyFilled) {
-        setErrorMsg(`Error en fila ${i + 1}: Debes completar todos los campos de la materia (Día y Horarios).`);
+        setErrorMsg(`Error en fila ${i + 1}: Debes completar todos los campos del horario libre (Día y Horas).`);
         hasError = true;
         break;
       }
@@ -126,12 +116,12 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
 
     try {
 
-      const res = await fetch('/api/assignments', {
+      const res = await fetch('/api/availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teacherId,
-          assignments: newAssignments
+          availability: newAvailability
         })
       });
 
@@ -154,8 +144,8 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
       <div className="flex justify-between items-center mb-6 print:hidden">
         <div>
-          <h2 className="text-2xl font-bold text-[#061266]">Asignación de Horarios</h2>
-          <p className="text-sm text-gray-500 mt-1">Llena la información de tus materias por módulo. Los cambios se sincronizarán con el área administrativa.</p>
+          <h2 className="text-2xl font-bold text-[#061266]">Disponibilidad de Horario</h2>
+          <p className="text-sm text-gray-500 mt-1">Llena la información con los días y horas que tienes disponibles. El área administrativa usará esto para asignarte grupos.</p>
         </div>
         <Button onClick={handleSave} isLoading={saving} className="bg-emerald-600 hover:bg-emerald-700">
           Guardar y Enviar
@@ -165,7 +155,7 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden print:shadow-none print:border-none">
         {/* Encabezado visible solo al imprimir */}
         <div className="hidden print:block p-4 mb-4 text-center border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900">Horario de Clases</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Disponibilidad de Horarios</h1>
           <p className="text-gray-600">Docente: {teacherId}</p>
         </div>
 
@@ -185,33 +175,14 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
           <table className="w-full border-collapse text-sm print:text-xs">
             <thead>
               <tr className="bg-blue-600 text-white uppercase text-xs print:bg-gray-100 print:text-gray-800">
-                <th className="p-3 border border-blue-700 print:hidden text-center w-12"> Disp. </th>
-                <th className="p-3 border border-blue-700 print:border-gray-300">Asignatura</th>
-                <th className="p-3 border border-blue-700 print:border-gray-300">Día de la Semana</th>
-                <th className="p-3 border border-blue-700 print:border-gray-300">Horario</th>
+                <th className="p-3 border border-blue-700 print:border-gray-300 w-1/3">Día de la Semana</th>
+                <th className="p-3 border border-blue-700 print:border-gray-300 w-2/3">Horas Libres (Inicio - Fin)</th>
                 <th className="bg-transparent border-none print:hidden w-12"></th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row, index) => (
                 <tr key={row.id} className="hover:bg-gray-50 group print:break-inside-avoid">
-                  <td className={`p-1 border border-gray-200 text-center print:hidden ${row.available ? 'bg-emerald-100/50' : ''}`}>
-                    <button 
-                      onClick={() => handleRowChange(index, 'available', !row.available)}
-                      className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center border transition-all ${row.available ? 'bg-emerald-500 border-emerald-600 text-white shadow-md' : 'bg-white border-gray-300 text-transparent hover:border-emerald-400'}`}
-                      title="Confirmar disponibilidad"
-                    >
-                      ✓
-                    </button>
-                  </td>
-                  <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2">
-                    <SearchableSelect 
-                      value={row.subject} 
-                      onChange={val => handleRowChange(index, 'subject', val)}
-                      options={MOCK_SUBJECTS.map(s => ({ value: s.id, label: s.name }))}
-                      placeholder="Selecciona materia..."
-                    />
-                  </td>
                   <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2">
                     <select 
                       value={row.day} 

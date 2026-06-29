@@ -9,6 +9,16 @@ import {
   getGroupById,
 } from '@/lib/mockData';
 
+const HOURLY_RATE = 150; // $150 MXN por hora base
+const WEEKS_PER_MODULE = 8; // 8 semanas por módulo aprox.
+
+function calculateHours(start: string, end: string) {
+  if (!start || !end) return 0;
+  const [h1, m1] = start.split(':').map(Number);
+  const [h2, m2] = end.split(':').map(Number);
+  return Math.max(0, (h2 + m2 / 60) - (h1 + m1 / 60));
+}
+
 export default function ContratosPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
@@ -53,6 +63,14 @@ export default function ContratosPage() {
     if (!selectedTeacherId) return [];
     return assignments.filter(a => a.teacherId === selectedTeacherId && a.modulo === 2);
   }, [selectedTeacherId, assignments]);
+
+  const weeklyHoursMod1 = useMemo(() => {
+    return assignmentsMod1.reduce((sum, a) => sum + calculateHours(a.startTime, a.endTime), 0);
+  }, [assignmentsMod1]);
+
+  const weeklyHoursMod2 = useMemo(() => {
+    return assignmentsMod2.reduce((sum, a) => sum + calculateHours(a.startTime, a.endTime), 0);
+  }, [assignmentsMod2]);
 
   const handlePrint = () => {
     window.print();
@@ -211,6 +229,52 @@ export default function ContratosPage() {
                   <p>23 DE AGOSTO - DOMINGOS</p>
                 </div>
               </div>
+            </div>
+
+            {/* CÁLCULO FINANCIERO */}
+            <div className="mb-12 mt-8 p-4 border border-gray-400 bg-gray-50/50 print:bg-transparent">
+              <h5 className="font-bold text-sm uppercase mb-4 text-center border-b border-gray-400 pb-2">Desglose de Honorarios (Estimación)</h5>
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="border-b border-gray-300">
+                    <th className="py-2">Concepto</th>
+                    <th className="py-2 text-right">Módulo 1</th>
+                    <th className="py-2 text-right">Módulo 2</th>
+                    <th className="py-2 text-right font-bold text-lg">Total Cuatrimestre</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-gray-200">
+                    <td className="py-2">Horas por Semana</td>
+                    <td className="py-2 text-right">{weeklyHoursMod1.toFixed(1)} hrs</td>
+                    <td className="py-2 text-right">{weeklyHoursMod2.toFixed(1)} hrs</td>
+                    <td className="py-2 text-right"></td>
+                  </tr>
+                  <tr className="border-b border-gray-200">
+                    <td className="py-2">Horas Totales ({WEEKS_PER_MODULE} semanas/mód)</td>
+                    <td className="py-2 text-right">{(weeklyHoursMod1 * WEEKS_PER_MODULE).toFixed(1)} hrs</td>
+                    <td className="py-2 text-right">{(weeklyHoursMod2 * WEEKS_PER_MODULE).toFixed(1)} hrs</td>
+                    <td className="py-2 text-right font-bold">
+                      {((weeklyHoursMod1 + weeklyHoursMod2) * WEEKS_PER_MODULE).toFixed(1)} hrs totales
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 font-bold text-sm">Honorarios Brutos (Tarifa: ${HOURLY_RATE}/hr)</td>
+                    <td className="py-3 text-right font-bold text-emerald-800">
+                      ${(weeklyHoursMod1 * WEEKS_PER_MODULE * HOURLY_RATE).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 text-right font-bold text-emerald-800">
+                      ${(weeklyHoursMod2 * WEEKS_PER_MODULE * HOURLY_RATE).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 text-right font-black text-xl text-emerald-900 border-l-2 border-gray-300 pl-4">
+                      ${((weeklyHoursMod1 + weeklyHoursMod2) * WEEKS_PER_MODULE * HOURLY_RATE).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p className="text-[9px] text-gray-500 mt-2 text-justify">
+                * El cálculo anterior es una estimación bruta basada en la tarifa base de honorarios asimilados vigente. Los importes netos estarán sujetos a las retenciones de ISR correspondientes según la ley vigente al momento del pago.
+              </p>
             </div>
 
             {/* FIRMAS */}
