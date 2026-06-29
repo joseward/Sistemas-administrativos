@@ -302,6 +302,66 @@ export default function HorariosPage() {
     }
   };
 
+  
+  const handleAutoAssign = () => {
+    let currentList = [...assignments];
+    let newAssignedCount = 0;
+    
+    // Obtener materias pendientes
+    const pending = availableTemplateSlots.flatMap(opt => opt[1]);
+    
+    for (const slot of pending) {
+      const availabilitiesOnly = currentList.filter(a => a.isAvailable === true);
+      let assigned = false;
+      
+      for (const av of availabilitiesOnly) {
+        const testA = {
+          teacherId: av.teacherId,
+          subjectId: slot.subjectId,
+          groupId: slot.tpl.groupId,
+          scheduleDay: av.scheduleDay,
+          startTime: av.startTime,
+          endTime: av.endTime,
+          classroom: slot.tpl.classroom,
+          modulo: slot.tpl.modulo
+        };
+        
+        if (!checkConflict(testA, currentList)) {
+          currentList.push({
+            ...testA,
+            id: `mock-auto-${Date.now()}-${Math.random()}`
+          });
+          newAssignedCount++;
+          assigned = true;
+          break;
+        }
+      }
+    }
+    
+    if (newAssignedCount > 0) {
+      setAssignments(currentList);
+      
+      const affectedTeacherIds = [...new Set(currentList.filter(a => !a.isAvailable).map(a => a.teacherId))];
+      Promise.all(
+        affectedTeacherIds.map(tid => {
+          const teacherAssignments = currentList.filter(a => a.teacherId === tid && !a.isAvailable);
+          return fetch('/api/assignments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ teacherId: tid, assignments: teacherAssignments })
+          });
+        })
+      ).then(() => {
+        alert(`✨ Magia completada: Se asignaron y GUARDARON ${newAssignedCount} materias a los horarios disponibles.`);
+      }).catch(err => {
+        console.error(err);
+        alert('Se asignaron localmente pero hubo un error al guardar en la base de datos.');
+      });
+    } else {
+      alert('No se encontraron horarios compatibles para asignar automáticamente.');
+    }
+  };
+
   const handleSubmit = () => {
     setFormError(null);
 
