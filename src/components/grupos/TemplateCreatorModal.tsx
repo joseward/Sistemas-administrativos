@@ -149,11 +149,15 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
               ...filteredGroups.map(g => ({ value: g.id, label: g.name }))
             ]}
           />
-          <Input
-            label="Aula Fija (Ej. Salón 102)"
+          <Select
+            label="Aula"
             value={classroom}
             onChange={(e) => setClassroom(e.target.value)}
-            placeholder="Salón..."
+            options={[
+              { value: '', label: 'Seleccionar...' },
+              ...['CC1', 'CC2', 'B8', 'C4', 'B12', 'B10', 'B4', 'C11', 'B3', 'B1', 'C8', 'B9', 'B2', 'C7', 'C1', 'B11', 'B6', 'C9', 'C']
+                .map(aula => ({ value: aula, label: aula }))
+            ]}
           />
         </div>
 
