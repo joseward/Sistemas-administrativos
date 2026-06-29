@@ -261,52 +261,6 @@ export default function HorariosPage() {
     let currentList = [...assignments];
     let newAssignedCount = 0;
     
-    // Obtener las materias pendientes
-    const pending = availableTemplateSlots.flatMap(opt => opt[1]);
-    
-    for (const slot of pending) {
-      // Buscar disponibilidades (nodos verdes)
-      const availabilitiesOnly = currentList.filter(a => a.isAvailable === true);
-      let assigned = false;
-      
-      for (const av of availabilitiesOnly) {
-        const testA = {
-          teacherId: av.teacherId,
-          subjectId: slot.subjectId,
-          groupId: slot.tpl.groupId,
-          scheduleDay: av.scheduleDay,
-          startTime: av.startTime,
-          endTime: av.endTime,
-          classroom: slot.tpl.classroom,
-          modulo: slot.tpl.modulo
-        };
-        
-        if (!checkConflict(testA, currentList)) {
-          // Asignado!
-          currentList.push({
-            ...testA,
-            id: `mock-auto-${Date.now()}-${Math.random()}`
-          });
-          newAssignedCount++;
-          assigned = true;
-          break;
-        }
-      }
-    }
-    
-    if (newAssignedCount > 0) {
-      setAssignments(currentList);
-      alert(`✨ Magia completada: Se asignaron ${newAssignedCount} materias a los horarios disponibles.`);
-    } else {
-      alert('No se encontraron horarios compatibles para asignar automáticamente.');
-    }
-  };
-
-  
-  const handleAutoAssign = () => {
-    let currentList = [...assignments];
-    let newAssignedCount = 0;
-    
     // Obtener materias pendientes
     const pending = availableTemplateSlots.flatMap(opt => opt[1]);
     
