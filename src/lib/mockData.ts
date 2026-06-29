@@ -232,7 +232,7 @@ export const MOCK_GROUP_TEMPLATES: MockGroupTemplate[] = [
     id: 'tpl-1',
     groupId: 'mock-g2', // Derecho 3
     modulo: 1,
-    classroom: 'Salón 101',
+    classroom: 'C1',
     // Tomamos algunas materias de Derecho (c-5) cuatrimestre 3
     subjectIds: ['mock-s-c-5-3-0', 'mock-s-c-5-3-1', 'mock-s-c-5-3-2'],
   }
@@ -257,20 +257,20 @@ export interface MockScheduleAssignment {
 
 export const MOCK_ASSIGNMENTS: MockScheduleAssignment[] = [
   // Juan Pérez — Módulo 1
-  { id: 'mock-a1', teacherId: 'mock-t1', subjectId: 'mock-s6', groupId: 'mock-g1', scheduleDay: 3, startTime: '10:10', endTime: '11:10', classroom: 'Aula 101', modulo: 1, cuatrimestre: 1 },
-  { id: 'mock-a2', teacherId: 'mock-t1', subjectId: 'mock-s7', groupId: 'mock-g2', scheduleDay: 3, startTime: '11:40', endTime: '12:40', classroom: 'Aula 101', modulo: 1, cuatrimestre: 1 },
-  { id: 'mock-a3', teacherId: 'mock-t1', subjectId: 'mock-s8', groupId: 'mock-g2', scheduleDay: 5, startTime: '08:00', endTime: '09:30', classroom: 'Aula 102', modulo: 1, cuatrimestre: 1 },
-  { id: 'mock-a4', teacherId: 'mock-t1', subjectId: 'mock-s1', groupId: 'mock-g6', scheduleDay: 5, startTime: '09:40', endTime: '11:10', classroom: 'Aula 102', modulo: 1, cuatrimestre: 1 },
-  { id: 'mock-a5', teacherId: 'mock-t1', subjectId: 'mock-s4', groupId: 'mock-g6', scheduleDay: 5, startTime: '11:20', endTime: '12:50', classroom: 'Aula 102', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a1', teacherId: 'mock-t1', subjectId: 'mock-s6', groupId: 'mock-g1', scheduleDay: 3, startTime: '10:10', endTime: '11:10', classroom: 'C1', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a2', teacherId: 'mock-t1', subjectId: 'mock-s7', groupId: 'mock-g2', scheduleDay: 3, startTime: '11:40', endTime: '12:40', classroom: 'C1', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a3', teacherId: 'mock-t1', subjectId: 'mock-s8', groupId: 'mock-g2', scheduleDay: 5, startTime: '08:00', endTime: '09:30', classroom: 'CC1', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a4', teacherId: 'mock-t1', subjectId: 'mock-s1', groupId: 'mock-g6', scheduleDay: 5, startTime: '09:40', endTime: '11:10', classroom: 'CC1', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a5', teacherId: 'mock-t1', subjectId: 'mock-s4', groupId: 'mock-g6', scheduleDay: 5, startTime: '11:20', endTime: '12:50', classroom: 'CC1', modulo: 1, cuatrimestre: 1 },
   // María López — Módulo 1
-  { id: 'mock-a6', teacherId: 'mock-t2', subjectId: 'mock-s9', groupId: 'mock-g1', scheduleDay: 5, startTime: '08:00', endTime: '09:30', classroom: 'Lab. Ciencias', modulo: 1, cuatrimestre: 1 },
-  { id: 'mock-a7', teacherId: 'mock-t2', subjectId: 'mock-s10', groupId: 'mock-g1', scheduleDay: 5, startTime: '09:40', endTime: '11:10', classroom: 'Lab. Ciencias', modulo: 1, cuatrimestre: 1 },
-  { id: 'mock-a8', teacherId: 'mock-t2', subjectId: 'mock-s11', groupId: 'mock-g3', scheduleDay: 5, startTime: '11:20', endTime: '12:50', classroom: 'Aula 205', modulo: 1, cuatrimestre: 1 },
-  { id: 'mock-a9', teacherId: 'mock-t2', subjectId: 'mock-s12', groupId: 'mock-g4', scheduleDay: 5, startTime: '13:00', endTime: '14:30', classroom: 'Aula 205', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a6', teacherId: 'mock-t2', subjectId: 'mock-s9', groupId: 'mock-g1', scheduleDay: 5, startTime: '08:00', endTime: '09:30', classroom: 'B8', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a7', teacherId: 'mock-t2', subjectId: 'mock-s10', groupId: 'mock-g1', scheduleDay: 5, startTime: '09:40', endTime: '11:10', classroom: 'B8', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a8', teacherId: 'mock-t2', subjectId: 'mock-s11', groupId: 'mock-g3', scheduleDay: 5, startTime: '11:20', endTime: '12:50', classroom: 'C4', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a9', teacherId: 'mock-t2', subjectId: 'mock-s12', groupId: 'mock-g4', scheduleDay: 5, startTime: '13:00', endTime: '14:30', classroom: 'C4', modulo: 1, cuatrimestre: 1 },
   // Carlos Ramírez — Módulo 1
-  { id: 'mock-a10', teacherId: 'mock-t3', subjectId: 'mock-s13', groupId: 'mock-g3', scheduleDay: 6, startTime: '08:00', endTime: '09:30', classroom: 'Aula 301', modulo: 1, cuatrimestre: 1 },
-  { id: 'mock-a11', teacherId: 'mock-t3', subjectId: 'mock-s11', groupId: 'mock-g5', scheduleDay: 6, startTime: '09:40', endTime: '11:10', classroom: 'Aula 301', modulo: 1, cuatrimestre: 1 },
-  { id: 'mock-a12', teacherId: 'mock-t3', subjectId: 'mock-s14', groupId: 'mock-g5', scheduleDay: 6, startTime: '11:20', endTime: '12:50', classroom: 'Aula 301', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a10', teacherId: 'mock-t3', subjectId: 'mock-s13', groupId: 'mock-g3', scheduleDay: 6, startTime: '08:00', endTime: '09:30', classroom: 'B12', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a11', teacherId: 'mock-t3', subjectId: 'mock-s11', groupId: 'mock-g5', scheduleDay: 6, startTime: '09:40', endTime: '11:10', classroom: 'B12', modulo: 1, cuatrimestre: 1 },
+  { id: 'mock-a12', teacherId: 'mock-t3', subjectId: 'mock-s14', groupId: 'mock-g5', scheduleDay: 6, startTime: '11:20', endTime: '12:50', classroom: 'B12', modulo: 1, cuatrimestre: 1 },
 ];
 
 // ============================================
