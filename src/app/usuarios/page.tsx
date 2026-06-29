@@ -33,6 +33,7 @@ export default function UsuariosPage() {
           email: u.email,
           role: u.role,
           status: u.status,
+          blockReason: u.blockReason,
           // If the backend returns teacherId or if we link by email
           teacherId: u.teacherId || null,
         }));
@@ -44,6 +45,7 @@ export default function UsuariosPage() {
           email: u.email,
           role: u.role,
           status: u.status,
+          blockReason: u.blockReason,
           teacherId: u.teacherId || null,
         }));
         setUsers(formattedUsers);
@@ -91,6 +93,22 @@ export default function UsuariosPage() {
         }
       } catch (error) {
         console.error('Error al eliminar:', error);
+      }
+    }
+  };
+
+  const handleUnblock = async (id: string) => {
+    if (confirm('¿Estás seguro de que deseas desbloquear a este usuario para permitirle el acceso nuevamente?')) {
+      try {
+        const response = await fetch(`/api/users/${id}/unblock`, { method: 'PUT' });
+        if (response.ok) {
+          loadUsers();
+          alert('Usuario desbloqueado exitosamente.');
+        } else {
+          alert('Error al desbloquear usuario');
+        }
+      } catch (error) {
+        console.error('Error al desbloquear:', error);
       }
     }
   };
@@ -185,12 +203,20 @@ export default function UsuariosPage() {
                         <td className="px-6 py-4 font-medium text-gray-900">{user.name}</td>
                         <td className="px-6 py-4 text-gray-600">{user.email}</td>
                         <td className="px-6 py-4 text-center">
-                          <Badge variant={user.status === 'active' ? 'success' : 'warning'}>
-                            {user.status === 'active' ? 'Activo' : 'Inactivo'}
+                          <Badge variant={user.status === 'active' ? 'success' : user.status === 'blocked' ? 'danger' : 'warning'}>
+                            {user.status === 'active' ? 'Activo' : user.status === 'blocked' ? 'Bloqueado' : 'Inactivo'}
                           </Badge>
+                          {user.status === 'blocked' && (
+                            <p className="text-[10px] text-red-500 mt-1 max-w-[150px] mx-auto leading-tight">{user.blockReason}</p>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex justify-center gap-2">
+                            {user.status === 'blocked' && (
+                              <Button size="sm" onClick={() => handleUnblock(user.id)} className="bg-orange-500 hover:bg-orange-600 text-white">
+                                🔓 Desbloquear
+                              </Button>
+                            )}
                             {user.role === 'admin' ? (
                               <>
                                 <Button size="sm" variant="outline" onClick={() => handleEdit(user)}>Editar</Button>
