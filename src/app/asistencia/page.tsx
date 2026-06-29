@@ -14,6 +14,16 @@ import {
   type MockScheduleAssignment,
 } from '@/lib/mockData';
 
+const DAYS_OF_WEEK: Record<number, string> = {
+  0: 'Domingo',
+  1: 'Lunes',
+  2: 'Martes',
+  3: 'Miércoles',
+  4: 'Jueves',
+  5: 'Viernes',
+  6: 'Sábado'
+};
+
 export default function AsistenciaPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
