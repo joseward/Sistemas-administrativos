@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { MOCK_SUBJECTS, TIME_SLOTS } from '@/lib/mockData';
 
 interface TeacherScheduleEditorProps {
@@ -21,6 +22,7 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
   const [rows, setRows] = useState<RowData[]>([]);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     // Cargar datos reales desde la API
@@ -76,23 +78,53 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
   const handleSave = async () => {
     setSaving(true);
     setSuccessMsg(null);
-    try {
-      const newAssignments: any[] = [];
-      
-      rows.forEach(r => {
-        if (r.subject && r.startTime && r.endTime && r.day) {
-          newAssignments.push({
-            subjectId: r.subject,
-            groupId: 'mock-g1', // Default ya que se eliminó CTM del UI
-            scheduleDay: Number(r.day),
-            startTime: r.startTime,
-            endTime: r.endTime,
-            modulo: 1, // Default
-            cuatrimestre: 1, // Default
-            isAvailable: r.available
-          });
+    setErrorMsg(null);
+
+    const newAssignments: any[] = [];
+    let hasError = false;
+    let filledRowsCount = 0;
+    
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const isPartiallyFilled = r.subject || r.startTime || r.endTime || r.day;
+      const isCompletelyFilled = r.subject && r.startTime && r.endTime && r.day;
+
+      if (isCompletelyFilled) {
+        if (r.startTime >= r.endTime) {
+          setErrorMsg(`Error en fila ${i + 1}: La hora de inicio debe ser anterior a la hora de fin.`);
+          hasError = true;
+          break;
         }
-      });
+        filledRowsCount++;
+        newAssignments.push({
+          subjectId: r.subject,
+          groupId: 'mock-g1', // Default ya que se eliminó CTM del UI
+          scheduleDay: Number(r.day),
+          startTime: r.startTime,
+          endTime: r.endTime,
+          modulo: 1, // Default
+          cuatrimestre: 1, // Default
+          isAvailable: r.available
+        });
+      } else if (isPartiallyFilled) {
+        setErrorMsg(`Error en fila ${i + 1}: Debes completar todos los campos de la materia (Día y Horarios).`);
+        hasError = true;
+        break;
+      }
+    }
+
+    if (hasError) {
+      setSaving(false);
+      return;
+    }
+
+    if (filledRowsCount === 0) {
+      setErrorMsg('Debes llenar al menos un horario de clase antes de enviar.');
+      setSaving(false);
+      return;
+    }
+
+    try {
 
       const res = await fetch('/api/assignments', {
         method: 'POST',
@@ -138,8 +170,14 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
         </div>
 
         {successMsg && (
-          <div className="mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm">
+          <div className="mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-medium">
             ✅ {successMsg}
+          </div>
+        )}
+
+        {errorMsg && (
+          <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium">
+            ⚠️ {errorMsg}
           </div>
         )}
 
@@ -167,14 +205,12 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
                     </button>
                   </td>
                   <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2">
-                    <select 
+                    <SearchableSelect 
                       value={row.subject} 
-                      onChange={e => handleRowChange(index, 'subject', e.target.value)}
-                      className="w-full p-2 bg-transparent outline-none text-xs print:appearance-none print:p-0"
-                    >
-                      <option value="">Selecciona...</option>
-                      {MOCK_SUBJECTS.map(s => <option key={`s-${s.id}`} value={s.id}>{s.name}</option>)}
-                    </select>
+                      onChange={val => handleRowChange(index, 'subject', val)}
+                      options={MOCK_SUBJECTS.map(s => ({ value: s.id, label: s.name }))}
+                      placeholder="Selecciona materia..."
+                    />
                   </td>
                   <td className="p-1 border border-gray-200 print:border-gray-300 print:p-2">
                     <select 
@@ -229,25 +265,6 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
           </button>
           
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <input 
-                type="file" 
-                id="import-excel" 
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                accept=".xlsx, .xls, .csv"
-                onChange={(e) => {
-                  if (e.target.files?.length) {
-                    setSuccessMsg('Excel importado correctamente (Simulación)');
-                    setTimeout(() => setSuccessMsg(null), 3000);
-                  }
-                }}
-              />
-              <button className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-sm font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                Importar Excel
-              </button>
-            </div>
-            
             <button 
               onClick={() => {
                 window.print();

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { jwtVerify } from 'jose';
+import { cookies } from 'next/headers';
 
 const prisma = new PrismaClient();
 
@@ -14,6 +16,7 @@ export async function GET() {
         firstName: true,
         lastName: true,
         status: true,
+        blockReason: true,
         createdAt: true,
         lastLogin: true,
       },
@@ -28,6 +31,18 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const token = cookies().get('auth-token')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+    
+    const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+    
+    if (payload.role !== 'admin') {
+      return NextResponse.json({ error: 'No tienes permisos de administrador para crear usuarios' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { email, password, role, firstName, lastName, status } = body;
 

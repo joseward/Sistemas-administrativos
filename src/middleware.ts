@@ -50,7 +50,18 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/', request.url));
       }
 
-      // TODO: Añadir lógica para que los docentes no entren al panel de admin y viceversa
+      // RBAC: Control de Acceso Basado en Roles
+      const role = payload.role as string;
+      const isAdminRoute = pathname === '/' || pathname.startsWith('/maestros') || pathname.startsWith('/grupos') || pathname.startsWith('/horarios') || pathname.startsWith('/usuarios');
+      const isDocenteRoute = pathname.startsWith('/portal-docente');
+
+      if (role === 'docente' && isAdminRoute) {
+        return NextResponse.redirect(new URL('/portal-docente', request.url));
+      }
+
+      if (role === 'admin' && isDocenteRoute) {
+        return NextResponse.redirect(new URL('/', request.url));
+      }
       
       return NextResponse.next();
     } catch (error) {

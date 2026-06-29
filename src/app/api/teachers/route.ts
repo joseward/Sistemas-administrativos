@@ -43,6 +43,11 @@ export async function POST(request: NextRequest) {
       try {
         const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
         const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+        
+        if (payload.role !== 'admin') {
+          return NextResponse.json({ success: false, error: 'No tienes permisos de administrador para realizar esta acción' }, { status: 403 });
+        }
+        
         if (payload && payload.id) {
           adminId = payload.id as string;
         }

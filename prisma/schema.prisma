@@ -277,7 +277,9 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   lastLogin     DateTime?
-  status        String   @default("active") // active, inactive
+  status        String   @default("active") // active, inactive, blocked
+  failedAttempts Int     @default(0)
+  blockReason   String?
 
   // Relaciones
   createdTeachers Teacher[] @relation("TeacherCreator")

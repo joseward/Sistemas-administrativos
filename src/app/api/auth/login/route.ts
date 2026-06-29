@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
        return NextResponse.json({ error: `Esta cuenta no tiene permisos de ${role}` }, { status: 403 });
     }
 
+    if (user.status === 'blocked') {
+      return NextResponse.json({ error: user.blockReason || 'Tu cuenta está bloqueada por seguridad. Contacta a administración.' }, { status: 403 });
+    }
+
     if (user.status !== 'active') {
       return NextResponse.json({ error: 'Esta cuenta está inactiva. Contacta a un administrador.' }, { status: 403 });
     }
@@ -39,13 +43,35 @@ export async function POST(request: NextRequest) {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
+      const newAttempts = (user.failedAttempts || 0) + 1;
+      
+      if (newAttempts >= 3) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            status: 'blocked',
+            failedAttempts: newAttempts,
+            blockReason: 'Superó el límite de 3 intentos fallidos de inicio de sesión.',
+          },
+        });
+        return NextResponse.json({ error: 'Cuenta bloqueada por seguridad después de 3 intentos fallidos. Contacta a administración.' }, { status: 403 });
+      } else {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { failedAttempts: newAttempts },
+        });
+        const remaining = 3 - newAttempts;
+        return NextResponse.json({ error: `Credenciales incorrectas. Te quedan ${remaining} intento(s).` }, { status: 401 });
+      }
     }
 
-    // Optional: Update lastLogin
+    // Optional: Update lastLogin and reset failedAttempts
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLogin: new Date() },
+      data: { 
+        lastLogin: new Date(),
+        failedAttempts: 0,
+      },
     });
 
     // Generar JWT
