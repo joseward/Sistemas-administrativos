@@ -181,7 +181,7 @@ model TeacherSubjectGroup {
   attendance    Attendance[]
   signatures    AttendanceSignature[]
 
-  @@unique([teacherId, subjectId, groupId, academicYear])
+  @@unique([teacherId, subjectId, groupId, academicYear, scheduleDay, startTime])
   @@map("teacher_subject_groups")
   @@index([teacherId])
   @@index([subjectId])
