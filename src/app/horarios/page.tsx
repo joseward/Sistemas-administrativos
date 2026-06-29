@@ -697,6 +697,7 @@ export default function HorariosPage() {
                                         newAsg[index].groupId = '';
                                         newAsg[index].classroom = '';
                                         newAsg[index].modulo = undefined;
+                                        newAsg[index].isAvailable = true;
                                       } else {
                                         // Asignar de plantilla
                                         const [tplId, subjId] = val.split('_');
@@ -706,9 +707,22 @@ export default function HorariosPage() {
                                           newAsg[index].groupId = tpl.groupId;
                                           newAsg[index].classroom = tpl.classroom;
                                           newAsg[index].modulo = tpl.modulo;
+                                          newAsg[index].isAvailable = false;
+                                          if (!newAsg[index].id.startsWith('mock-a')) {
+                                            newAsg[index].id = `mock-a-${Date.now()}-${Math.random()}`;
+                                          }
                                         }
                                       }
                                       setAssignments(newAsg);
+                                      
+                                      // Guardar en la base de datos
+                                      const tid = newAsg[index].teacherId;
+                                      const teacherAssignments = newAsg.filter(asg => asg.teacherId === tid && !asg.isAvailable);
+                                      fetch('/api/assignments', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ teacherId: tid, assignments: teacherAssignments })
+                                      }).catch(console.error);
                                     }
                                   }}
                                 >
