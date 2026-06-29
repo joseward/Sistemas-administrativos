@@ -56,6 +56,23 @@ export async function POST(request: NextRequest) {
 
     // 3. Ejecutar en transacción: Eliminar las anteriores y crear las nuevas
     await prisma.$transaction(async (tx) => {
+      // Asegurar que el grupo mock-g1 exista
+      const mockGroup = await tx.group.findUnique({ where: { id: 'mock-g1' } });
+      if (!mockGroup) {
+        const school = await tx.school.findFirst();
+        if (school) {
+          await tx.group.create({
+            data: {
+              id: 'mock-g1',
+              schoolId: school.id,
+              name: 'Grupo Principal (Defecto)',
+              grade: 1,
+              academicYear: '2026-2027'
+            }
+          });
+        }
+      }
+
       // Eliminar actuales
       await tx.teacherSubjectGroup.deleteMany({
         where: { teacherId }
