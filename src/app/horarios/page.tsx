@@ -261,11 +261,10 @@ export default function HorariosPage() {
     let currentList = [...assignments];
     let newAssignedCount = 0;
     
-    // Obtener las materias pendientes
+    // Obtener materias pendientes
     const pending = availableTemplateSlots.flatMap(opt => opt[1]);
     
     for (const slot of pending) {
-      // Buscar disponibilidades (nodos verdes)
       const availabilitiesOnly = currentList.filter(a => a.isAvailable === true);
       let assigned = false;
       
@@ -282,7 +281,6 @@ export default function HorariosPage() {
         };
         
         if (!checkConflict(testA, currentList)) {
-          // Asignado!
           currentList.push({
             ...testA,
             id: `mock-auto-${Date.now()}-${Math.random()}`
@@ -296,7 +294,23 @@ export default function HorariosPage() {
     
     if (newAssignedCount > 0) {
       setAssignments(currentList);
-      alert(`✨ Magia completada: Se asignaron ${newAssignedCount} materias a los horarios disponibles.`);
+      
+      const affectedTeacherIds = [...new Set(currentList.filter(a => !a.isAvailable).map(a => a.teacherId))];
+      Promise.all(
+        affectedTeacherIds.map(tid => {
+          const teacherAssignments = currentList.filter(a => a.teacherId === tid && !a.isAvailable);
+          return fetch('/api/assignments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ teacherId: tid, assignments: teacherAssignments })
+          });
+        })
+      ).then(() => {
+        alert(`✨ Magia completada: Se asignaron y GUARDARON ${newAssignedCount} materias a los horarios disponibles.`);
+      }).catch(err => {
+        console.error(err);
+        alert('Se asignaron localmente pero hubo un error al guardar en la base de datos.');
+      });
     } else {
       alert('No se encontraron horarios compatibles para asignar automáticamente.');
     }
@@ -683,6 +697,7 @@ export default function HorariosPage() {
                                         newAsg[index].groupId = '';
                                         newAsg[index].classroom = '';
                                         newAsg[index].modulo = undefined;
+                                        newAsg[index].isAvailable = true;
                                       } else {
                                         // Asignar de plantilla
                                         const [tplId, subjId] = val.split('_');
@@ -692,9 +707,22 @@ export default function HorariosPage() {
                                           newAsg[index].groupId = tpl.groupId;
                                           newAsg[index].classroom = tpl.classroom;
                                           newAsg[index].modulo = tpl.modulo;
+                                          newAsg[index].isAvailable = false;
+                                          if (!newAsg[index].id.startsWith('mock-a')) {
+                                            newAsg[index].id = `mock-a-${Date.now()}-${Math.random()}`;
+                                          }
                                         }
                                       }
                                       setAssignments(newAsg);
+                                      
+                                      // Guardar en la base de datos
+                                      const tid = newAsg[index].teacherId;
+                                      const teacherAssignments = newAsg.filter(asg => asg.teacherId === tid && !asg.isAvailable);
+                                      fetch('/api/assignments', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ teacherId: tid, assignments: teacherAssignments })
+                                      }).catch(console.error);
                                     }
                                   }}
                                 >

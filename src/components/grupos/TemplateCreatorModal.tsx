@@ -41,13 +41,13 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
     );
   }, [carreraId, cuatrimestre]);
 
-  // Materias de la carrera y cuatrimestre seleccionado
+  // Materias de la carrera seleccionada
   const availableSubjects = useMemo(() => {
-    if (!carreraId || !cuatrimestre) return [];
+    if (!carreraId) return [];
     return MOCK_SUBJECTS.filter(s => 
-      s.careerId === carreraId && s.cuatrimestre === Number(cuatrimestre)
+      s.careerId === carreraId
     );
-  }, [carreraId, cuatrimestre]);
+  }, [carreraId]);
 
   const handleToggleSubject = (subjectId: string) => {
     setSelectedSubjects(prev => 
@@ -180,9 +180,9 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
           </div>
         )}
 
-        {availableSubjects.length === 0 && carreraId && cuatrimestre && (
+        {availableSubjects.length === 0 && carreraId && (
           <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 rounded-md text-sm">
-            No hay materias registradas para este cuatrimestre en esta carrera.
+            No hay materias registradas para esta carrera. Puede agregar materias en el Catálogo de Materias.
           </div>
         )}
 
