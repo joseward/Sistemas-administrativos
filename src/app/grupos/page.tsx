@@ -38,7 +38,7 @@ export default function GruposPage() {
   const [refreshTick, setRefreshTick] = useState(0);
   
   // Promote Preview State
-  const [promotePreview, setPromotePreview] = useState<{group: any, template: MockGroupTemplate, nextCuatri: number, nextSubjects: any[]} | null>(null);
+  const [promotePreview, setPromotePreview] = useState<{group: any, template: MockGroupTemplate, nextCuatri: number, nextModulo: number, nextSubjects: any[], isNextCuatri: boolean} | null>(null);
 
   const [assignments, setAssignments] = useState<any[]>([]);
   const [templates, setTemplates] = useState<MockGroupTemplate[]>(MOCK_GROUP_TEMPLATES);
@@ -179,43 +179,75 @@ export default function GruposPage() {
 
   const handlePromoteClick = (group: any, template: MockGroupTemplate) => {
     const currentCuatri = group.cuatrimestre;
-    const nextCuatri = currentCuatri + 1;
+    const currentModulo = template.modulo;
     
-    // Buscar materias del siguiente cuatrimestre
-    const nextSubjects = MOCK_SUBJECTS.filter(s => 
+    // Todas las materias del cuatrimestre actual
+    const currentCuatriSubjects = MOCK_SUBJECTS.filter(s => 
       s.carreraId === group.carreraId && 
-      s.cuatrimestre === nextCuatri
+      s.cuatrimestre === currentCuatri
     );
 
+    // Materias ya asignadas a este grupo en cualquier plantilla
+    const assignedSubjectIds = new Set(
+      templates.filter(t => t.groupId === group.id)
+               .flatMap(t => t.subjectIds)
+    );
+    
+    // Materias que faltan por impartir en este cuatrimestre
+    const missingSubjectsCurrentCuatri = currentCuatriSubjects.filter(s => !assignedSubjectIds.has(s.id));
+
+    let nextCuatri = currentCuatri;
+    let nextModulo = currentModulo + 1;
+    let nextSubjects = [];
+    let isNextCuatri = false;
+
+    if (missingSubjectsCurrentCuatri.length > 0) {
+      // Hay materias restantes en el cuatrimestre actual, se promueve al siguiente módulo (bimestre)
+      nextSubjects = missingSubjectsCurrentCuatri.slice(0, 3);
+    } else {
+      // Ya se dieron todas, se promueve al siguiente cuatrimestre
+      nextCuatri = currentCuatri + 1;
+      nextModulo = 1;
+      isNextCuatri = true;
+      nextSubjects = MOCK_SUBJECTS.filter(s => 
+        s.carreraId === group.carreraId && 
+        s.cuatrimestre === nextCuatri
+      ).slice(0, 3);
+    }
+
     setPromotePreview({
-      group, template, nextCuatri, nextSubjects
+      group, template, nextCuatri, nextModulo, nextSubjects, isNextCuatri
     });
   };
 
   const confirmPromote = () => {
     if (!promotePreview) return;
-    const { group, template, nextCuatri, nextSubjects } = promotePreview;
+    const { group, template, nextCuatri, nextModulo, nextSubjects, isNextCuatri } = promotePreview;
 
     if (nextSubjects.length === 0) {
-      alert(`No hay materias registradas en el catálogo para el Cuatrimestre ${nextCuatri}.`);
+      alert(`No hay materias registradas en el catálogo para este ciclo.`);
       setPromotePreview(null);
       return;
     }
 
-    // Crear o usar el grupo
-    const newGroupId = `mock-g-${Date.now()}`;
-    const newGroup = {
-      ...group,
-      id: newGroupId,
-      cuatrimestre: nextCuatri
-    };
-    MOCK_GROUPS.push(newGroup); // Guardar en memoria de sesión
+    let newGroupId = group.id;
+
+    if (isNextCuatri) {
+      // Crear o usar el grupo
+      newGroupId = `mock-g-${Date.now()}`;
+      const newGroup = {
+        ...group,
+        id: newGroupId,
+        cuatrimestre: nextCuatri
+      };
+      MOCK_GROUPS.push(newGroup); // Guardar en memoria de sesión
+    }
 
     const newTemplate: MockGroupTemplate = {
       id: `tpl-${Date.now()}`,
       groupId: newGroupId,
-      modulo: template.modulo, // Clonar al mismo módulo
-      subjectIds: nextSubjects.map(s => s.id), // Cargar materias nuevas
+      modulo: nextModulo,
+      subjectIds: nextSubjects.map(s => s.id),
       classroom: template.classroom, // Conservar aula
       createdAt: new Date().toISOString()
     };
@@ -375,7 +407,7 @@ export default function GruposPage() {
                     onClick={() => handlePromoteClick(g.group, g.template)}
                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:text-blue-600 transition-colors shadow-sm"
                   >
-                    🚀 Promover a Sig. Cuatrimestre
+                    🚀 Promover Ciclo
                   </button>
                 </div>
 
@@ -467,15 +499,15 @@ export default function GruposPage() {
               <div className="bg-gray-50 p-4 rounded-lg border">
                 <p className="text-xs text-gray-500 uppercase font-bold mb-1">De (Actual)</p>
                 <p className="font-semibold text-gray-900">{promotePreview.group.carrera}</p>
-                <p className="text-blue-600">Cuatrimestre {promotePreview.group.cuatrimestre}</p>
+                <p className="text-blue-600">Cuatrimestre {promotePreview.group.cuatrimestre} - Módulo {promotePreview.template.modulo}</p>
               </div>
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm relative">
                 <div className="absolute -left-5 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm border text-blue-500">
                   →
                 </div>
-                <p className="text-xs text-blue-600 uppercase font-bold mb-1">Hacia (Nuevo)</p>
+                <p className="text-xs text-blue-600 uppercase font-bold mb-1">{promotePreview.isNextCuatri ? 'A Sig. Cuatrimestre' : 'A Sig. Bimestre'}</p>
                 <p className="font-semibold text-gray-900">{promotePreview.group.carrera}</p>
-                <p className="text-emerald-600 font-bold">Cuatrimestre {promotePreview.nextCuatri}</p>
+                <p className="text-emerald-600 font-bold">Cuatrimestre {promotePreview.nextCuatri} - Módulo {promotePreview.nextModulo}</p>
               </div>
             </div>
 
