@@ -39,6 +39,7 @@ export default function GruposPage() {
   
   // Promote Preview State
   const [promotePreview, setPromotePreview] = useState<{group: any, template: MockGroupTemplate, nextCuatri: number, nextModulo: number, nextSubjects: any[], isNextCuatri: boolean} | null>(null);
+  const [templateToEdit, setTemplateToEdit] = useState<MockGroupTemplate | null>(null);
 
   const [assignments, setAssignments] = useState<any[]>([]);
   const [templates, setTemplates] = useState<MockGroupTemplate[]>(MOCK_GROUP_TEMPLATES);
@@ -256,6 +257,19 @@ export default function GruposPage() {
     setPromotePreview(null);
   };
 
+  const handleEditTemplate = (template: MockGroupTemplate) => {
+    setTemplateToEdit(template);
+    setIsTemplateModalOpen(true);
+  };
+
+  const handleDeleteTemplate = (templateId: string) => {
+    if (confirm("¿Estás seguro de que deseas eliminar esta plantilla? Las asignaciones en los horarios podrían verse afectadas.")) {
+      setTemplates(prev => prev.filter(t => t.id !== templateId));
+      const idx = MOCK_GROUP_TEMPLATES.findIndex(t => t.id === templateId);
+      if (idx !== -1) MOCK_GROUP_TEMPLATES.splice(idx, 1);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-transparent p-6">
       <div className="max-w-[1400px] mx-auto">
@@ -404,13 +418,29 @@ export default function GruposPage() {
                       {g.moduloLabel}{g.template.turno ? ` • ${g.template.turno}` : ''}
                     </span>
                   </div>
-                  <button 
-                    id={`btn-promover-${index}`}
-                    onClick={() => handlePromoteClick(g.group, g.template)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:text-blue-600 transition-colors shadow-sm"
-                  >
-                    🚀 Promover Ciclo
-                  </button>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <button 
+                      onClick={() => handleEditTemplate(g.template)}
+                      className="text-gray-400 hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-blue-50"
+                      title="Editar Plantilla"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteTemplate(g.template.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
+                      title="Eliminar Plantilla"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                    <button 
+                      id={`btn-promover-${index}`}
+                      onClick={() => handlePromoteClick(g.group, g.template)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:text-blue-600 transition-colors shadow-sm ml-1 sm:ml-2"
+                    >
+                      🚀 Promover Ciclo
+                    </button>
+                  </div>
                 </div>
 
                 {/* Table */}
@@ -469,15 +499,27 @@ export default function GruposPage() {
 
       <TemplateCreatorModal
         isOpen={isTemplateModalOpen}
-        onClose={() => setIsTemplateModalOpen(false)}
+        initialData={templateToEdit}
+        onClose={() => {
+          setIsTemplateModalOpen(false);
+          setTimeout(() => setTemplateToEdit(null), 300);
+        }}
         onSave={(newTemplate) => {
-          const tpl: MockGroupTemplate = {
-            id: `tpl-${Date.now()}`,
-            ...newTemplate
-          };
-          // En la vida real, se guarda en DB. Aquí lo añadimos al estado en memoria.
-          MOCK_GROUP_TEMPLATES.push(tpl);
-          setTemplates([...templates, tpl]);
+          if (templateToEdit) {
+            const updatedTemplates = templates.map(t => 
+              t.id === templateToEdit.id ? { ...t, ...newTemplate } : t
+            );
+            setTemplates(updatedTemplates);
+            const idx = MOCK_GROUP_TEMPLATES.findIndex(t => t.id === templateToEdit.id);
+            if (idx !== -1) MOCK_GROUP_TEMPLATES[idx] = { ...MOCK_GROUP_TEMPLATES[idx], ...newTemplate };
+          } else {
+            const tpl: MockGroupTemplate = {
+              id: `tpl-${Date.now()}`,
+              ...newTemplate
+            };
+            MOCK_GROUP_TEMPLATES.push(tpl);
+            setTemplates([...templates, tpl]);
+          }
         }}
       />
 

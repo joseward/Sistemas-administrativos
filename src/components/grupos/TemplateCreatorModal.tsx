@@ -17,9 +17,10 @@ interface TemplateCreatorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (template: Omit<MockGroupTemplate, 'id'>) => void;
+  initialData?: MockGroupTemplate | null;
 }
 
-export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreatorModalProps) {
+export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: TemplateCreatorModalProps) {
   const [nivelAcademico, setNivelAcademico] = useState('');
   const [carreraId, setCarreraId] = useState('');
   const [cuatrimestre, setCuatrimestre] = useState('');
@@ -28,6 +29,34 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
   const [turno, setTurno] = useState('');
   const [classroom, setClassroom] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+
+  React.useEffect(() => {
+    if (isOpen && initialData) {
+      const group = MOCK_GROUPS.find(g => g.id === initialData.groupId);
+      if (group) {
+        const career = MOCK_CAREERS.find(c => c.id === group.carreraId);
+        if (career) {
+          setNivelAcademico(career.academicLevelId);
+        }
+        setCarreraId(group.carreraId);
+        setCuatrimestre(group.cuatrimestre.toString());
+        setGroupId(initialData.groupId);
+        setModulo(initialData.modulo.toString());
+        setTurno(initialData.turno || '');
+        setClassroom(initialData.classroom);
+        setSelectedSubjects(initialData.subjectIds);
+      }
+    } else if (isOpen && !initialData) {
+      setNivelAcademico('');
+      setCarreraId('');
+      setCuatrimestre('');
+      setModulo('');
+      setTurno('');
+      setGroupId('');
+      setClassroom('');
+      setSelectedSubjects([]);
+    }
+  }, [isOpen, initialData]);
 
   // Filtrar carreras por nivel
   const filteredCareers = useMemo(() => {
@@ -85,7 +114,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Crear Plantilla de Grupo">
+    <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Editar Plantilla de Grupo" : "Crear Plantilla de Grupo"}>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Select
@@ -214,7 +243,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleSave} disabled={!groupId || !modulo || !classroom || !turno || selectedSubjects.length === 0}>
-            Crear Plantilla
+            {initialData ? "Guardar Cambios" : "Crear Plantilla"}
           </Button>
         </div>
       </div>
