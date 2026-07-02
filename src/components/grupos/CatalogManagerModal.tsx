@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
+import { Select } from '@/components/ui/Select';
 import {
   CUATRIMESTRES,
   MOCK_CARRERAS,
   MOCK_BIMESTRES,
   MOCK_YEARS,
   MOCK_SUBJECTS,
-  MOCK_GROUPS
+  MOCK_GROUPS,
+  MOCK_CAREERS
 } from '@/lib/mockData';
 
 interface CatalogManagerModalProps {
@@ -18,8 +20,11 @@ interface CatalogManagerModalProps {
 }
 
 export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManagerModalProps) {
-  const [activeTab, setActiveTab] = useState<'carreras' | 'materias' | 'cuatrimestres' | 'bimestres' | 'años'>('carreras');
+  const [activeTab, setActiveTab] = useState<'carreras' | 'materias' | 'cuatrimestres' | 'bimestres' | 'años' | 'grupos'>('carreras');
   
+  const [selectedCarreraId, setSelectedCarreraId] = useState('');
+  const [selectedCuatri, setSelectedCuatri] = useState('');
+
   // Estados para nuevos items y edición
   const [newValue, setNewValue] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -37,32 +42,34 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     } else if (activeTab === 'cuatrimestres') {
       CUATRIMESTRES.push({ value: CUATRIMESTRES.length + 1, label: newValue.trim() });
     } else if (activeTab === 'materias') {
-      MOCK_SUBJECTS.push({ id: `mock-s${Date.now()}`, name: newValue.trim(), code: `MAT-${Date.now()}`.substring(0,8) });
+      if (!selectedCarreraId) { alert('Selecciona una carrera para la materia'); return; }
+      MOCK_SUBJECTS.push({ id: `mock-s${Date.now()}`, name: newValue.trim(), code: `MAT-${Date.now()}`.substring(0,8), careerId: selectedCarreraId, cuatrimestre: Number(selectedCuatri) || 1 });
+    } else if (activeTab === 'grupos') {
+      if (!selectedCarreraId || !selectedCuatri) { alert('Selecciona una carrera y cuatrimestre para el grupo'); return; }
+      MOCK_GROUPS.push({ id: `g-${Date.now()}`, name: newValue.trim(), carreraId: selectedCarreraId, cuatrimestre: Number(selectedCuatri), section: 'A', shift: 'Matutino', campusId: 'pdc' });
     }
     
     setNewValue('');
     onSuccess();
   };
 
-  const handleSaveEdit = (index: number) => {
+  const handleSaveEdit = (originalIndex: number) => {
     if (!editValue.trim()) return;
 
     if (activeTab === 'carreras') {
-      const oldName = MOCK_CARRERAS[index];
+      const oldName = MOCK_CARRERAS[originalIndex];
       const newName = editValue.trim();
-      MOCK_CARRERAS[index] = newName;
-      // Cascade update to groups
-      MOCK_GROUPS.forEach(g => {
-        if (g.carrera === oldName) g.carrera = newName;
-      });
+      MOCK_CARRERAS[originalIndex] = newName;
     } else if (activeTab === 'años') {
-      MOCK_YEARS[index] = editValue.trim();
+      MOCK_YEARS[originalIndex] = editValue.trim();
     } else if (activeTab === 'bimestres') {
-      MOCK_BIMESTRES[index].label = editValue.trim();
+      MOCK_BIMESTRES[originalIndex].label = editValue.trim();
     } else if (activeTab === 'cuatrimestres') {
-      CUATRIMESTRES[index].label = editValue.trim();
+      CUATRIMESTRES[originalIndex].label = editValue.trim();
     } else if (activeTab === 'materias') {
-      MOCK_SUBJECTS[index].name = editValue.trim();
+      MOCK_SUBJECTS[originalIndex].name = editValue.trim();
+    } else if (activeTab === 'grupos') {
+      MOCK_GROUPS[originalIndex].name = editValue.trim();
     }
     
     setEditingIndex(null);
@@ -70,60 +77,75 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     onSuccess();
   };
 
-  const handleRemove = (index: number) => {
+  const handleRemove = (originalIndex: number) => {
     if (!confirm('¿Seguro que quieres eliminar este elemento?')) return;
     
     if (activeTab === 'carreras') {
-      MOCK_CARRERAS.splice(index, 1);
+      MOCK_CARRERAS.splice(originalIndex, 1);
     } else if (activeTab === 'años') {
-      MOCK_YEARS.splice(index, 1);
+      MOCK_YEARS.splice(originalIndex, 1);
     } else if (activeTab === 'bimestres') {
-      MOCK_BIMESTRES.splice(index, 1);
+      MOCK_BIMESTRES.splice(originalIndex, 1);
     } else if (activeTab === 'cuatrimestres') {
-      CUATRIMESTRES.splice(index, 1);
+      CUATRIMESTRES.splice(originalIndex, 1);
     } else if (activeTab === 'materias') {
-      MOCK_SUBJECTS.splice(index, 1);
+      MOCK_SUBJECTS.splice(originalIndex, 1);
+    } else if (activeTab === 'grupos') {
+      MOCK_GROUPS.splice(originalIndex, 1);
     }
     onSuccess();
   };
 
   const renderList = () => {
-    let items: any[] = [];
-    if (activeTab === 'carreras') items = MOCK_CARRERAS;
-    if (activeTab === 'años') items = MOCK_YEARS;
-    if (activeTab === 'bimestres') items = MOCK_BIMESTRES.map(b => b.label);
-    if (activeTab === 'cuatrimestres') items = CUATRIMESTRES.map(c => c.label);
-    if (activeTab === 'materias') items = MOCK_SUBJECTS.map(s => s.name);
+    let items: { display: string, originalIndex: number }[] = [];
+    
+    if (activeTab === 'carreras') items = MOCK_CARRERAS.map((c, i) => ({ display: c, originalIndex: i }));
+    if (activeTab === 'años') items = MOCK_YEARS.map((y, i) => ({ display: y, originalIndex: i }));
+    if (activeTab === 'bimestres') items = MOCK_BIMESTRES.map((b, i) => ({ display: b.label, originalIndex: i }));
+    if (activeTab === 'cuatrimestres') items = CUATRIMESTRES.map((c, i) => ({ display: c.label, originalIndex: i }));
+    
+    if (activeTab === 'materias') {
+      MOCK_SUBJECTS.forEach((s, i) => {
+         if (!selectedCarreraId || s.careerId === selectedCarreraId) items.push({ display: s.name, originalIndex: i });
+      });
+    }
+    if (activeTab === 'grupos') {
+      MOCK_GROUPS.forEach((g, i) => {
+         if ((!selectedCarreraId || g.carreraId === selectedCarreraId) && (!selectedCuatri || g.cuatrimestre.toString() === selectedCuatri)) {
+            items.push({ display: g.name, originalIndex: i });
+         }
+      });
+    }
 
     return (
-      <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-        {items.map((item, index) => (
-          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 border rounded text-sm">
-            {editingIndex === index ? (
+      <div className="space-y-2 max-h-60 overflow-y-auto pr-2 mt-4">
+        {items.map((item) => (
+          <div key={item.originalIndex} className="flex items-center justify-between p-2 bg-gray-50 border rounded text-sm">
+            {editingIndex === item.originalIndex ? (
               <div className="flex items-center gap-2 flex-1 mr-2">
                 <Input 
                   value={editValue} 
                   onChange={(e) => setEditValue(e.target.value)} 
                   className="flex-1 h-8"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(index)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(item.originalIndex)}
                   autoFocus
                 />
-                <button onClick={() => handleSaveEdit(index)} className="text-green-600 font-bold hover:text-green-800">✓</button>
+                <button onClick={() => handleSaveEdit(item.originalIndex)} className="text-green-600 font-bold hover:text-green-800">✓</button>
                 <button onClick={() => setEditingIndex(null)} className="text-gray-500 font-bold hover:text-gray-700">✕</button>
               </div>
             ) : (
               <>
-                <span>{item}</span>
+                <span>{item.display}</span>
                 <div className="flex items-center gap-1">
                   <button 
-                    onClick={() => { setEditingIndex(index); setEditValue(item); }}
+                    onClick={() => { setEditingIndex(item.originalIndex); setEditValue(item.display); }}
                     className="text-blue-500 hover:text-blue-700 px-2 font-bold"
                     title="Editar"
                   >
                     ✎
                   </button>
                   <button 
-                    onClick={() => handleRemove(index)}
+                    onClick={() => handleRemove(item.originalIndex)}
                     className="text-red-500 hover:text-red-700 px-2 font-bold"
                     title="Eliminar"
                   >
@@ -135,7 +157,7 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
           </div>
         ))}
         {items.length === 0 && (
-          <p className="text-gray-500 text-center py-4 text-sm">No hay elementos registrados.</p>
+          <p className="text-gray-500 text-center py-4 text-sm">No hay elementos registrados para esta selección.</p>
         )}
       </div>
     );
@@ -155,7 +177,7 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
 
         {/* Tabs */}
         <div className="flex gap-2 border-b pb-2 overflow-x-auto">
-          {['carreras', 'materias', 'cuatrimestres', 'bimestres', 'años'].map((tab) => (
+          {['carreras', 'materias', 'grupos', 'cuatrimestres', 'bimestres', 'años'].map((tab) => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab as any); setEditingIndex(null); }}
@@ -170,15 +192,41 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
           ))}
         </div>
 
+        {/* Filtros para Materias y Grupos */}
+        {(activeTab === 'materias' || activeTab === 'grupos') && (
+          <div className="grid grid-cols-2 gap-2 mt-4 bg-gray-50 p-3 rounded-lg border">
+            <Select
+              label="Filtrar por Carrera"
+              value={selectedCarreraId}
+              onChange={(e) => setSelectedCarreraId(e.target.value)}
+              options={[
+                { value: '', label: 'Seleccionar...' },
+                ...MOCK_CAREERS.map(c => ({ value: c.id, label: c.name }))
+              ]}
+            />
+            {activeTab === 'grupos' && (
+              <Select
+                label="Filtrar por Cuatrimestre"
+                value={selectedCuatri}
+                onChange={(e) => setSelectedCuatri(e.target.value)}
+                options={[
+                  { value: '', label: 'Seleccionar...' },
+                  ...CUATRIMESTRES.map(c => ({ value: c.value.toString(), label: c.label }))
+                ]}
+              />
+            )}
+          </div>
+        )}
+
         {/* Lista */}
-        <div className="mt-4">
+        <div>
           {renderList()}
         </div>
 
         {/* Agregar Nuevo */}
         <div className="flex gap-2 pt-4 border-t mt-4">
           <Input
-            placeholder={`Nuevo(a) ${activeTab.slice(0, -1)}...`}
+            placeholder={activeTab === 'grupos' ? 'Nuevo grupo (Ej. ISC 8)' : `Nuevo(a) ${activeTab.slice(0, -1)}...`}
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}

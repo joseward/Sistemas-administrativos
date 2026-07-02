@@ -17,9 +17,11 @@ import {
   MOCK_YEARS,
   getSubjectById,
   getGroupById,
+  MOCK_ASSIGNMENTS
 } from '@/lib/mockData';
 import { Select } from '@/components/ui/Select';
 import { CatalogManagerModal } from '@/components/grupos/CatalogManagerModal';
+import { AssignmentEditModal } from '@/components/grupos/AssignmentEditModal';
 import { TemplateCreatorModal } from '@/components/grupos/TemplateCreatorModal';
 import { MOCK_GROUP_TEMPLATES, MockGroupTemplate } from '@/lib/mockData';
 
@@ -33,14 +35,17 @@ export default function GruposPage() {
     carreraId: '',
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<any>(null);
+  const [assignmentSubjectName, setAssignmentSubjectName] = useState('');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
   
   // Promote Preview State
-  const [promotePreview, setPromotePreview] = useState<{group: any, template: MockGroupTemplate, nextCuatri: number, nextSubjects: any[]} | null>(null);
+  const [promotePreview, setPromotePreview] = useState<{group: any, template: MockGroupTemplate, nextCuatri: number, nextModulo: number, nextSubjects: any[], isNextCuatri: boolean} | null>(null);
+  const [templateToEdit, setTemplateToEdit] = useState<MockGroupTemplate | null>(null);
 
-  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<any[]>(MOCK_ASSIGNMENTS);
   const [templates, setTemplates] = useState<MockGroupTemplate[]>(MOCK_GROUP_TEMPLATES);
 
   useEffect(() => {
@@ -52,15 +57,6 @@ export default function GruposPage() {
         }
       })
       .catch(err => console.error("Error fetching teachers", err));
-
-    fetch('/api/assignments')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setAssignments(data.data);
-        }
-      })
-      .catch(err => console.error("Error fetching assignments", err));
   }, []);
 
   useEffect(() => {
@@ -179,49 +175,122 @@ export default function GruposPage() {
 
   const handlePromoteClick = (group: any, template: MockGroupTemplate) => {
     const currentCuatri = group.cuatrimestre;
-    const nextCuatri = currentCuatri + 1;
+    const currentModulo = template.modulo;
     
-    // Buscar materias del siguiente cuatrimestre
-    const nextSubjects = MOCK_SUBJECTS.filter(s => 
+    // Todas las materias del cuatrimestre actual
+    const currentCuatriSubjects = MOCK_SUBJECTS.filter(s => 
       s.carreraId === group.carreraId && 
-      s.cuatrimestre === nextCuatri
+      s.cuatrimestre === currentCuatri
     );
 
+    // Materias ya asignadas a este grupo en cualquier plantilla
+    const assignedSubjectIds = new Set(
+      templates.filter(t => t.groupId === group.id)
+               .flatMap(t => t.subjectIds)
+    );
+    
+    // Materias que faltan por impartir en este cuatrimestre
+    const missingSubjectsCurrentCuatri = currentCuatriSubjects.filter(s => !assignedSubjectIds.has(s.id));
+
+    let nextCuatri = currentCuatri;
+    let nextModulo = currentModulo + 1;
+    let nextSubjects = [];
+    let isNextCuatri = false;
+
+    if (missingSubjectsCurrentCuatri.length > 0) {
+      // Hay materias restantes en el cuatrimestre actual, se promueve al siguiente módulo (bimestre)
+      nextSubjects = missingSubjectsCurrentCuatri.slice(0, 3);
+    } else {
+      // Ya se dieron todas, se promueve al siguiente cuatrimestre
+      nextCuatri = currentCuatri + 1;
+      nextModulo = 1;
+      isNextCuatri = true;
+      nextSubjects = MOCK_SUBJECTS.filter(s => 
+        s.carreraId === group.carreraId && 
+        s.cuatrimestre === nextCuatri
+      ).slice(0, 3);
+    }
+
     setPromotePreview({
-      group, template, nextCuatri, nextSubjects
+      group, template, nextCuatri, nextModulo, nextSubjects, isNextCuatri
     });
   };
 
   const confirmPromote = () => {
     if (!promotePreview) return;
-    const { group, template, nextCuatri, nextSubjects } = promotePreview;
+    const { group, template, nextCuatri, nextModulo, nextSubjects, isNextCuatri } = promotePreview;
 
     if (nextSubjects.length === 0) {
-      alert(`No hay materias registradas en el catálogo para el Cuatrimestre ${nextCuatri}.`);
+      alert(`No hay materias registradas en el catálogo para este ciclo.`);
       setPromotePreview(null);
       return;
     }
 
-    // Crear o usar el grupo
-    const newGroupId = `mock-g-${Date.now()}`;
-    const newGroup = {
-      ...group,
-      id: newGroupId,
-      cuatrimestre: nextCuatri
-    };
-    MOCK_GROUPS.push(newGroup); // Guardar en memoria de sesión
+    let newGroupId = group.id;
+
+    if (isNextCuatri) {
+      // Crear o usar el grupo
+      newGroupId = `mock-g-${Date.now()}`;
+      const newGroup = {
+        ...group,
+        id: newGroupId,
+        cuatrimestre: nextCuatri
+      };
+      MOCK_GROUPS.push(newGroup); // Guardar en memoria de sesión
+    }
 
     const newTemplate: MockGroupTemplate = {
       id: `tpl-${Date.now()}`,
       groupId: newGroupId,
-      modulo: template.modulo, // Clonar al mismo módulo
-      subjectIds: nextSubjects.map(s => s.id), // Cargar materias nuevas
+      modulo: nextModulo,
+      subjectIds: nextSubjects.map(s => s.id),
       classroom: template.classroom, // Conservar aula
       createdAt: new Date().toISOString()
     };
 
     setTemplates([...templates, newTemplate]);
     setPromotePreview(null);
+  };
+
+  const handleEditTemplate = (template: MockGroupTemplate) => {
+    setTemplateToEdit(template);
+    setIsTemplateModalOpen(true);
+  };
+
+  const handleDeleteTemplate = (templateId: string) => {
+    if (confirm("¿Estás seguro de que deseas eliminar esta plantilla? Las asignaciones en los horarios podrían verse afectadas.")) {
+      setTemplates(prev => prev.filter(t => t.id !== templateId));
+      const idx = MOCK_GROUP_TEMPLATES.findIndex(t => t.id === templateId);
+      if (idx !== -1) MOCK_GROUP_TEMPLATES.splice(idx, 1);
+    }
+  };
+
+  const handleSaveAssignment = (updatedAssignment: any) => {
+    const index = MOCK_ASSIGNMENTS.findIndex(a => a.id === updatedAssignment.id);
+    if (index !== -1) {
+      MOCK_ASSIGNMENTS[index] = updatedAssignment;
+      setAssignments([...MOCK_ASSIGNMENTS]);
+    } else {
+        MOCK_ASSIGNMENTS.push(updatedAssignment);
+        setAssignments([...MOCK_ASSIGNMENTS]);
+    }
+    setEditingAssignment(null);
+  };
+
+  const handleRemoveAssignment = (assignmentId: string, templateId: string, subjectId: string) => {
+    if (!confirm('¿Seguro que quieres remover esta materia del grupo?')) return;
+    
+    // Remover de MOCK_ASSIGNMENTS
+    const aIndex = MOCK_ASSIGNMENTS.findIndex(a => a.id === assignmentId);
+    if (aIndex !== -1) MOCK_ASSIGNMENTS.splice(aIndex, 1);
+    setAssignments([...MOCK_ASSIGNMENTS]);
+
+    // Remover de template.subjectIds
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      template.subjectIds = template.subjectIds.filter(id => id !== subjectId);
+      setTemplates([...templates]);
+    }
   };
 
   return (
@@ -248,7 +317,7 @@ export default function GruposPage() {
             <Button id="btn-nueva-plantilla" onClick={() => setIsTemplateModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2">
               <span className="text-lg">+</span> Nueva Plantilla
             </Button>
-            <Button onClick={() => setIsCatalogOpen(true)} className="bg-[#061266] text-white">
+            <Button onClick={() => setIsCatalogModalOpen(true)} className="bg-[#061266] text-white">
               Catálogo de Materias
             </Button>
           </div>
@@ -259,7 +328,7 @@ export default function GruposPage() {
           <div className="flex items-center justify-between border-b pb-2 mb-4">
             <h2 className="text-lg font-bold text-gray-800">Filtros de Período Académico</h2>
             <button 
-              onClick={() => setIsCatalogOpen(true)}
+              onClick={() => setIsCatalogModalOpen(true)}
               className="text-gray-400 hover:text-[#fdb515] transition-colors"
               title="Configurar Catálogos"
             >
@@ -312,7 +381,7 @@ export default function GruposPage() {
               label="Carrera / Programa"
               value={filters.carreraId}
               onChange={(e) => setFilters({ ...filters, carreraId: e.target.value })}
-              disabled={!filters.nivelAcademico && false} // Optional: disable if no level selected
+              disabled={!filters.nivelAcademico && false} 
               options={[
                 { value: '', label: 'Todas las carreras' },
                 ...MOCK_CAREERS
@@ -363,75 +432,101 @@ export default function GruposPage() {
             </div>
           ) : (
             filteredGroups.map((g, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden border border-blue-600">
+              <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
+                {/* Header (Módulo y Promover) */}
+                <div className="bg-gray-50 border-b border-gray-200 px-5 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="flex flex-col">
+                    <h3 className="font-bold text-gray-800 uppercase tracking-wide text-sm">{g.label}</h3>
+                    <span className="text-xs text-gray-500 font-medium mt-1">
+                      {g.moduloLabel}{g.template.turno ? ` • ${g.template.turno}` : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <button 
+                      onClick={() => handleEditTemplate(g.template)}
+                      className="text-gray-400 hover:text-blue-600 transition-colors p-1.5 rounded hover:bg-blue-50"
+                      title="Editar Plantilla"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteTemplate(g.template.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
+                      title="Eliminar Plantilla"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                    <button 
+                      id={`btn-promover-${index}`}
+                      onClick={() => handlePromoteClick(g.group, g.template)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:text-blue-600 transition-colors shadow-sm ml-1 sm:ml-2"
+                    >
+                      🚀 Promover Ciclo
+                    </button>
+                  </div>
+                </div>
+
+                {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      {/* Header Superior: Grupo y Módulo */}
-                      <tr className="bg-blue-600 text-white border-b border-blue-700">
-                        <th colSpan={2} className="px-4 py-3 text-left border-r border-blue-500 w-1/2 font-bold uppercase tracking-wider">
-                          <div className="flex justify-between items-center">
-                            <span>{g.label}</span>
-                            <button 
-                              id={`btn-promover-${index}`}
-                              onClick={() => handlePromoteClick(g.group, g.template)}
-                              className="bg-white text-blue-600 hover:bg-blue-50 text-xs px-3 py-1 rounded shadow-sm flex items-center gap-1 transition-colors"
-                            >
-                              🚀 Promover al Sig. Cuatrimestre
-                            </button>
-                          </div>
-                        </th>
-                        <th colSpan={2} className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                          {g.moduloLabel}
-                        </th>
-                      </tr>
-                      {/* Header Inferior: Columnas */}
-                      <tr className="bg-blue-500 text-white border-b-2 border-blue-700">
-                        <th className="px-4 py-2 text-center border-r border-blue-400 w-[30%] uppercase text-xs font-semibold">
-                          Asignatura
-                        </th>
-                        <th className="px-4 py-2 text-center border-r border-blue-400 w-[25%] uppercase text-xs font-semibold">
-                          Docente
-                        </th>
-                        <th className="px-4 py-2 text-center border-r border-blue-400 w-[25%] uppercase text-xs font-semibold">
-                          Horario
-                        </th>
-                        <th className="px-4 py-2 text-center w-[20%] uppercase text-xs font-semibold">
-                          Aula
-                        </th>
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-white text-gray-500 border-b border-gray-200">
+                      <tr>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[25%] tracking-wider">Asignatura</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[10%] tracking-wider">Grupo</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[25%] tracking-wider">Docente</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[20%] tracking-wider">Horario</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[10%] tracking-wider">Aula</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[10%] tracking-wider text-center">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white">
+                    <tbody className="divide-y divide-gray-100 bg-white">
                       {g.assignments.map((a: any, aIndex: number) => {
                         const teacher = teachers.find(t => t.id === a.teacherId);
                         const subject = getSubjectById(a.subjectId);
                         
                         return (
-                          <tr 
-                            key={a.id} 
-                            className={cn(
-                              "bg-[#5cdb5c] hover:bg-[#4bcc4b] transition-colors", // Verde estilo excel
-                              aIndex < g.assignments.length - 1 ? "border-b border-gray-300/50" : ""
-                            )}
-                          >
-                            {/* Asignatura */}
-                            <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 font-medium text-xs uppercase leading-relaxed text-center">
+                          <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-5 py-3 text-gray-800 font-medium text-xs uppercase">
                               {subject?.name}
                             </td>
-                            
-                            {/* Docente */}
-                            <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 text-xs uppercase leading-relaxed text-center">
-                              {teacher ? `${teacher.firstName} ${teacher.lastName}` : <span className="text-red-600 font-bold">Pendiente</span>}
+                            <td className="px-5 py-3 text-xs uppercase text-gray-600 font-medium">
+                              {g.group.name}
                             </td>
-                            
-                            {/* Horario */}
-                            <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 text-xs uppercase leading-relaxed text-center">
+                            <td className="px-5 py-3 text-xs uppercase">
+                              {teacher ? (
+                                <span className="text-gray-700">{teacher.firstName} {teacher.lastName}</span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-600 border border-amber-200">
+                                  Pendiente
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3 text-xs uppercase text-gray-600">
                               {a.scheduleDay !== -1 ? `${DAYS_OF_WEEK[a.scheduleDay]} ${a.startTime} - ${a.endTime}` : <span className="text-gray-400">---</span>}
                             </td>
-                            
-                            {/* Aula */}
-                            <td className="px-4 py-3 text-gray-900 text-xs uppercase leading-relaxed text-center">
+                            <td className="px-5 py-3 text-xs uppercase text-gray-600">
                               {a.classroom || <span className="text-gray-400">---</span>}
+                            </td>
+                            <td className="px-5 py-3 text-xs uppercase text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingAssignment(a);
+                                    setAssignmentSubjectName(subject?.name || '');
+                                  }}
+                                  className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
+                                  title="Editar línea"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveAssignment(a.id, g.template.id, a.subjectId)}
+                                  className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                  title="Remover materia"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -446,22 +541,45 @@ export default function GruposPage() {
       </div>
 
       <CatalogManagerModal 
-        isOpen={isCatalogOpen} 
-        onClose={() => setIsCatalogOpen(false)} 
-        onSuccess={() => setRefreshTick(t => t + 1)}
+        isOpen={isCatalogModalOpen} 
+        onClose={() => setIsCatalogModalOpen(false)} 
+        onSuccess={() => {
+          setIsCatalogModalOpen(false);
+          setRefreshTick(t => t + 1);
+        }}
+      />
+
+      <AssignmentEditModal
+        isOpen={!!editingAssignment}
+        onClose={() => setEditingAssignment(null)}
+        assignment={editingAssignment}
+        subjectName={assignmentSubjectName}
+        onSave={handleSaveAssignment}
       />
 
       <TemplateCreatorModal
         isOpen={isTemplateModalOpen}
-        onClose={() => setIsTemplateModalOpen(false)}
+        initialData={templateToEdit}
+        onClose={() => {
+          setIsTemplateModalOpen(false);
+          setTimeout(() => setTemplateToEdit(null), 300);
+        }}
         onSave={(newTemplate) => {
-          const tpl: MockGroupTemplate = {
-            id: `tpl-${Date.now()}`,
-            ...newTemplate
-          };
-          // En la vida real, se guarda en DB. Aquí lo añadimos al estado en memoria.
-          MOCK_GROUP_TEMPLATES.push(tpl);
-          setTemplates([...templates, tpl]);
+          if (templateToEdit) {
+            const updatedTemplates = templates.map(t => 
+              t.id === templateToEdit.id ? { ...t, ...newTemplate } : t
+            );
+            setTemplates(updatedTemplates);
+            const idx = MOCK_GROUP_TEMPLATES.findIndex(t => t.id === templateToEdit.id);
+            if (idx !== -1) MOCK_GROUP_TEMPLATES[idx] = { ...MOCK_GROUP_TEMPLATES[idx], ...newTemplate };
+          } else {
+            const tpl: MockGroupTemplate = {
+              id: `tpl-${Date.now()}`,
+              ...newTemplate
+            };
+            MOCK_GROUP_TEMPLATES.push(tpl);
+            setTemplates([...templates, tpl]);
+          }
         }}
       />
 
@@ -485,15 +603,15 @@ export default function GruposPage() {
               <div className="bg-gray-50 p-4 rounded-lg border">
                 <p className="text-xs text-gray-500 uppercase font-bold mb-1">De (Actual)</p>
                 <p className="font-semibold text-gray-900">{promotePreview.group.carrera}</p>
-                <p className="text-blue-600">Cuatrimestre {promotePreview.group.cuatrimestre}</p>
+                <p className="text-blue-600">Cuatrimestre {promotePreview.group.cuatrimestre} - Módulo {promotePreview.template.modulo}</p>
               </div>
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm relative">
                 <div className="absolute -left-5 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm border text-blue-500">
                   →
                 </div>
-                <p className="text-xs text-blue-600 uppercase font-bold mb-1">Hacia (Nuevo)</p>
+                <p className="text-xs text-blue-600 uppercase font-bold mb-1">{promotePreview.isNextCuatri ? 'A Sig. Cuatrimestre' : 'A Sig. Bimestre'}</p>
                 <p className="font-semibold text-gray-900">{promotePreview.group.carrera}</p>
-                <p className="text-emerald-600 font-bold">Cuatrimestre {promotePreview.nextCuatri}</p>
+                <p className="text-emerald-600 font-bold">Cuatrimestre {promotePreview.nextCuatri} - Módulo {promotePreview.nextModulo}</p>
               </div>
             </div>
 
