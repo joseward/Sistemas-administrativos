@@ -48,6 +48,7 @@ export default function HorariosPage() {
   const [viewMode, setViewMode] = useState<'table' | 'week'>('week');
   const [filterTeacher, setFilterTeacher] = useState<string>('');
   const [filterGroup, setFilterGroup] = useState<string>('');
+  const [isCapturing, setIsCapturing] = useState<boolean>(false);
 
   // Datos agrupados para los selects en línea
   const groupedSubjects = useMemo(() => {
@@ -429,6 +430,29 @@ export default function HorariosPage() {
 
   const activeTeachers = getActiveTeachers();
 
+  const handleDownloadPNG = () => {
+    setIsCapturing(true);
+    // Le damos tiempo a que React actualice el DOM quitando la clase hidden
+    setTimeout(async () => {
+      try {
+        const html2canvas = (await import('html2canvas')).default;
+        const element = document.getElementById('print-container');
+        if (element) {
+          const canvas = await html2canvas(element, { scale: 2 });
+          const dataURL = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.href = dataURL;
+          link.download = 'Horarios_Exportados.png';
+          link.click();
+        }
+      } catch (error) {
+        console.error("Error al generar el PNG", error);
+      } finally {
+        setIsCapturing(false);
+      }
+    }, 300);
+  };
+
   return (
     <>
     <div className="min-h-screen bg-transparent p-6 print:hidden">
@@ -450,23 +474,28 @@ export default function HorariosPage() {
               Asigna horarios vinculando Maestro → Materia → Grupo. Se validan conflictos automáticamente.
             </p>
           </div>
-          <div className="flex gap-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  id="btn-generar-pdfs"
-                  size="lg"
-                  variant="outline"
-                  onClick={() => window.print()}
-                  className="shadow-sm border-blue-600 text-blue-600 hover:bg-blue-50 flex items-center gap-2"
-                >
-                  📄 Generar PDFs (Grupos)
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Abre la vista de impresión lista para descargar los PDF de cada grupo por separado.
-              </TooltipContent>
-            </Tooltip>
+          <div className="flex gap-2">
+            <Button
+              id="btn-generar-pdfs"
+              size="lg"
+              variant="outline"
+              onClick={() => window.print()}
+              className="shadow-sm border-red-500 text-red-600 hover:bg-red-50 flex items-center gap-2"
+              title="Descargar como PDF"
+            >
+              📄 PDF
+            </Button>
+
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={handleDownloadPNG}
+              disabled={isCapturing}
+              className="shadow-sm border-emerald-500 text-emerald-600 hover:bg-emerald-50 flex items-center gap-2 mr-2"
+              title="Descargar como Imagen (PNG)"
+            >
+              {isCapturing ? '⏳...' : '🖼️ PNG'}
+            </Button>
             
             <Button
               id="btn-nueva-asignacion"
@@ -989,7 +1018,7 @@ export default function HorariosPage() {
       )}
     </div>
     
-    <PrintGroups assignments={assignments} />
+    <PrintGroups assignments={assignments} isCapturing={isCapturing} />
     </>
   );
 }

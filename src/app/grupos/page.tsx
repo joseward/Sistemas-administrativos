@@ -17,9 +17,11 @@ import {
   MOCK_YEARS,
   getSubjectById,
   getGroupById,
+  MOCK_ASSIGNMENTS
 } from '@/lib/mockData';
 import { Select } from '@/components/ui/Select';
 import { CatalogManagerModal } from '@/components/grupos/CatalogManagerModal';
+import { AssignmentEditModal } from '@/components/grupos/AssignmentEditModal';
 import { TemplateCreatorModal } from '@/components/grupos/TemplateCreatorModal';
 import { MOCK_GROUP_TEMPLATES, MockGroupTemplate } from '@/lib/mockData';
 
@@ -33,7 +35,9 @@ export default function GruposPage() {
     carreraId: '',
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<any>(null);
+  const [assignmentSubjectName, setAssignmentSubjectName] = useState('');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
   
@@ -41,7 +45,7 @@ export default function GruposPage() {
   const [promotePreview, setPromotePreview] = useState<{group: any, template: MockGroupTemplate, nextCuatri: number, nextModulo: number, nextSubjects: any[], isNextCuatri: boolean} | null>(null);
   const [templateToEdit, setTemplateToEdit] = useState<MockGroupTemplate | null>(null);
 
-  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<any[]>(MOCK_ASSIGNMENTS);
   const [templates, setTemplates] = useState<MockGroupTemplate[]>(MOCK_GROUP_TEMPLATES);
 
   useEffect(() => {
@@ -53,15 +57,6 @@ export default function GruposPage() {
         }
       })
       .catch(err => console.error("Error fetching teachers", err));
-
-    fetch('/api/assignments')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setAssignments(data.data);
-        }
-      })
-      .catch(err => console.error("Error fetching assignments", err));
   }, []);
 
   useEffect(() => {
@@ -270,6 +265,34 @@ export default function GruposPage() {
     }
   };
 
+  const handleSaveAssignment = (updatedAssignment: any) => {
+    const index = MOCK_ASSIGNMENTS.findIndex(a => a.id === updatedAssignment.id);
+    if (index !== -1) {
+      MOCK_ASSIGNMENTS[index] = updatedAssignment;
+      setAssignments([...MOCK_ASSIGNMENTS]);
+    } else {
+        MOCK_ASSIGNMENTS.push(updatedAssignment);
+        setAssignments([...MOCK_ASSIGNMENTS]);
+    }
+    setEditingAssignment(null);
+  };
+
+  const handleRemoveAssignment = (assignmentId: string, templateId: string, subjectId: string) => {
+    if (!confirm('¿Seguro que quieres remover esta materia del grupo?')) return;
+    
+    // Remover de MOCK_ASSIGNMENTS
+    const aIndex = MOCK_ASSIGNMENTS.findIndex(a => a.id === assignmentId);
+    if (aIndex !== -1) MOCK_ASSIGNMENTS.splice(aIndex, 1);
+    setAssignments([...MOCK_ASSIGNMENTS]);
+
+    // Remover de template.subjectIds
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      template.subjectIds = template.subjectIds.filter(id => id !== subjectId);
+      setTemplates([...templates]);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-transparent p-6">
       <div className="max-w-[1400px] mx-auto">
@@ -294,7 +317,7 @@ export default function GruposPage() {
             <Button id="btn-nueva-plantilla" onClick={() => setIsTemplateModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2">
               <span className="text-lg">+</span> Nueva Plantilla
             </Button>
-            <Button onClick={() => setIsCatalogOpen(true)} className="bg-[#061266] text-white">
+            <Button onClick={() => setIsCatalogModalOpen(true)} className="bg-[#061266] text-white">
               Catálogo de Materias
             </Button>
           </div>
@@ -305,7 +328,7 @@ export default function GruposPage() {
           <div className="flex items-center justify-between border-b pb-2 mb-4">
             <h2 className="text-lg font-bold text-gray-800">Filtros de Período Académico</h2>
             <button 
-              onClick={() => setIsCatalogOpen(true)}
+              onClick={() => setIsCatalogModalOpen(true)}
               className="text-gray-400 hover:text-[#fdb515] transition-colors"
               title="Configurar Catálogos"
             >
@@ -358,7 +381,7 @@ export default function GruposPage() {
               label="Carrera / Programa"
               value={filters.carreraId}
               onChange={(e) => setFilters({ ...filters, carreraId: e.target.value })}
-              disabled={!filters.nivelAcademico && false} // Optional: disable if no level selected
+              disabled={!filters.nivelAcademico && false} 
               options={[
                 { value: '', label: 'Todas las carreras' },
                 ...MOCK_CAREERS
@@ -448,10 +471,12 @@ export default function GruposPage() {
                   <table className="w-full text-sm text-left">
                     <thead className="bg-white text-gray-500 border-b border-gray-200">
                       <tr>
-                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[35%] tracking-wider">Asignatura</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[25%] tracking-wider">Asignatura</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[10%] tracking-wider">Grupo</th>
                         <th className="px-5 py-3 font-semibold uppercase text-xs w-[25%] tracking-wider">Docente</th>
-                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[25%] tracking-wider">Horario</th>
-                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[15%] tracking-wider">Aula</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[20%] tracking-wider">Horario</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[10%] tracking-wider">Aula</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[10%] tracking-wider text-center">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 bg-white">
@@ -463,6 +488,9 @@ export default function GruposPage() {
                           <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
                             <td className="px-5 py-3 text-gray-800 font-medium text-xs uppercase">
                               {subject?.name}
+                            </td>
+                            <td className="px-5 py-3 text-xs uppercase text-gray-600 font-medium">
+                              {g.group.name}
                             </td>
                             <td className="px-5 py-3 text-xs uppercase">
                               {teacher ? (
@@ -479,6 +507,27 @@ export default function GruposPage() {
                             <td className="px-5 py-3 text-xs uppercase text-gray-600">
                               {a.classroom || <span className="text-gray-400">---</span>}
                             </td>
+                            <td className="px-5 py-3 text-xs uppercase text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingAssignment(a);
+                                    setAssignmentSubjectName(subject?.name || '');
+                                  }}
+                                  className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
+                                  title="Editar línea"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveAssignment(a.id, g.template.id, a.subjectId)}
+                                  className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                  title="Remover materia"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })}
@@ -492,9 +541,20 @@ export default function GruposPage() {
       </div>
 
       <CatalogManagerModal 
-        isOpen={isCatalogOpen} 
-        onClose={() => setIsCatalogOpen(false)} 
-        onSuccess={() => setRefreshTick(t => t + 1)}
+        isOpen={isCatalogModalOpen} 
+        onClose={() => setIsCatalogModalOpen(false)} 
+        onSuccess={() => {
+          setIsCatalogModalOpen(false);
+          setRefreshTick(t => t + 1);
+        }}
+      />
+
+      <AssignmentEditModal
+        isOpen={!!editingAssignment}
+        onClose={() => setEditingAssignment(null)}
+        assignment={editingAssignment}
+        subjectName={assignmentSubjectName}
+        onSave={handleSaveAssignment}
       />
 
       <TemplateCreatorModal

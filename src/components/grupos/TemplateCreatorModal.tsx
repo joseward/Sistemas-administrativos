@@ -25,7 +25,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
   const [carreraId, setCarreraId] = useState('');
   const [cuatrimestre, setCuatrimestre] = useState('');
   const [modulo, setModulo] = useState('');
-  const [groupName, setGroupName] = useState('');
+  const [groupId, setGroupId] = useState('');
   const [turno, setTurno] = useState('');
   const [classroom, setClassroom] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
@@ -40,7 +40,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
         }
         setCarreraId(group.carreraId);
         setCuatrimestre(group.cuatrimestre.toString());
-        setGroupName(group.name);
+        setGroupId(initialData.groupId);
         setModulo(initialData.modulo.toString());
         setTurno(initialData.turno || '');
         setClassroom(initialData.classroom);
@@ -52,7 +52,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
       setCuatrimestre('');
       setModulo('');
       setTurno('');
-      setGroupName('');
+      setGroupId('');
       setClassroom('');
       setSelectedSubjects([]);
     }
@@ -88,35 +88,13 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
   };
 
   const handleSave = () => {
-    if (!groupName || !modulo || !classroom || !turno || selectedSubjects.length === 0) {
-      alert("Por favor completa todos los campos (incluyendo el Turno y Nombre del Grupo) y selecciona al menos una materia.");
+    if (!groupId || !modulo || !classroom || !turno || selectedSubjects.length === 0) {
+      alert("Por favor completa todos los campos (incluyendo el Turno y Grupo Existente) y selecciona al menos una materia.");
       return;
-    }
-
-    // Buscar si ya existe un grupo con ese nombre para la carrera y cuatrimestre seleccionados
-    let finalGroupId = '';
-    const existingGroup = filteredGroups.find(g => g.name.toLowerCase() === groupName.toLowerCase());
-    
-    if (existingGroup) {
-      finalGroupId = existingGroup.id;
-    } else {
-      // Crear un nuevo grupo dinámicamente
-      const newGroupId = `g-${Date.now()}`;
-      const newGroup = {
-        id: newGroupId,
-        name: groupName,
-        carreraId,
-        cuatrimestre: Number(cuatrimestre),
-        section: 'A',
-        shift: turno,
-        campusId: 'pdc' // default
-      };
-      MOCK_GROUPS.push(newGroup);
-      finalGroupId = newGroupId;
     }
     
     onSave({
-      groupId: finalGroupId,
+      groupId,
       modulo: Number(modulo),
       turno,
       classroom,
@@ -129,7 +107,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
     setCuatrimestre('');
     setModulo('');
     setTurno('');
-    setGroupName('');
+    setGroupId('');
     setClassroom('');
     setSelectedSubjects([]);
     onClose();
@@ -145,7 +123,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
             onChange={(e) => {
               setNivelAcademico(e.target.value);
               setCarreraId('');
-              setGroupName('');
+              setGroupId('');
               setSelectedSubjects([]);
             }}
             options={[
@@ -158,7 +136,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
             value={carreraId}
             onChange={(e) => {
               setCarreraId(e.target.value);
-              setGroupName('');
+              setGroupId('');
               setSelectedSubjects([]);
             }}
             options={[
@@ -174,7 +152,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
             value={cuatrimestre}
             onChange={(e) => {
               setCuatrimestre(e.target.value);
-              setGroupName('');
+              setGroupId('');
               setSelectedSubjects([]);
             }}
             options={[
@@ -194,11 +172,14 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Nombre del Grupo (Ej. ISC 8)"
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            placeholder="Escribe el nombre del grupo..."
+          <Select
+            label="Grupo Existente"
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value)}
+            options={[
+              { value: '', label: 'Seleccionar...' },
+              ...filteredGroups.map(g => ({ value: g.id, label: g.name }))
+            ]}
           />
           <Select
             label="Turno / Horario"
@@ -261,7 +242,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
 
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!groupName || !modulo || !classroom || !turno || selectedSubjects.length === 0}>
+          <Button onClick={handleSave} disabled={!groupId || !modulo || !classroom || !turno || selectedSubjects.length === 0}>
             {initialData ? "Guardar Cambios" : "Crear Plantilla"}
           </Button>
         </div>
