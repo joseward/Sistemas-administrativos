@@ -363,74 +363,56 @@ export default function GruposPage() {
             </div>
           ) : (
             filteredGroups.map((g, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden border border-blue-600">
+              <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
+                {/* Header (Módulo y Promover) */}
+                <div className="bg-gray-50 border-b border-gray-200 px-5 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div className="flex flex-col">
+                    <h3 className="font-bold text-gray-800 uppercase tracking-wide text-sm">{g.label}</h3>
+                    <span className="text-xs text-gray-500 font-medium mt-1">{g.moduloLabel}</span>
+                  </div>
+                  <button 
+                    id={`btn-promover-${index}`}
+                    onClick={() => handlePromoteClick(g.group, g.template)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:text-blue-600 transition-colors shadow-sm"
+                  >
+                    🚀 Promover a Sig. Cuatrimestre
+                  </button>
+                </div>
+
+                {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      {/* Header Superior: Grupo y Módulo */}
-                      <tr className="bg-blue-600 text-white border-b border-blue-700">
-                        <th colSpan={2} className="px-4 py-3 text-left border-r border-blue-500 w-1/2 font-bold uppercase tracking-wider">
-                          <div className="flex justify-between items-center">
-                            <span>{g.label}</span>
-                            <button 
-                              id={`btn-promover-${index}`}
-                              onClick={() => handlePromoteClick(g.group, g.template)}
-                              className="bg-white text-blue-600 hover:bg-blue-50 text-xs px-3 py-1 rounded shadow-sm flex items-center gap-1 transition-colors"
-                            >
-                              🚀 Promover al Sig. Cuatrimestre
-                            </button>
-                          </div>
-                        </th>
-                        <th colSpan={2} className="px-4 py-3 text-left font-bold uppercase tracking-wider">
-                          {g.moduloLabel}
-                        </th>
-                      </tr>
-                      {/* Header Inferior: Columnas */}
-                      <tr className="bg-blue-500 text-white border-b-2 border-blue-700">
-                        <th className="px-4 py-2 text-center border-r border-blue-400 w-[30%] uppercase text-xs font-semibold">
-                          Asignatura
-                        </th>
-                        <th className="px-4 py-2 text-center border-r border-blue-400 w-[25%] uppercase text-xs font-semibold">
-                          Docente
-                        </th>
-                        <th className="px-4 py-2 text-center border-r border-blue-400 w-[25%] uppercase text-xs font-semibold">
-                          Horario
-                        </th>
-                        <th className="px-4 py-2 text-center w-[20%] uppercase text-xs font-semibold">
-                          Aula
-                        </th>
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-white text-gray-500 border-b border-gray-200">
+                      <tr>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[35%] tracking-wider">Asignatura</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[25%] tracking-wider">Docente</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[25%] tracking-wider">Horario</th>
+                        <th className="px-5 py-3 font-semibold uppercase text-xs w-[15%] tracking-wider">Aula</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white">
+                    <tbody className="divide-y divide-gray-100 bg-white">
                       {g.assignments.map((a: any, aIndex: number) => {
                         const teacher = teachers.find(t => t.id === a.teacherId);
                         const subject = getSubjectById(a.subjectId);
                         
                         return (
-                          <tr 
-                            key={a.id} 
-                            className={cn(
-                              "bg-[#5cdb5c] hover:bg-[#4bcc4b] transition-colors", // Verde estilo excel
-                              aIndex < g.assignments.length - 1 ? "border-b border-gray-300/50" : ""
-                            )}
-                          >
-                            {/* Asignatura */}
-                            <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 font-medium text-xs uppercase leading-relaxed text-center">
+                          <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-5 py-3 text-gray-800 font-medium text-xs uppercase">
                               {subject?.name}
                             </td>
-                            
-                            {/* Docente */}
-                            <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 text-xs uppercase leading-relaxed text-center">
-                              {teacher ? `${teacher.firstName} ${teacher.lastName}` : <span className="text-red-600 font-bold">Pendiente</span>}
+                            <td className="px-5 py-3 text-xs uppercase">
+                              {teacher ? (
+                                <span className="text-gray-700">{teacher.firstName} {teacher.lastName}</span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-600 border border-amber-200">
+                                  Pendiente
+                                </span>
+                              )}
                             </td>
-                            
-                            {/* Horario */}
-                            <td className="px-4 py-3 border-r border-gray-300/50 text-gray-900 text-xs uppercase leading-relaxed text-center">
+                            <td className="px-5 py-3 text-xs uppercase text-gray-600">
                               {a.scheduleDay !== -1 ? `${DAYS_OF_WEEK[a.scheduleDay]} ${a.startTime} - ${a.endTime}` : <span className="text-gray-400">---</span>}
                             </td>
-                            
-                            {/* Aula */}
-                            <td className="px-4 py-3 text-gray-900 text-xs uppercase leading-relaxed text-center">
+                            <td className="px-5 py-3 text-xs uppercase text-gray-600">
                               {a.classroom || <span className="text-gray-400">---</span>}
                             </td>
                           </tr>
