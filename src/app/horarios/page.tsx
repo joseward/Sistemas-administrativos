@@ -99,7 +99,7 @@ export default function HorariosPage() {
           const subject = getSubjectById(subjectId);
           options.push({
             id: `${tpl.id}_${subjectId}`,
-            label: `Mód ${tpl.modulo} | ${group.name} - ${subject?.name} (${tpl.classroom})`,
+            label: `Mód ${tpl.modulo} | ${group.name} ${tpl.turno ? `(${tpl.turno})` : ''} - ${subject?.name} (${tpl.classroom})`,
             groupCategory: groupName,
             tpl,
             subjectId

@@ -25,6 +25,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
   const [cuatrimestre, setCuatrimestre] = useState('');
   const [modulo, setModulo] = useState('');
   const [groupId, setGroupId] = useState('');
+  const [turno, setTurno] = useState('');
   const [classroom, setClassroom] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
 
@@ -58,14 +59,15 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
   };
 
   const handleSave = () => {
-    if (!groupId || !modulo || !classroom || selectedSubjects.length === 0) {
-      alert("Por favor completa todos los campos y selecciona al menos una materia.");
+    if (!groupId || !modulo || !classroom || !turno || selectedSubjects.length === 0) {
+      alert("Por favor completa todos los campos (incluyendo el Turno) y selecciona al menos una materia.");
       return;
     }
     
     onSave({
       groupId,
       modulo: Number(modulo),
+      turno,
       classroom,
       subjectIds: selectedSubjects
     });
@@ -75,6 +77,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
     setCarreraId('');
     setCuatrimestre('');
     setModulo('');
+    setTurno('');
     setGroupId('');
     setClassroom('');
     setSelectedSubjects([]);
@@ -150,6 +153,23 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
             ]}
           />
           <Select
+            label="Turno / Horario"
+            value={turno}
+            onChange={(e) => setTurno(e.target.value)}
+            options={[
+              { value: '', label: 'Seleccionar...' },
+              { value: 'Matutino', label: 'Matutino' },
+              { value: 'Vespertino', label: 'Vespertino' },
+              { value: 'Nocturno', label: 'Nocturno' },
+              { value: 'Sabatino', label: 'Sabatino' },
+              { value: 'Dominical', label: 'Dominical' },
+              { value: 'En Línea', label: 'En Línea' }
+            ]}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Select
             label="Aula"
             value={classroom}
             onChange={(e) => setClassroom(e.target.value)}
@@ -159,6 +179,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
                 .map(aula => ({ value: aula, label: aula }))
             ]}
           />
+          <div></div>
         </div>
 
         {availableSubjects.length > 0 && (
@@ -192,7 +213,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave }: TemplateCreato
 
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!groupId || !modulo || !classroom || selectedSubjects.length === 0}>
+          <Button onClick={handleSave} disabled={!groupId || !modulo || !classroom || !turno || selectedSubjects.length === 0}>
             Crear Plantilla
           </Button>
         </div>

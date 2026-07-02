@@ -222,8 +222,10 @@ export interface MockGroupTemplate {
   id: string;
   groupId: string;       // Relacionado con MockGroup.id
   modulo: number;        // 1 o 2 (Bimestre)
+  turno?: string;        // Matutino, Vespertino, Sabatino, etc.
   classroom: string;     // Aula fija
   subjectIds: string[];  // Materias que deben impartirse a este grupo en este módulo
+  createdAt?: string;
 }
 
 // Empezamos con una base vacía o un ejemplo
@@ -232,6 +234,7 @@ export const MOCK_GROUP_TEMPLATES: MockGroupTemplate[] = [
     id: 'tpl-1',
     groupId: 'mock-g2', // Derecho 3
     modulo: 1,
+    turno: 'Sabatino',
     classroom: 'C1',
     // Tomamos algunas materias de Derecho (c-5) cuatrimestre 3
     subjectIds: ['mock-s-c-5-3-0', 'mock-s-c-5-3-1', 'mock-s-c-5-3-2'],

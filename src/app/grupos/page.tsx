@@ -400,7 +400,9 @@ export default function GruposPage() {
                 <div className="bg-gray-50 border-b border-gray-200 px-5 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div className="flex flex-col">
                     <h3 className="font-bold text-gray-800 uppercase tracking-wide text-sm">{g.label}</h3>
-                    <span className="text-xs text-gray-500 font-medium mt-1">{g.moduloLabel}</span>
+                    <span className="text-xs text-gray-500 font-medium mt-1">
+                      {g.moduloLabel}{g.template.turno ? ` • ${g.template.turno}` : ''}
+                    </span>
                   </div>
                   <button 
                     id={`btn-promover-${index}`}
