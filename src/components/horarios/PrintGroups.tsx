@@ -10,7 +10,7 @@ export function PrintGroups({ assignments, isCapturing }: { assignments: any[], 
   return (
     <div 
       id="print-container" 
-      className={`w-full text-black bg-white ${isCapturing ? 'block absolute top-0 left-0 z-[-1] w-[800px]' : 'hidden print:block'}`}
+      className={`text-black bg-white ${isCapturing ? 'block absolute top-0 left-0 z-[-1] w-[700px]' : 'hidden print:block w-full'}`}
     >
       {activeGroups.map((groupId) => {
         const group = getGroupById(groupId);
@@ -27,7 +27,7 @@ export function PrintGroups({ assignments, isCapturing }: { assignments: any[], 
         });
 
         return (
-          <div key={groupId} className="w-full page-break-after-always flex flex-col pt-8 bg-white p-8">
+          <div key={groupId} className="max-w-[700px] mx-auto page-break-after-always flex flex-col pt-8 bg-white p-6">
             <div className="text-center mb-6 border-b-2 border-black pb-4">
                <h1 className="text-2xl font-black uppercase mb-1">Horario de Clases</h1>
                <h2 className="text-lg font-bold">{group.carrera}</h2>
