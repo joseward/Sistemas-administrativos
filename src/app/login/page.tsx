@@ -49,7 +49,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative z-[100] flex flex-col font-sans bg-white overflow-x-hidden">
+    <div className="fixed inset-0 z-[100] flex flex-col font-sans bg-white overflow-y-auto overflow-x-hidden">
       {/* Contenedor Principal Divivido */}
       <div className="flex-1 flex flex-col lg:flex-row relative">
         

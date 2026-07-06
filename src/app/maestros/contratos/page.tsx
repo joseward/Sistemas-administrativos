@@ -23,6 +23,17 @@ export default function ContratosPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
 
+  // Estados para textos dinámicos del contrato
+  const [contractConfig, setContractConfig] = useState({
+    cuatrimestre: 'CUATRIMESTRE MAYO - AGOSTO 2026',
+    mod1Title: 'PRIMER MÓDULO: MAYO - JUNIO 2026',
+    mod1Start: '05, 06 Y 07 DE MAYO - ENTRE SEMANA\n09 DE MAYO - SÁBADOS\n10 DE MAYO - DOMINGOS',
+    mod1End: '23, 24 Y 25 DE JUNIO - ENTRE SEMANA\n27 DE JUNIO - SÁBADOS\n28 DE JUNIO - DOMINGOS',
+    mod2Title: 'SEGUNDO MÓDULO: JULIO - AGOSTO 2026',
+    mod2Start: '30 DE JUNIO, 01 Y 02 DE JULIO - ENTRE SEMANA\n04 DE JULIO - SÁBADOS\n05 DE JULIO - DOMINGOS',
+    mod2End: '18, 19 Y 20 DE AGOSTO - ENTRE SEMANA\n22 DE AGOSTO - SÁBADOS\n23 DE AGOSTO - DOMINGOS'
+  });
+
   const [assignments, setAssignments] = useState<any[]>([]);
 
   useEffect(() => {
@@ -72,6 +83,10 @@ export default function ContratosPage() {
     return assignmentsMod2.reduce((sum, a) => sum + calculateHours(a.startTime, a.endTime), 0);
   }, [assignmentsMod2]);
 
+  const handleConfigChange = (field: string, value: string) => {
+    setContractConfig(prev => ({ ...prev, [field]: value }));
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -118,10 +133,53 @@ export default function ContratosPage() {
               <Button
                 onClick={handlePrint}
                 disabled={!selectedTeacherId}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 h-[42px]"
               >
                 🖨️ Imprimir Anexo
               </Button>
+            </div>
+            
+            {/* Controles Dinámicos del Contrato */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h3 className="text-sm font-bold text-gray-700 mb-4">Configuración de Fechas y Textos del Documento</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="col-span-full">
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Título del Cuatrimestre</label>
+                  <input type="text" value={contractConfig.cuatrimestre} onChange={e => handleConfigChange('cuatrimestre', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm uppercase" />
+                </div>
+                
+                {/* Módulo 1 */}
+                <div className="space-y-3 bg-gray-50 p-4 rounded-md">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Título Módulo 1</label>
+                    <input type="text" value={contractConfig.mod1Title} onChange={e => handleConfigChange('mod1Title', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm uppercase" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Inicio Módulo 1</label>
+                    <textarea rows={3} value={contractConfig.mod1Start} onChange={e => handleConfigChange('mod1Start', e.target.value)} className="w-full px-3 py-2 border rounded-md text-xs uppercase" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Término Módulo 1</label>
+                    <textarea rows={3} value={contractConfig.mod1End} onChange={e => handleConfigChange('mod1End', e.target.value)} className="w-full px-3 py-2 border rounded-md text-xs uppercase" />
+                  </div>
+                </div>
+
+                {/* Módulo 2 */}
+                <div className="space-y-3 bg-gray-50 p-4 rounded-md">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Título Módulo 2</label>
+                    <input type="text" value={contractConfig.mod2Title} onChange={e => handleConfigChange('mod2Title', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm uppercase" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Inicio Módulo 2</label>
+                    <textarea rows={3} value={contractConfig.mod2Start} onChange={e => handleConfigChange('mod2Start', e.target.value)} className="w-full px-3 py-2 border rounded-md text-xs uppercase" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Término Módulo 2</label>
+                    <textarea rows={3} value={contractConfig.mod2End} onChange={e => handleConfigChange('mod2End', e.target.value)} className="w-full px-3 py-2 border rounded-md text-xs uppercase" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -135,13 +193,13 @@ export default function ContratosPage() {
             {/* Cabecera Central */}
             <div className="text-center mb-8">
               <h2 className="text-xl font-bold uppercase tracking-wide">Anexo I: ASIGNACIÓN</h2>
-              <h3 className="text-lg font-bold uppercase mt-1">CUATRIMESTRE MAYO - AGOSTO 2026</h3>
+              <h3 className="text-lg font-bold uppercase mt-1">{contractConfig.cuatrimestre}</h3>
               <h4 className="text-lg uppercase mt-3">{selectedTeacher.firstName} {selectedTeacher.lastName}</h4>
             </div>
 
             {/* PRIMER MÓDULO */}
             <div className="mb-8">
-              <h5 className="text-center font-bold text-sm uppercase mb-3">PRIMER MÓDULO: MAYO - JUNIO 2026</h5>
+              <h5 className="text-center font-bold text-sm uppercase mb-3">{contractConfig.mod1Title}</h5>
               
               <table className="w-full border-collapse border border-gray-800 text-xs mb-4">
                 <tbody>
@@ -169,25 +227,21 @@ export default function ContratosPage() {
                 </tbody>
               </table>
 
-              <div className="grid grid-cols-2 gap-4 text-[11px] font-medium leading-tight">
+              <div className="grid grid-cols-2 gap-4 text-[11px] font-medium leading-tight whitespace-pre-wrap">
                 <div>
                   <p className="font-bold mb-1">FECHA DE INICIO</p>
-                  <p>05, 06 Y 07 DE MAYO - ENTRE SEMANA</p>
-                  <p>09 DE MAYO - SÁBADOS</p>
-                  <p>10 DE MAYO - DOMINGOS</p>
+                  <p>{contractConfig.mod1Start}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-bold mb-1">FECHA DE TÉRMINO:</p>
-                  <p>23, 24 Y 25 DE JUNIO - ENTRE SEMANA</p>
-                  <p>27 DE JUNIO - SÁBADOS</p>
-                  <p>28 DE JUNIO - DOMINGOS</p>
+                  <p>{contractConfig.mod1End}</p>
                 </div>
               </div>
             </div>
 
             {/* SEGUNDO MÓDULO */}
             <div className="mb-12">
-              <h5 className="text-center font-bold text-sm uppercase mb-3">SEGUNDO MÓDULO: JULIO - AGOSTO 2026</h5>
+              <h5 className="text-center font-bold text-sm uppercase mb-3">{contractConfig.mod2Title}</h5>
               
               <table className="w-full border-collapse border border-gray-800 text-xs mb-4 min-h-[80px]">
                 <tbody>
@@ -215,77 +269,29 @@ export default function ContratosPage() {
                 </tbody>
               </table>
 
-              <div className="grid grid-cols-2 gap-4 text-[11px] font-medium leading-tight">
+              <div className="grid grid-cols-2 gap-4 text-[11px] font-medium leading-tight whitespace-pre-wrap">
                 <div>
                   <p className="font-bold mb-1">FECHA DE INICIO</p>
-                  <p>30 DE JUNIO, 01 Y 02 DE JULIO - ENTRE SEMANA</p>
-                  <p>04 DE JULIO - SÁBADOS</p>
-                  <p>05 DE JULIO - DOMINGOS</p>
+                  <p>{contractConfig.mod2Start}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-bold mb-1">FECHA DE TÉRMINO:</p>
-                  <p>18, 19 Y 20 DE AGOSTO - ENTRE SEMANA</p>
-                  <p>22 DE AGOSTO - SÁBADOS</p>
-                  <p>23 DE AGOSTO - DOMINGOS</p>
+                  <p>{contractConfig.mod2End}</p>
                 </div>
               </div>
-            </div>
-
-            {/* CÁLCULO FINANCIERO */}
-            <div className="mb-12 mt-8 p-4 border border-gray-400 bg-gray-50/50 print:bg-transparent">
-              <h5 className="font-bold text-sm uppercase mb-4 text-center border-b border-gray-400 pb-2">Desglose de Honorarios (Estimación)</h5>
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="border-b border-gray-300">
-                    <th className="py-2">Concepto</th>
-                    <th className="py-2 text-right">Módulo 1</th>
-                    <th className="py-2 text-right">Módulo 2</th>
-                    <th className="py-2 text-right font-bold text-lg">Total Cuatrimestre</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-gray-200">
-                    <td className="py-2">Horas por Semana</td>
-                    <td className="py-2 text-right">{weeklyHoursMod1.toFixed(1)} hrs</td>
-                    <td className="py-2 text-right">{weeklyHoursMod2.toFixed(1)} hrs</td>
-                    <td className="py-2 text-right"></td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="py-2">Horas Totales ({WEEKS_PER_MODULE} semanas/mód)</td>
-                    <td className="py-2 text-right">{(weeklyHoursMod1 * WEEKS_PER_MODULE).toFixed(1)} hrs</td>
-                    <td className="py-2 text-right">{(weeklyHoursMod2 * WEEKS_PER_MODULE).toFixed(1)} hrs</td>
-                    <td className="py-2 text-right font-bold">
-                      {((weeklyHoursMod1 + weeklyHoursMod2) * WEEKS_PER_MODULE).toFixed(1)} hrs totales
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-3 font-bold text-sm">Honorarios Brutos (Tarifa: ${HOURLY_RATE}/hr)</td>
-                    <td className="py-3 text-right font-bold text-emerald-800">
-                      ${(weeklyHoursMod1 * WEEKS_PER_MODULE * HOURLY_RATE).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 text-right font-bold text-emerald-800">
-                      ${(weeklyHoursMod2 * WEEKS_PER_MODULE * HOURLY_RATE).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 text-right font-black text-xl text-emerald-900 border-l-2 border-gray-300 pl-4">
-                      ${((weeklyHoursMod1 + weeklyHoursMod2) * WEEKS_PER_MODULE * HOURLY_RATE).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <p className="text-[9px] text-gray-500 mt-2 text-justify">
-                * El cálculo anterior es una estimación bruta basada en la tarifa base de honorarios asimilados vigente. Los importes netos estarán sujetos a las retenciones de ISR correspondientes según la ley vigente al momento del pago.
-              </p>
             </div>
 
             {/* FIRMAS */}
             <div className="mt-20 print:mt-32">
-              <div className="mb-16">
-                <div className="w-72 border-b border-black mb-2"></div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase">COORDINADOR ACADEMICO</p>
-              </div>
-              <div>
-                <div className="w-72 border-b border-black mb-2"></div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase">DOCENTE</p>
+              <div className="flex justify-between px-12">
+                <div className="text-center">
+                  <div className="w-64 border-b border-black mb-2 mx-auto"></div>
+                  <p className="text-[10px] font-bold text-gray-500 uppercase">COORDINADOR ACADEMICO</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-64 border-b border-black mb-2 mx-auto"></div>
+                  <p className="text-[10px] font-bold text-gray-500 uppercase">DOCENTE</p>
+                </div>
               </div>
             </div>
             
