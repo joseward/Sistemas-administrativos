@@ -225,6 +225,17 @@ export function TeacherForm({
             { value: 'inactive', label: 'Inactivo' },
           ]}
         />
+        
+        {!editingTeacher && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-4">
+            <p className="text-sm text-blue-800 flex items-start gap-2">
+              <span className="text-lg">ℹ️</span>
+              <span>
+                <strong>Contraseña por Defecto:</strong> Se generará una cuenta de acceso para el portal docente con la contraseña <code>docente123</code>. El docente podrá (y deberá) cambiarla posteriormente desde su portal.
+              </span>
+            </p>
+          </div>
+        )}
       </form>
     </Modal>
   );

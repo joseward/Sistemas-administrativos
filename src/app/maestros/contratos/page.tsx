@@ -7,6 +7,9 @@ import {
   DAYS_OF_WEEK,
   getSubjectById,
   getGroupById,
+  MOCK_BIMESTRES,
+  CUATRIMESTRES,
+  MOCK_YEARS
 } from '@/lib/mockData';
 
 const HOURLY_RATE = 150; // $150 MXN por hora base
@@ -24,13 +27,17 @@ export default function ContratosPage() {
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
   const [printMode, setPrintMode] = useState<'single' | 'all' | null>(null);
 
-  // Estados para textos dinámicos del contrato
+  // Estados para textos dinámicos del contrato (Inicializados con Catálogos)
+  const defaultCuatrimestre = CUATRIMESTRES[1]?.label || 'CUATRIMESTRE MAYO - AGOSTO';
+  const defaultMod1 = MOCK_BIMESTRES[0]?.label || 'PRIMER MÓDULO';
+  const defaultMod2 = MOCK_BIMESTRES[1]?.label || 'SEGUNDO MÓDULO';
+
   const [contractConfig, setContractConfig] = useState({
-    cuatrimestre: 'CUATRIMESTRE MAYO - AGOSTO 2026',
-    mod1Title: 'PRIMER MÓDULO: MAYO - JUNIO 2026',
+    cuatrimestre: defaultCuatrimestre.toUpperCase(),
+    mod1Title: defaultMod1.toUpperCase(),
     mod1Start: '05, 06 Y 07 DE MAYO - ENTRE SEMANA\n09 DE MAYO - SÁBADOS\n10 DE MAYO - DOMINGOS',
     mod1End: '23, 24 Y 25 DE JUNIO - ENTRE SEMANA\n27 DE JUNIO - SÁBADOS\n28 DE JUNIO - DOMINGOS',
-    mod2Title: 'SEGUNDO MÓDULO: JULIO - AGOSTO 2026',
+    mod2Title: defaultMod2.toUpperCase(),
     mod2Start: '30 DE JUNIO, 01 Y 02 DE JULIO - ENTRE SEMANA\n04 DE JULIO - SÁBADOS\n05 DE JULIO - DOMINGOS',
     mod2End: '18, 19 Y 20 DE AGOSTO - ENTRE SEMANA\n22 DE AGOSTO - SÁBADOS\n23 DE AGOSTO - DOMINGOS'
   });
