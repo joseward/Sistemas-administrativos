@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { TeacherList, TeacherForm, AvailabilityGrid } from '@/components/teachers';
-import { Modal, Button, Input } from '@/components/ui';
+import { Modal, Button, Input, LoadingSpinner } from '@/components/ui';
 
 interface Teacher {
   id: string;
@@ -94,12 +94,14 @@ export default function TeachersPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               Maestros Registrados
             </h2>
-            <TeacherList
-              key={refreshList}
-              schoolId={SCHOOL_ID}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
+            <Suspense fallback={<LoadingSpinner />}>
+              <TeacherList
+                key={refreshList}
+                schoolId={SCHOOL_ID}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </Suspense>
           </div>
 
           {/* Sección: Gestión de Disponibilidad */}

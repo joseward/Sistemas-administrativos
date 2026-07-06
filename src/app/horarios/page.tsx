@@ -671,126 +671,143 @@ export default function HorariosPage() {
 
         {/* ============ VISTA TABLA ============ */}
         {viewMode === 'table' && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            {!filterTeacher ? (
-              <div className="p-12 text-center">
-                <p className="text-gray-500 mb-2 text-lg">Por favor selecciona un maestro en los filtros de arriba.</p>
-                <p className="text-sm text-gray-400">Podrás visualizar su disponibilidad y asignarle materias, grupos y aulas.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 border-b border-gray-300">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Día</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Horario</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700 w-1/4">Materia</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700 w-1/4">Grupo</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700 w-1/6">Aula</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAssignments.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-16 text-center">
-                          <div className="flex flex-col items-center justify-center max-w-sm mx-auto text-gray-500">
-                            <div className="text-6xl mb-4">🗓️</div>
-                            <h3 className="text-xl font-bold text-gray-800 mb-2">No hay horarios disponibles</h3>
-                            <p className="text-sm">
-                              Este docente no ha enviado su disponibilidad o no tienes grupos seleccionados con materias asignables.
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      [...filteredAssignments]
-                        .sort((a, b) => a.scheduleDay - b.scheduleDay || a.startTime.localeCompare(b.startTime))
-                        .map((a) => {
-                          const isAssigned = a.subjectId && a.subjectId !== 'mock-s1';
-                          const assignedSubject = isAssigned ? getSubjectById(a.subjectId) : null;
-                          const assignedGroup = isAssigned ? getGroupById(a.groupId) : null;
+          <div className="bg-transparent space-y-8">
+            {(() => {
+              const teachersInView = Array.from(new Set(filteredAssignments.map(a => a.teacherId)));
+              
+              if (teachersInView.length === 0) {
+                return (
+                  <div className="bg-white rounded-xl shadow-md p-16 text-center border border-gray-100">
+                    <div className="text-6xl mb-4">🗓️</div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">No hay horarios disponibles</h3>
+                    <p className="text-sm text-gray-500">
+                      {filterTeacher ? 'Este docente no ha enviado su disponibilidad o no tienes grupos seleccionados.' : 'No hay docentes con disponibilidad o clases que coincidan con los filtros.'}
+                    </p>
+                  </div>
+                );
+              }
 
-                          return (
-                            <tr key={a.id} className="border-b border-gray-200 bg-[#5cdb5c]/20 hover:bg-[#5cdb5c]/40 transition-colors">
-                              <td className="px-4 py-4 font-bold text-emerald-900 uppercase w-[15%]">
-                                {DAYS_OF_WEEK[a.scheduleDay]}
-                              </td>
-                              <td className="px-4 py-4 text-emerald-800 font-mono font-semibold w-[20%]">
-                                {a.startTime} — {a.endTime}
-                              </td>
-                              <td colSpan={3} className="px-4 py-2 w-[65%]">
-                                <select
-                                  className="w-full px-2 py-2 border border-emerald-400 rounded bg-white text-gray-800 text-sm font-medium focus:ring-2 focus:ring-emerald-500"
-                                  value={isAssigned ? "assigned" : ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    const newAsg = [...assignments];
-                                    const index = newAsg.findIndex(asg => asg.id === a.id);
-                                    if(index !== -1) {
-                                      if (val === "") {
-                                        // Desasignar
-                                        newAsg[index].subjectId = '';
-                                        newAsg[index].groupId = '';
-                                        newAsg[index].classroom = '';
-                                        newAsg[index].modulo = undefined;
-                                        newAsg[index].isAvailable = true;
-                                      } else {
-                                        // Asignar de plantilla
-                                        const [tplId, subjId] = val.split('_');
-                                        const tpl = MOCK_GROUP_TEMPLATES.find(t => t.id === tplId);
-                                        if (tpl) {
-                                          newAsg[index].subjectId = subjId;
-                                          newAsg[index].groupId = tpl.groupId;
-                                          newAsg[index].classroom = tpl.classroom;
-                                          newAsg[index].modulo = tpl.modulo;
-                                          newAsg[index].isAvailable = false;
-                                          if (!newAsg[index].id.startsWith('mock-a')) {
-                                            newAsg[index].id = `mock-a-${Date.now()}-${Math.random()}`;
+              return teachersInView.map(tid => {
+                const teacher = getTeacherById(tid);
+                const tAssignments = filteredAssignments
+                  .filter(a => a.teacherId === tid)
+                  .sort((a, b) => a.scheduleDay - b.scheduleDay || a.startTime.localeCompare(b.startTime));
+
+                return (
+                  <div key={tid} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                    {/* Header del Maestro */}
+                    <div className="bg-gradient-to-r from-[#061266] to-[#1877f2] text-white px-6 py-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold text-lg">
+                          {teacher?.firstName?.charAt(0)}{teacher?.lastName?.charAt(0)}
+                        </div>
+                        <h3 className="font-bold text-lg tracking-wide uppercase">{teacher?.firstName} {teacher?.lastName}</h3>
+                      </div>
+                      <span className="text-xs font-semibold bg-white text-blue-900 px-3 py-1 rounded-full shadow-sm">
+                        {tAssignments.length} Registros
+                      </span>
+                    </div>
+                    
+                    {/* Tabla de Horarios */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-6 py-3 text-left font-semibold text-gray-700 w-[15%]">Día</th>
+                            <th className="px-6 py-3 text-left font-semibold text-gray-700 w-[20%]">Disponibilidad</th>
+                            <th className="px-6 py-3 text-left font-semibold text-gray-700 w-[65%]">Asignación de Clase</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {tAssignments.map(a => {
+                            const isAssigned = a.subjectId && a.subjectId !== 'mock-s1';
+                            const assignedSubject = isAssigned ? getSubjectById(a.subjectId) : null;
+                            const assignedGroup = isAssigned ? getGroupById(a.groupId) : null;
+                            
+                            // Visual distinction: Free time = Greenish, Assigned = Blueish/Solid
+                            const rowBg = isAssigned ? 'bg-blue-50/50 hover:bg-blue-100/70 border-l-4 border-l-blue-500' : 'bg-emerald-50/50 hover:bg-emerald-100/70 border-l-4 border-l-emerald-500';
+                            const textColor = isAssigned ? 'text-blue-900' : 'text-emerald-900';
+
+                            return (
+                              <tr key={a.id} className={`border-b border-gray-100 transition-colors ${rowBg}`}>
+                                <td className={`px-6 py-4 font-black uppercase ${textColor}`}>
+                                  {DAYS_OF_WEEK[a.scheduleDay]}
+                                </td>
+                                <td className={`px-6 py-4 font-mono font-semibold ${textColor}`}>
+                                  {a.startTime} — {a.endTime}
+                                </td>
+                                <td className="px-6 py-3">
+                                  <select
+                                    className={`w-full px-3 py-2 border rounded-lg text-sm font-medium focus:ring-2 outline-none transition-shadow ${isAssigned ? 'bg-white border-blue-300 text-blue-900 focus:ring-blue-500 shadow-sm' : 'bg-white border-emerald-300 text-emerald-800 focus:ring-emerald-500'}`}
+                                    value={isAssigned ? "assigned" : ""}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const newAsg = [...assignments];
+                                      const index = newAsg.findIndex(asg => asg.id === a.id);
+                                      if(index !== -1) {
+                                        if (val === "") {
+                                          newAsg[index].subjectId = '';
+                                          newAsg[index].groupId = '';
+                                          newAsg[index].classroom = '';
+                                          newAsg[index].modulo = undefined;
+                                          newAsg[index].isAvailable = true;
+                                        } else {
+                                          const [tplId, subjId] = val.split('_');
+                                          const tpl = MOCK_GROUP_TEMPLATES.find(t => t.id === tplId);
+                                          if (tpl) {
+                                            newAsg[index].subjectId = subjId;
+                                            newAsg[index].groupId = tpl.groupId;
+                                            newAsg[index].classroom = tpl.classroom;
+                                            newAsg[index].modulo = tpl.modulo;
+                                            newAsg[index].isAvailable = false;
+                                            if (!newAsg[index].id.startsWith('mock-a')) {
+                                              newAsg[index].id = `mock-a-${Date.now()}-${Math.random()}`;
+                                            }
                                           }
                                         }
+                                        setAssignments(newAsg);
+                                        
+                                        const tid = newAsg[index].teacherId;
+                                        const teacherAssignments = newAsg.filter(asg => asg.teacherId === tid && !asg.isAvailable);
+                                        fetch('/api/assignments', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ teacherId: tid, assignments: teacherAssignments })
+                                        }).catch(console.error);
                                       }
-                                      setAssignments(newAsg);
-                                      
-                                      // Guardar en la base de datos
-                                      const tid = newAsg[index].teacherId;
-                                      const teacherAssignments = newAsg.filter(asg => asg.teacherId === tid && !asg.isAvailable);
-                                      fetch('/api/assignments', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ teacherId: tid, assignments: teacherAssignments })
-                                      }).catch(console.error);
-                                    }
-                                  }}
-                                >
-                                  {isAssigned ? (
-                                    <>
-                                      <option value="assigned">
-                                        Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})
-                                      </option>
-                                      <option value="">-- Desasignar / Liberar Horario --</option>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <option value="">-- Asignar desde Plantilla Pendiente --</option>
-                                      {availableTemplateSlots.map(([groupName, options]) => (
-                                        <optgroup key={groupName} label={groupName}>
-                                          {options.map((opt: any) => (
-                                            <option key={opt.id} value={opt.id}>{opt.label}</option>
-                                          ))}
-                                        </optgroup>
-                                      ))}
-                                    </>
-                                  )}
-                                </select>
-                              </td>
-                            </tr>
-                          );
-                        })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                                    }}
+                                  >
+                                    {isAssigned ? (
+                                      <>
+                                        <option value="assigned">
+                                          🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})
+                                        </option>
+                                        <option value="">-- Liberar Horario (Volver a Disponible) --</option>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <option value="">✅ Disponible para asignar clase...</option>
+                                        {availableTemplateSlots.map(([groupName, options]) => (
+                                          <optgroup key={groupName} label={groupName}>
+                                            {options.map((opt: any) => (
+                                              <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                            ))}
+                                          </optgroup>
+                                        ))}
+                                      </>
+                                    )}
+                                  </select>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         )}
 

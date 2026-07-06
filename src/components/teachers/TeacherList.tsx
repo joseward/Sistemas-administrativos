@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useSearchParams } from 'next/navigation';
 import { Button, Badge, LoadingSpinner, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { MOCK_TEACHERS, MOCK_USERS } from '@/lib/mockData';
@@ -43,11 +44,29 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<any[]>([]);
+
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get('filter');
 
   // Cargar maestros
   useEffect(() => {
     fetchTeachers();
   }, [currentPage]);
+
+  // Si hay filtro de disponibilidad, cargamos la disponibilidad
+  useEffect(() => {
+    if (filterParam === 'missing_availability') {
+      fetch('/api/availability')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setAvailability(data.data);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [filterParam]);
 
   const fetchTeachers = async () => {
     setLoading(true);
@@ -107,12 +126,23 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
   // Filtrar maestros por búsqueda
   const filteredTeachers = teachers.filter((teacher) => {
     const searchLower = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = (
       teacher.firstName.toLowerCase().includes(searchLower) ||
       teacher.lastName.toLowerCase().includes(searchLower) ||
       teacher.email.toLowerCase().includes(searchLower) ||
       (teacher.specialization?.toLowerCase().includes(searchLower) ?? false)
     );
+
+    if (!matchesSearch) return false;
+
+    // Filtro adicional desde URL
+    if (filterParam === 'missing_availability') {
+      if (teacher.contractStatus !== 'active') return false;
+      const hasAvailability = availability.some(a => a.teacherId === teacher.id);
+      if (hasAvailability) return false;
+    }
+
+    return true;
   });
 
   const getStatusBadge = (status: 'active' | 'inactive' | 'pending') => {
@@ -137,16 +167,24 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
 
   return (
     <div className="space-y-4">
-      {/* Barra de búsqueda */}
-      <Input
-        placeholder="Buscar por nombre, email o especialidad..."
-        value={searchTerm}
-        onChange={(e) => {
-          setSearchTerm(e.target.value);
-          setCurrentPage(1);
-        }}
-        className="w-full"
-      />
+      {/* Barra de búsqueda y título de filtro */}
+      <div className="w-full">
+        <Input
+          placeholder="Buscar por nombre, email o especialidad..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="w-full"
+        />
+        {filterParam === 'missing_availability' && (
+          <div className="mt-4 p-3 bg-amber-50 text-amber-800 border-l-4 border-amber-500 font-medium text-sm flex justify-between items-center shadow-sm">
+            <span>⚠️ Mostrando únicamente maestros activos que NO han enviado su disponibilidad.</span>
+            <a href="/dashboard/teachers" className="text-amber-700 hover:text-amber-900 underline">Quitar filtro</a>
+          </div>
+        )}
+      </div>
 
       {/* Mensajes de error */}
       {error && (
