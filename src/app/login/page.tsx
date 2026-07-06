@@ -49,19 +49,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col font-sans bg-white overflow-hidden">
+    <div className="min-h-screen relative z-[100] flex flex-col font-sans bg-white overflow-x-hidden">
       {/* Contenedor Principal Divivido */}
       <div className="flex-1 flex flex-col lg:flex-row relative">
         
         {/* LADO IZQUIERDO: Branding y Patrón de Texto */}
-        <div className="hidden lg:flex flex-col w-[55%] relative overflow-hidden bg-[#081a36] pt-12 pl-12">
+        <div className="hidden lg:flex flex-col w-[55%] relative overflow-hidden bg-[#081a36] justify-center pl-8 xl:pl-12 py-12">
           {/* Círculo Decorativo */}
           <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-[#ff2a55] rounded-full opacity-20 blur-[60px]"></div>
           
           {/* Contenedor del texto repetido */}
-          <div className="relative z-10 flex flex-col space-y-2 pointer-events-none">
+          <div className="relative z-10 flex flex-col space-y-2 lg:space-y-4 pointer-events-none">
             {/* Primer línea rellena */}
-            <h1 className="text-[6rem] leading-[0.8] font-black text-white tracking-tight m-0 drop-shadow-md">
+            <h1 className="text-[4.5vw] xl:text-[6rem] leading-[0.85] font-black text-white tracking-tight m-0 drop-shadow-md whitespace-nowrap">
               PLAYA DEL CARMEN
             </h1>
             
@@ -69,7 +69,7 @@ export default function LoginPage() {
             {[...Array(8)].map((_, i) => (
               <h1 
                 key={i} 
-                className="text-[6rem] leading-[0.8] font-black tracking-tight m-0"
+                className="text-[4.5vw] xl:text-[6rem] leading-[0.85] font-black tracking-tight m-0 whitespace-nowrap"
                 style={{ 
                   color: 'transparent', 
                   WebkitTextStroke: '2px white',
@@ -82,11 +82,11 @@ export default function LoginPage() {
           </div>
 
           {/* Mascota Superpuesta */}
-          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none mt-12 pr-12">
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none p-8">
             <img 
               src="/mascota.png" 
               alt="Mascota Jaguar Aztlán" 
-              className="w-auto h-[85%] object-contain drop-shadow-2xl"
+              className="w-auto max-w-full h-auto max-h-[80%] object-contain drop-shadow-2xl"
               // Agregamos una suave animación flotante en línea
               style={{ animation: 'float 6s ease-in-out infinite' }}
             />

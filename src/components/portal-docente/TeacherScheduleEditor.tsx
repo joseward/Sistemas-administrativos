@@ -78,6 +78,9 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
     const newAvailability: any[] = [];
     let hasError = false;
     let filledRowsCount = 0;
+    const validRows: RowData[] = [];
+    
+    const dayNames = ["DOMINGO", "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO"];
     
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
@@ -90,6 +93,21 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
           hasError = true;
           break;
         }
+        
+        // Verificar traslapes con filas anteriores
+        const overlaps = validRows.some(vr => 
+          vr.day === r.day && 
+          r.startTime < vr.endTime && 
+          vr.startTime < r.endTime
+        );
+
+        if (overlaps) {
+          setErrorMsg(`Error: Hay un traslape de horario en tus filas del día ${dayNames[Number(r.day)]}. Verifica que no se empalmen las horas.`);
+          hasError = true;
+          break;
+        }
+
+        validRows.push(r);
         filledRowsCount++;
         newAvailability.push({
           dayOfWeek: Number(r.day),

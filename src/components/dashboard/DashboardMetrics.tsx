@@ -1,24 +1,30 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { MOCK_GROUP_TEMPLATES, MOCK_TEACHERS } from '@/lib/mockData';
+import Link from 'next/link';
+import { MOCK_GROUP_TEMPLATES } from '@/lib/mockData';
 
 export function DashboardMetrics() {
   const [assignments, setAssignments] = useState<any[]>([]);
   const [availability, setAvailability] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/assignments').then(res => res.json()),
-      fetch('/api/availability').then(res => res.json())
+      fetch('/api/availability').then(res => res.json()),
+      fetch('/api/teachers').then(res => res.json())
     ])
-      .then(([assignData, availData]) => {
+      .then(([assignData, availData, teacherData]) => {
         if (assignData.success) {
           setAssignments(assignData.data);
         }
         if (availData.success) {
           setAvailability(availData.data);
+        }
+        if (teacherData.success) {
+          setTeachers(teacherData.data);
         }
         setLoading(false);
       })
@@ -57,7 +63,7 @@ export function DashboardMetrics() {
   });
 
   // 2. Maestros sin disponibilidad (Amarillo)
-  const activeTeachers = MOCK_TEACHERS.filter(t => t.contractStatus === 'active');
+  const activeTeachers = teachers.filter(t => t.contractStatus === 'active');
   let missingAvailabilityCount = 0;
 
   activeTeachers.forEach(t => {
@@ -70,31 +76,31 @@ export function DashboardMetrics() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {/* Tarjeta Roja: Faltan Asignaciones */}
-      <div className="bg-red-50 rounded-xl p-6 border-l-4 border-red-500 shadow-sm flex flex-col justify-between">
+      <Link href="/horarios" className="bg-red-50 hover:bg-red-100 transition-colors rounded-xl p-6 border-l-4 border-red-500 shadow-sm flex flex-col justify-between cursor-pointer group">
         <div>
-          <p className="text-sm font-bold text-red-700 uppercase tracking-wide">Atención Requerida</p>
+          <p className="text-sm font-bold text-red-700 uppercase tracking-wide group-hover:text-red-900 transition-colors">Atención Requerida</p>
           <h3 className="text-3xl font-black text-red-900 mt-2">{incompleteTemplates}</h3>
           <p className="text-red-800 text-sm mt-1">Plantillas con materias sin maestro asignado</p>
         </div>
-      </div>
+      </Link>
 
       {/* Tarjeta Amarilla: Faltan Horarios de Maestros */}
-      <div className="bg-amber-50 rounded-xl p-6 border-l-4 border-amber-500 shadow-sm flex flex-col justify-between">
+      <Link href="/dashboard/teachers?filter=missing_availability" className="bg-amber-50 hover:bg-amber-100 transition-colors rounded-xl p-6 border-l-4 border-amber-500 shadow-sm flex flex-col justify-between cursor-pointer group">
         <div>
-          <p className="text-sm font-bold text-amber-700 uppercase tracking-wide">Pendientes de Docentes</p>
+          <p className="text-sm font-bold text-amber-700 uppercase tracking-wide group-hover:text-amber-900 transition-colors">Pendientes de Docentes</p>
           <h3 className="text-3xl font-black text-amber-900 mt-2">{missingAvailabilityCount}</h3>
           <p className="text-amber-800 text-sm mt-1">Maestros activos que no han enviado su disponibilidad</p>
         </div>
-      </div>
+      </Link>
 
       {/* Tarjeta Verde: Todo en Orden */}
-      <div className="bg-emerald-50 rounded-xl p-6 border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between">
+      <Link href="/horarios" className="bg-emerald-50 hover:bg-emerald-100 transition-colors rounded-xl p-6 border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between cursor-pointer group">
         <div>
-          <p className="text-sm font-bold text-emerald-700 uppercase tracking-wide">Cobertura Exitosa</p>
+          <p className="text-sm font-bold text-emerald-700 uppercase tracking-wide group-hover:text-emerald-900 transition-colors">Cobertura Exitosa</p>
           <h3 className="text-3xl font-black text-emerald-900 mt-2">{completeTemplates}</h3>
           <p className="text-emerald-800 text-sm mt-1">Plantillas completadas al 100%</p>
         </div>
-      </div>
+      </Link>
     </div>
   );
 }
