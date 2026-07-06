@@ -4,7 +4,6 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { PrismaClient } from '@prisma/client';
 import { TeacherScheduleEditor } from '@/components/portal-docente/TeacherScheduleEditor';
-import { ChangePasswordForm } from '@/components/portal-docente/ChangePasswordForm';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
@@ -79,7 +78,6 @@ export default async function PortalDocentePage() {
         {/* Área dinámica */}
         <div className="min-h-[500px]">
           <TeacherScheduleEditor teacherId={teacherId} />
-          <ChangePasswordForm />
         </div>
 
       </main>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui';
 import { TIME_SLOTS } from '@/lib/mockData';
+import { ChangePasswordForm } from './ChangePasswordForm';
 
 interface TeacherScheduleEditorProps {
   teacherId: string;
@@ -165,9 +166,12 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
           <h2 className="text-2xl font-bold text-[#061266]">Disponibilidad de Horario</h2>
           <p className="text-sm text-gray-500 mt-1">Llena la información con los días y horas que tienes disponibles. El área administrativa usará esto para asignarte grupos.</p>
         </div>
-        <Button onClick={handleSave} isLoading={saving} className="bg-emerald-600 hover:bg-emerald-700">
-          Guardar y Enviar
-        </Button>
+        <div className="flex items-center gap-3">
+          <ChangePasswordForm />
+          <Button onClick={handleSave} isLoading={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            Guardar y Enviar
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden print:shadow-none print:border-none">
