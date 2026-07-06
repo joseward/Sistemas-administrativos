@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { jwtVerify } from 'jose';
 import { MOCK_SUBJECTS, MOCK_GROUPS } from '@/lib/mockData';
 
-const prisma = new PrismaClient();
+
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
 // GET: Obtener todas las asignaciones o filtrar por teacherId

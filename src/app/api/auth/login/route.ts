@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 const encoder = new TextEncoder();
 
-const prisma = new PrismaClient();
+
 
 export async function POST(request: NextRequest) {
   try {

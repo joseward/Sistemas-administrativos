@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const prisma = new PrismaClient();
+
 
 export async function PUT(request: NextRequest) {
   try {
