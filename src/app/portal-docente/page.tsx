@@ -2,10 +2,10 @@ import React from 'react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { TeacherScheduleEditor } from '@/components/portal-docente/TeacherScheduleEditor';
 
-const prisma = new PrismaClient();
+
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
 export default async function PortalDocentePage() {
