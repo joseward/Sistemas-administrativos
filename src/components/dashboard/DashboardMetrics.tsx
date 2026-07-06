@@ -76,7 +76,7 @@ export function DashboardMetrics() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {/* Tarjeta Roja: Faltan Asignaciones */}
-      <Link href="/horarios" className="bg-red-50 hover:bg-red-100 transition-colors rounded-xl p-6 border-l-4 border-red-500 shadow-sm flex flex-col justify-between cursor-pointer group">
+      <Link href="/horarios?view=table" className="bg-red-50 hover:bg-red-100 transition-colors rounded-xl p-6 border-l-4 border-red-500 shadow-sm flex flex-col justify-between cursor-pointer group">
         <div>
           <p className="text-sm font-bold text-red-700 uppercase tracking-wide group-hover:text-red-900 transition-colors">Atención Requerida</p>
           <h3 className="text-3xl font-black text-red-900 mt-2">{incompleteTemplates}</h3>
@@ -94,7 +94,7 @@ export function DashboardMetrics() {
       </Link>
 
       {/* Tarjeta Verde: Todo en Orden */}
-      <Link href="/horarios" className="bg-emerald-50 hover:bg-emerald-100 transition-colors rounded-xl p-6 border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between cursor-pointer group">
+      <Link href="/horarios?view=table" className="bg-emerald-50 hover:bg-emerald-100 transition-colors rounded-xl p-6 border-l-4 border-emerald-500 shadow-sm flex flex-col justify-between cursor-pointer group">
         <div>
           <p className="text-sm font-bold text-emerald-700 uppercase tracking-wide group-hover:text-emerald-900 transition-colors">Cobertura Exitosa</p>
           <h3 className="text-3xl font-black text-emerald-900 mt-2">{completeTemplates}</h3>

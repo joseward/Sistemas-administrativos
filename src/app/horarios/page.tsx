@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Button, Badge, Modal, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
@@ -36,7 +37,10 @@ function getTeacherColor(teacherId: string) {
   return TEACHER_COLORS[teacherId] || { bg: 'bg-gray-100', border: 'border-gray-400', text: 'text-gray-800' };
 }
 
-export default function HorariosPage() {
+function HorariosContent() {
+  const searchParams = useSearchParams();
+  const initialView = searchParams.get('view') as 'table' | 'week' | null;
+
   const [teachers, setTeachers] = useState<any[]>([]);
   const [loadingTeachers, setLoadingTeachers] = useState(true);
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -45,7 +49,7 @@ export default function HorariosPage() {
   
   // Assign Preview State
   const [assignPreview, setAssignPreview] = useState<Omit<MockScheduleAssignment, 'id'> | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'week'>('week');
+  const [viewMode, setViewMode] = useState<'table' | 'week'>(initialView === 'table' ? 'table' : 'week');
   const [filterTeacher, setFilterTeacher] = useState<string>('');
   const [filterGroup, setFilterGroup] = useState<string>('');
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
@@ -1037,5 +1041,13 @@ export default function HorariosPage() {
     
     <PrintGroups assignments={assignments} isCapturing={isCapturing} />
     </>
+  );
+}
+
+export default function HorariosPage() {
+  return (
+    <Suspense fallback={<div className="p-12 text-center text-gray-500">Cargando gestión de horarios...</div>}>
+      <HorariosContent />
+    </Suspense>
   );
 }
