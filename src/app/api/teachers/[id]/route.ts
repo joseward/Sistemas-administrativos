@@ -48,7 +48,7 @@ export async function PUT(
             email: email || user.email,
             firstName: firstName || user.firstName,
             lastName: lastName || user.lastName,
-            status: contractStatus === 'inactive' ? 'inactive' : 'active',
+            status: contractStatus === 'active' ? 'active' : 'inactive',
           },
         });
       }

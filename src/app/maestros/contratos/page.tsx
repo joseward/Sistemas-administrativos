@@ -7,6 +7,9 @@ import {
   DAYS_OF_WEEK,
   getSubjectById,
   getGroupById,
+  MOCK_BIMESTRES,
+  CUATRIMESTRES,
+  MOCK_YEARS
 } from '@/lib/mockData';
 
 const HOURLY_RATE = 150; // $150 MXN por hora base
@@ -22,14 +25,19 @@ function calculateHours(start: string, end: string) {
 export default function ContratosPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
+  const [printMode, setPrintMode] = useState<'single' | 'all' | null>(null);
 
-  // Estados para textos dinámicos del contrato
+  // Estados para textos dinámicos del contrato (Inicializados con Catálogos)
+  const defaultCuatrimestre = CUATRIMESTRES[1]?.label || 'CUATRIMESTRE MAYO - AGOSTO';
+  const defaultMod1 = MOCK_BIMESTRES[0]?.label || 'PRIMER MÓDULO';
+  const defaultMod2 = MOCK_BIMESTRES[1]?.label || 'SEGUNDO MÓDULO';
+
   const [contractConfig, setContractConfig] = useState({
-    cuatrimestre: 'CUATRIMESTRE MAYO - AGOSTO 2026',
-    mod1Title: 'PRIMER MÓDULO: MAYO - JUNIO 2026',
+    cuatrimestre: defaultCuatrimestre.toUpperCase(),
+    mod1Title: defaultMod1.toUpperCase(),
     mod1Start: '05, 06 Y 07 DE MAYO - ENTRE SEMANA\n09 DE MAYO - SÁBADOS\n10 DE MAYO - DOMINGOS',
     mod1End: '23, 24 Y 25 DE JUNIO - ENTRE SEMANA\n27 DE JUNIO - SÁBADOS\n28 DE JUNIO - DOMINGOS',
-    mod2Title: 'SEGUNDO MÓDULO: JULIO - AGOSTO 2026',
+    mod2Title: defaultMod2.toUpperCase(),
     mod2Start: '30 DE JUNIO, 01 Y 02 DE JULIO - ENTRE SEMANA\n04 DE JULIO - SÁBADOS\n05 DE JULIO - DOMINGOS',
     mod2End: '18, 19 Y 20 DE AGOSTO - ENTRE SEMANA\n22 DE AGOSTO - SÁBADOS\n23 DE AGOSTO - DOMINGOS'
   });
@@ -64,31 +72,141 @@ export default function ContratosPage() {
 
   const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
 
-  // Filtrar asignaciones del maestro por módulo
-  const assignmentsMod1 = useMemo(() => {
-    if (!selectedTeacherId) return [];
-    return assignments.filter(a => a.teacherId === selectedTeacherId && a.modulo === 1);
-  }, [selectedTeacherId, assignments]);
-
-  const assignmentsMod2 = useMemo(() => {
-    if (!selectedTeacherId) return [];
-    return assignments.filter(a => a.teacherId === selectedTeacherId && a.modulo === 2);
-  }, [selectedTeacherId, assignments]);
-
-  const weeklyHoursMod1 = useMemo(() => {
-    return assignmentsMod1.reduce((sum, a) => sum + calculateHours(a.startTime, a.endTime), 0);
-  }, [assignmentsMod1]);
-
-  const weeklyHoursMod2 = useMemo(() => {
-    return assignmentsMod2.reduce((sum, a) => sum + calculateHours(a.startTime, a.endTime), 0);
-  }, [assignmentsMod2]);
-
   const handleConfigChange = (field: string, value: string) => {
     setContractConfig(prev => ({ ...prev, [field]: value }));
   };
 
-  const handlePrint = () => {
-    window.print();
+  useEffect(() => {
+    if (printMode) {
+      // Permitimos que el DOM se actualice con la vista de impresión elegida antes de invocar print
+      const timer = setTimeout(() => {
+        window.print();
+        setPrintMode(null);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [printMode]);
+
+  // Helper function to render a contract for a specific teacher
+  const renderContract = (teacher: any, isLast: boolean) => {
+    const teacherAssignments = assignments.filter(a => a.teacherId === teacher.id);
+    const mod1 = teacherAssignments.filter(a => a.modulo === 1);
+    const mod2 = teacherAssignments.filter(a => a.modulo === 2);
+
+    return (
+      <div 
+        key={teacher.id} 
+        className="bg-white rounded-lg shadow-lg p-10 print:shadow-none print:p-0 font-sans text-gray-900 mb-8"
+        style={{ pageBreakAfter: isLast ? 'auto' : 'always' }}
+      >
+        
+        {/* Cabecera Central */}
+        <div className="text-center mb-8">
+          <h2 className="text-xl font-bold uppercase tracking-wide">Anexo I: ASIGNACIÓN</h2>
+          <h3 className="text-lg font-bold uppercase mt-1">{contractConfig.cuatrimestre}</h3>
+          <h4 className="text-lg uppercase mt-3">{teacher.firstName} {teacher.lastName}</h4>
+        </div>
+
+        {/* PRIMER MÓDULO */}
+        <div className="mb-8">
+          <h5 className="text-center font-bold text-sm uppercase mb-3">{contractConfig.mod1Title}</h5>
+          
+          <table className="w-full border-collapse border border-gray-800 text-xs mb-4">
+            <tbody>
+              <tr>
+                <td className="border border-gray-800 p-2 align-top w-1/3">
+                  {mod1.length > 0 ? mod1.map((a, i) => {
+                    const subject = getSubjectById(a.subjectId);
+                    return <div key={i} className="uppercase mb-1">{subject?.name}</div>;
+                  }) : <div className="text-transparent">.</div>}
+                </td>
+                <td className="border border-gray-800 p-2 align-top w-1/3">
+                  {mod1.length > 0 ? mod1.map((a, i) => (
+                    <div key={i} className="uppercase mb-1">
+                      {DAYS_OF_WEEK[a.scheduleDay]} DE {a.startTime} - {a.endTime}
+                    </div>
+                  )) : <div className="text-transparent">.</div>}
+                </td>
+                <td className="border border-gray-800 p-2 align-top w-1/3">
+                  {mod1.length > 0 ? mod1.map((a, i) => {
+                    const group = getGroupById(a.groupId);
+                    return <div key={i} className="uppercase mb-1">{group?.carrera} {group?.grade}</div>;
+                  }) : <div className="text-transparent">.</div>}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="grid grid-cols-2 gap-4 text-[11px] font-medium leading-tight whitespace-pre-wrap">
+            <div>
+              <p className="font-bold mb-1">FECHA DE INICIO</p>
+              <p>{contractConfig.mod1Start}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-bold mb-1">FECHA DE TÉRMINO:</p>
+              <p>{contractConfig.mod1End}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* SEGUNDO MÓDULO */}
+        <div className="mb-12">
+          <h5 className="text-center font-bold text-sm uppercase mb-3">{contractConfig.mod2Title}</h5>
+          
+          <table className="w-full border-collapse border border-gray-800 text-xs mb-4 min-h-[80px]">
+            <tbody>
+              <tr>
+                <td className="border border-gray-800 p-2 align-top w-1/3 h-24">
+                  {mod2.length > 0 ? mod2.map((a, i) => {
+                    const subject = getSubjectById(a.subjectId);
+                    return <div key={i} className="uppercase mb-1">{subject?.name}</div>;
+                  }) : null}
+                </td>
+                <td className="border border-gray-800 p-2 align-top w-1/3 h-24">
+                  {mod2.length > 0 ? mod2.map((a, i) => (
+                    <div key={i} className="uppercase mb-1">
+                      {DAYS_OF_WEEK[a.scheduleDay]} DE {a.startTime} - {a.endTime}
+                    </div>
+                  )) : null}
+                </td>
+                <td className="border border-gray-800 p-2 align-top w-1/3 h-24">
+                  {mod2.length > 0 ? mod2.map((a, i) => {
+                    const group = getGroupById(a.groupId);
+                    return <div key={i} className="uppercase mb-1">{group?.carrera} {group?.grade}</div>;
+                  }) : null}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="grid grid-cols-2 gap-4 text-[11px] font-medium leading-tight whitespace-pre-wrap">
+            <div>
+              <p className="font-bold mb-1">FECHA DE INICIO</p>
+              <p>{contractConfig.mod2Start}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-bold mb-1">FECHA DE TÉRMINO:</p>
+              <p>{contractConfig.mod2End}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* FIRMAS */}
+        <div className="mt-20 print:mt-32">
+          <div className="flex justify-between px-12">
+            <div className="text-center">
+              <div className="w-64 border-b border-black mb-2 mx-auto"></div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase">COORDINADOR ACADEMICO</p>
+            </div>
+            <div className="text-center">
+              <div className="w-64 border-b border-black mb-2 mx-auto"></div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase">DOCENTE</p>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    );
   };
 
   return (
@@ -120,7 +238,7 @@ export default function ContratosPage() {
                 <select
                   value={selectedTeacherId}
                   onChange={(e) => setSelectedTeacherId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
                 >
                   <option value="">-- Elija un docente --</option>
                   {teachersWithAssignments.map((t) => (
@@ -130,13 +248,23 @@ export default function ContratosPage() {
                   ))}
                 </select>
               </div>
-              <Button
-                onClick={handlePrint}
-                disabled={!selectedTeacherId}
-                className="flex items-center gap-2 h-[42px]"
-              >
-                🖨️ Imprimir Anexo
-              </Button>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setPrintMode('single')}
+                  disabled={!selectedTeacherId || printMode !== null}
+                  className="flex items-center gap-2 h-[42px]"
+                >
+                  🖨️ Imprimir Actual
+                </Button>
+                <Button
+                  onClick={() => setPrintMode('all')}
+                  disabled={teachersWithAssignments.length === 0 || printMode !== null}
+                  variant="outline"
+                  className="flex items-center gap-2 h-[42px] border-blue-600 text-blue-700 hover:bg-blue-50"
+                >
+                  📑 Imprimir Todos ({teachersWithAssignments.length})
+                </Button>
+              </div>
             </div>
             
             {/* Controles Dinámicos del Contrato */}
@@ -187,118 +315,22 @@ export default function ContratosPage() {
         {/* ============================================================== */}
         {/* DOCUMENTO IMPRIMIBLE (Anexo I: ASIGNACIÓN) */}
         {/* ============================================================== */}
-        {selectedTeacher && (
-          <div className="bg-white rounded-lg shadow-lg p-10 print:shadow-none print:p-0 font-sans text-gray-900">
-            
-            {/* Cabecera Central */}
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-bold uppercase tracking-wide">Anexo I: ASIGNACIÓN</h2>
-              <h3 className="text-lg font-bold uppercase mt-1">{contractConfig.cuatrimestre}</h3>
-              <h4 className="text-lg uppercase mt-3">{selectedTeacher.firstName} {selectedTeacher.lastName}</h4>
-            </div>
-
-            {/* PRIMER MÓDULO */}
-            <div className="mb-8">
-              <h5 className="text-center font-bold text-sm uppercase mb-3">{contractConfig.mod1Title}</h5>
-              
-              <table className="w-full border-collapse border border-gray-800 text-xs mb-4">
-                <tbody>
-                  <tr>
-                    <td className="border border-gray-800 p-2 align-top w-1/3">
-                      {assignmentsMod1.length > 0 ? assignmentsMod1.map((a, i) => {
-                        const subject = getSubjectById(a.subjectId);
-                        return <div key={i} className="uppercase mb-1">{subject?.name}</div>;
-                      }) : <div className="text-transparent">.</div>}
-                    </td>
-                    <td className="border border-gray-800 p-2 align-top w-1/3">
-                      {assignmentsMod1.length > 0 ? assignmentsMod1.map((a, i) => (
-                        <div key={i} className="uppercase mb-1">
-                          {DAYS_OF_WEEK[a.scheduleDay]} DE {a.startTime} - {a.endTime}
-                        </div>
-                      )) : <div className="text-transparent">.</div>}
-                    </td>
-                    <td className="border border-gray-800 p-2 align-top w-1/3">
-                      {assignmentsMod1.length > 0 ? assignmentsMod1.map((a, i) => {
-                        const group = getGroupById(a.groupId);
-                        return <div key={i} className="uppercase mb-1">{group?.carrera} {group?.grade}</div>;
-                      }) : <div className="text-transparent">.</div>}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div className="grid grid-cols-2 gap-4 text-[11px] font-medium leading-tight whitespace-pre-wrap">
-                <div>
-                  <p className="font-bold mb-1">FECHA DE INICIO</p>
-                  <p>{contractConfig.mod1Start}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold mb-1">FECHA DE TÉRMINO:</p>
-                  <p>{contractConfig.mod1End}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* SEGUNDO MÓDULO */}
-            <div className="mb-12">
-              <h5 className="text-center font-bold text-sm uppercase mb-3">{contractConfig.mod2Title}</h5>
-              
-              <table className="w-full border-collapse border border-gray-800 text-xs mb-4 min-h-[80px]">
-                <tbody>
-                  <tr>
-                    <td className="border border-gray-800 p-2 align-top w-1/3 h-24">
-                      {assignmentsMod2.length > 0 ? assignmentsMod2.map((a, i) => {
-                        const subject = getSubjectById(a.subjectId);
-                        return <div key={i} className="uppercase mb-1">{subject?.name}</div>;
-                      }) : null}
-                    </td>
-                    <td className="border border-gray-800 p-2 align-top w-1/3 h-24">
-                      {assignmentsMod2.length > 0 ? assignmentsMod2.map((a, i) => (
-                        <div key={i} className="uppercase mb-1">
-                          {DAYS_OF_WEEK[a.scheduleDay]} DE {a.startTime} - {a.endTime}
-                        </div>
-                      )) : null}
-                    </td>
-                    <td className="border border-gray-800 p-2 align-top w-1/3 h-24">
-                      {assignmentsMod2.length > 0 ? assignmentsMod2.map((a, i) => {
-                        const group = getGroupById(a.groupId);
-                        return <div key={i} className="uppercase mb-1">{group?.carrera} {group?.grade}</div>;
-                      }) : null}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div className="grid grid-cols-2 gap-4 text-[11px] font-medium leading-tight whitespace-pre-wrap">
-                <div>
-                  <p className="font-bold mb-1">FECHA DE INICIO</p>
-                  <p>{contractConfig.mod2Start}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold mb-1">FECHA DE TÉRMINO:</p>
-                  <p>{contractConfig.mod2End}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* FIRMAS */}
-            <div className="mt-20 print:mt-32">
-              <div className="flex justify-between px-12">
-                <div className="text-center">
-                  <div className="w-64 border-b border-black mb-2 mx-auto"></div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase">COORDINADOR ACADEMICO</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-64 border-b border-black mb-2 mx-auto"></div>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase">DOCENTE</p>
-                </div>
-              </div>
-            </div>
-            
+        
+        {/* Vista cuando estamos imprimiendo TODOS */}
+        {(printMode === 'all') && teachersWithAssignments.length > 0 && (
+          <div className="mt-8">
+            {teachersWithAssignments.map((t, index) => renderContract(t, index === teachersWithAssignments.length - 1))}
           </div>
         )}
 
-        {!selectedTeacher && (
+        {/* Vista cuando NO estamos imprimiendo todos (Preview de uno solo, o imprimiendo uno solo) */}
+        {printMode !== 'all' && selectedTeacher && (
+          <div className="mt-8">
+            {renderContract(selectedTeacher, true)}
+          </div>
+        )}
+
+        {printMode !== 'all' && !selectedTeacher && (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200 border-dashed print:hidden">
             <span className="text-4xl block mb-4">📄</span>
             <h3 className="text-lg font-semibold text-gray-700">Ningún docente seleccionado</h3>

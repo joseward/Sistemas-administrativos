@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
           role: 'docente',
           firstName,
           lastName,
-          status: contractStatus === 'inactive' ? 'inactive' : 'active',
+          status: contractStatus === 'active' ? 'active' : 'inactive',
         },
       });
 
