@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 // GET /api/teachers/[id]/documents
 // Obtiene todos los documentos de un docente
@@ -68,7 +68,8 @@ export async function POST(
     const filePath = `${teacherId}/${fileName}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Subir a Supabase Storage usando el cliente administrador (ignora RLS)
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('teacher-documents')
       .upload(filePath, buffer, {
         contentType: file.type,
@@ -105,10 +106,10 @@ export async function POST(
         }
       });
       
-      // Opcional: borrar el archivo viejo de Supabase (no estrictamente necesario si usamos buckets grandes, pero buena práctica)
+      // Opcional: borrar el archivo viejo de Supabase
       const oldFilePath = existingDoc.fileUrl.split('/teacher-documents/')[1];
       if (oldFilePath) {
-         await supabase.storage.from('teacher-documents').remove([oldFilePath]);
+         await supabaseAdmin.storage.from('teacher-documents').remove([oldFilePath]);
       }
     } else {
       document = await prisma.teacherDocument.create({
