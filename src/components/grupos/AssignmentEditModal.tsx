@@ -24,7 +24,7 @@ const DAYS_OF_WEEK = [
   { value: '6', label: 'Domingo' }
 ];
 
-export function AssignmentEditModal({ isOpen, onClose, assignment, subjectName, onSave }: AssignmentEditModalProps) {
+export function AssignmentEditModal({ isOpen, onClose, assignment, subjectName, teachers, onSave }: AssignmentEditModalProps) {
   const [teacherId, setTeacherId] = useState('');
   const [scheduleDay, setScheduleDay] = useState('-1');
   const [startTime, setStartTime] = useState('');
