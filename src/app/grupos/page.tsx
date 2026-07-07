@@ -137,8 +137,8 @@ export default function GruposPage() {
     result.forEach(g => {
       g.assignments.sort((a: any, b: any) => {
         // Poner los asignados primero, ordenados por día
-        if (a.scheduleDay !== b.scheduleDay) return a.scheduleDay - b.scheduleDay;
-        return a.startTime.localeCompare(b.startTime);
+        if (a.scheduleDay !== b.scheduleDay) return (a.scheduleDay || -1) - (b.scheduleDay || -1);
+        return (a.startTime || '').localeCompare(b.startTime || '');
       });
     });
     
@@ -155,8 +155,8 @@ export default function GruposPage() {
         const teacher = teachers.find(t => t.id === a.teacherId);
         if (!teacher) return false;
         return (
-          teacher.firstName.toLowerCase().includes(search) ||
-          teacher.lastName.toLowerCase().includes(search)
+          (teacher.firstName || '').toLowerCase().includes(search) ||
+          (teacher.lastName || '').toLowerCase().includes(search)
         );
       });
       return { ...g, assignments: filteredAsgs };
