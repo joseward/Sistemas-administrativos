@@ -544,7 +544,6 @@ export default function GruposPage() {
         isOpen={isCatalogModalOpen} 
         onClose={() => setIsCatalogModalOpen(false)} 
         onSuccess={() => {
-          setIsCatalogModalOpen(false);
           setRefreshTick(t => t + 1);
         }}
       />
