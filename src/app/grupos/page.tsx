@@ -6,8 +6,7 @@ import { Button, Badge, Modal, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-  MOCK_ASSIGNMENTS
-} from '@/lib/mockData';
+import { MOCK_ASSIGNMENTS } from '@/lib/mockData';
 import { Select } from '@/components/ui/Select';
 import { CatalogManagerModal } from '@/components/grupos/CatalogManagerModal';
 import { AssignmentEditModal } from '@/components/grupos/AssignmentEditModal';
