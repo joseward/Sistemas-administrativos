@@ -74,7 +74,7 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         title={`Expediente: ${teacher.firstName} ${teacher.lastName}`}
-        size="lg"
+        size="xl"
       >
         <div className="p-2 space-y-4">
           <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">

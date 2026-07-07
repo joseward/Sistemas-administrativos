@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { DashboardMetrics } from '@/components/dashboard/DashboardMetrics';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-transparent p-6">
