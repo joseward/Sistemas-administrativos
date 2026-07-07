@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
+import {
   CUATRIMESTRES,
   MOCK_CARRERAS,
   MOCK_BIMESTRES,
