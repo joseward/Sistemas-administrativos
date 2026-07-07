@@ -231,7 +231,6 @@ export default function GruposPage() {
         id: newGroupId,
         cuatrimestre: nextCuatri
       };
-      MOCK_GROUPS.push(newGroup); // Guardar en memoria de sesión
     }
 
     const newTemplate: MockGroupTemplate = {
@@ -298,7 +297,6 @@ export default function GruposPage() {
     const template = templates.find(t => t.id === templateId);
     if (template) {
       template.subjectIds = template.subjectIds.filter(id => id !== subjectId);
-      setTemplates([...templates]);
     }
   };
 
@@ -489,7 +487,7 @@ export default function GruposPage() {
                     <tbody className="divide-y divide-gray-100 bg-white">
                       {g.assignments.map((a: any, aIndex: number) => {
                         const teacher = teachers.find(t => t.id === a.teacherId);
-                        const subject = getSubjectById(a.subjectId);
+                        const subject = subjects.find(s => s.id === a.subjectId);
                         
                         return (
                           <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
@@ -509,7 +507,7 @@ export default function GruposPage() {
                               )}
                             </td>
                             <td className="px-5 py-3 text-xs uppercase text-gray-600">
-                              {a.scheduleDay !== -1 ? `${DAYS_OF_WEEK[a.scheduleDay]} ${a.startTime} - ${a.endTime}` : <span className="text-gray-400">---</span>}
+                              {a.scheduleDay !== -1 ? `${['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][a.scheduleDay]} ${a.startTime} - ${a.endTime}` : <span className="text-gray-400">---</span>}
                             </td>
                             <td className="px-5 py-3 text-xs uppercase text-gray-600">
                               {a.classroom || <span className="text-gray-400">---</span>}
