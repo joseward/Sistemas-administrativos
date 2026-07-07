@@ -3,8 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
-  MockGroupTemplate,
-} from '@/lib/mockData';
+import { MockGroupTemplate } from '@/lib/mockData';
 import { useCurriculum } from '@/context/CurriculumContext';
 
 interface TemplateCreatorModalProps {

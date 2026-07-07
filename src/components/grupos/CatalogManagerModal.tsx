@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
-} from '@/lib/mockData';
+
 import { useCurriculum } from '@/context/CurriculumContext';
 
 interface CatalogManagerModalProps {
