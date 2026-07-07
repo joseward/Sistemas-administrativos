@@ -72,4 +72,4 @@ export async function DELETE(request: Request) {
     console.error('Error deleting career:', error);
     return NextResponse.json({ error: 'Failed to delete career' }, { status: 500 });
   }
-
+}
