@@ -28,7 +28,7 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
   
-  const { careers, subjects, groups, refreshData } = useCurriculum();
+  const { careers = [], subjects = [], groups = [], refreshData = () => {} } = useCurriculum() || {};
 
   const handleAdd = () => {
     if (!newValue.trim()) return;

@@ -26,7 +26,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
   const [turno, setTurno] = useState('');
   const [classroom, setClassroom] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const { academicLevels, careers, subjects, groups } = useCurriculum();
+  const { academicLevels = [], careers = [], subjects = [], groups = [], refreshData = () => {} } = useCurriculum() || {};
 
   React.useEffect(() => {
     if (isOpen && initialData) {

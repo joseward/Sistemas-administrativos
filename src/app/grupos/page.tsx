@@ -41,7 +41,7 @@ export default function GruposPage() {
   const [templateToEdit, setTemplateToEdit] = useState<MockGroupTemplate | null>(null);
 
   const [assignments, setAssignments] = useState<any[]>(MOCK_ASSIGNMENTS);
-  const { academicLevels, careers, subjects, groups, templates, refreshData } = useCurriculum();
+  const { academicLevels = [], careers = [], subjects = [], groups = [], templates = [], refreshData = () => {} } = useCurriculum() || {};
 
   useEffect(() => {
     fetch('/api/teachers')
