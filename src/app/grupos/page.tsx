@@ -88,7 +88,7 @@ export default function GruposPage() {
         if (!groupCareer || groupCareer.academicLevelId !== filters.nivelAcademico) return;
       }
 
-      if (filters.carreraId && group.careerId !== filters.carreraId) return;
+      if (filters.careerId && group.careerId !== filters.careerId) return;
 
       const cuatriLabel = cuatrimestres.find((c: any) => c.value === group.cuatrimestre)?.label || `${group.cuatrimestre}er Cuatrimestre`;
       const carreraName = group.career?.name || 'Carrera';
@@ -374,7 +374,7 @@ export default function GruposPage() {
               className="w-[180px]"
               value={filters.nivelAcademico}
               onChange={(e) => {
-                setFilters({...filters, nivelAcademico: e.target.value, carreraId: ''});
+                setFilters({...filters, nivelAcademico: e.target.value, careerId: ''});
               }}
               options={[
                 { value: '', label: 'Nivel: Seleccionar...' },
@@ -383,8 +383,8 @@ export default function GruposPage() {
             />
             <Select
               className="w-[180px]"
-              value={filters.carreraId}
-              onChange={(e) => setFilters({...filters, carreraId: e.target.value})}
+              value={filters.careerId}
+              onChange={(e) => setFilters({...filters, careerId: e.target.value})}
               disabled={!filters.nivelAcademico}
               options={[
                 { value: '', label: 'Carrera: Seleccionar...' },
