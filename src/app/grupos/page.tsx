@@ -38,12 +38,17 @@ export default function GruposPage() {
   const { academicLevels = [], careers = [], subjects = [], groups = [], templates = [], academicYears = [], bimestres = [], cuatrimestres = [], refreshData = () => {} } = useCurriculum() || {};
 
   useEffect(() => {
+    fetch('/api/assignments')
+      .then(r => r.json())
+      .then(data => {
+        setAssignments(data.data || data.assignments || (Array.isArray(data) ? data : []));
+      })
+      .catch(console.error);
+
     fetch('/api/teachers')
       .then(res => res.json())
       .then(data => {
-        if (data.success) {
-          setTeachers(data.data);
-        }
+        setTeachers(data.data || data.teachers || (Array.isArray(data) ? data : []));
       })
       .catch(err => console.error("Error fetching teachers", err));
   }, []);
@@ -555,6 +560,7 @@ export default function GruposPage() {
         onClose={() => setEditingAssignment(null)}
         assignment={editingAssignment}
         subjectName={assignmentSubjectName}
+        teachers={teachers}
         onSave={handleSaveAssignment}
       />
 

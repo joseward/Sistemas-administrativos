@@ -3,13 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
-import { MOCK_TEACHERS } from '@/lib/mockData';
 
 interface AssignmentEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   assignment: any; // MockAssignment
   subjectName: string;
+  teachers: any[];
   onSave: (updatedAssignment: any) => void;
 }
 
@@ -70,7 +70,7 @@ export function AssignmentEditModal({ isOpen, onClose, assignment, subjectName, 
             onChange={(e) => setTeacherId(e.target.value)}
             options={[
               { value: '', label: 'Sin Asignar' },
-              ...MOCK_TEACHERS.map(t => ({ value: t.id, label: `${t.firstName} ${t.lastName}` }))
+              ...teachers.map((t: any) => ({ value: t.id, label: `${t.firstName} ${t.lastName}` }))
             ]}
           />
         </div>
