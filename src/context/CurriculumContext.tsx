@@ -7,6 +7,9 @@ type CurriculumContextType = {
   subjects: any[];
   groups: any[];
   templates: any[];
+  academicYears: any[];
+  bimestres: any[];
+  cuatrimestres: any[];
   refreshData: () => void;
 };
 
@@ -25,9 +28,12 @@ export const CurriculumProvider = ({ children }: { children: React.ReactNode }) 
   const [subjects, setSubjects] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
-  const [tick, setTick] = useState(0);
+  const [academicYears, setAcademicYears] = useState<any[]>([]);
+  const [bimestres, setBimestres] = useState<any[]>([]);
+  const [cuatrimestres, setCuatrimestres] = useState<any[]>([]);
+  const [refreshTick, setRefreshTick] = useState(0);
 
-  const refreshData = () => setTick(t => t + 1);
+  const refreshData = () => setRefreshTick(t => t + 1);
 
   useEffect(() => {
     Promise.all([
@@ -35,18 +41,24 @@ export const CurriculumProvider = ({ children }: { children: React.ReactNode }) 
       fetch('/api/careers').then(res => res.json()),
       fetch('/api/subjects').then(res => res.json()),
       fetch('/api/groups').then(res => res.json()),
-      fetch('/api/templates').then(res => res.json())
-    ]).then(([alData, cData, sData, gData, tData]) => {
+      fetch('/api/templates').then(res => res.json()),
+      fetch('/api/academic-years').then(res => res.json()),
+      fetch('/api/bimestres').then(res => res.json()),
+      fetch('/api/cuatrimestres').then(res => res.json())
+    ]).then(([alData, cData, sData, gData, tData, yData, bData, cuData]) => {
       setAcademicLevels(Array.isArray(alData) ? alData : []);
       setCareers(Array.isArray(cData) ? cData : []);
       setSubjects(Array.isArray(sData) ? sData : []);
       setGroups(Array.isArray(gData) ? gData : []);
       setTemplates(Array.isArray(tData) ? tData : []);
+      setAcademicYears(Array.isArray(yData) ? yData : []);
+      setBimestres(Array.isArray(bData) ? bData : []);
+      setCuatrimestres(Array.isArray(cuData) ? cuData : []);
     }).catch(console.error);
-  }, [tick]);
+  }, [refreshTick]);
 
   return (
-    <CurriculumContext.Provider value={{ academicLevels, careers, subjects, groups, templates, refreshData }}>
+    <CurriculumContext.Provider value={{ academicLevels, careers, subjects, groups, templates, academicYears, bimestres, cuatrimestres, refreshData }}>
       {children}
     </CurriculumContext.Provider>
   );

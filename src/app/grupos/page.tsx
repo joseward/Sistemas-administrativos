@@ -6,11 +6,6 @@ import { Button, Badge, Modal, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import {
-  DAYS_OF_WEEK,
-  CUATRIMESTRES,
-  MOCK_BIMESTRES,
-  MOCK_YEARS,
   MOCK_ASSIGNMENTS
 } from '@/lib/mockData';
 import { Select } from '@/components/ui/Select';
@@ -41,7 +36,7 @@ export default function GruposPage() {
   const [templateToEdit, setTemplateToEdit] = useState<MockGroupTemplate | null>(null);
 
   const [assignments, setAssignments] = useState<any[]>(MOCK_ASSIGNMENTS);
-  const { academicLevels = [], careers = [], subjects = [], groups = [], templates = [], refreshData = () => {} } = useCurriculum() || {};
+  const { academicLevels = [], careers = [], subjects = [], groups = [], templates = [], academicYears = [], bimestres = [], cuatrimestres = [], refreshData = () => {} } = useCurriculum() || {};
 
   useEffect(() => {
     fetch('/api/teachers')
@@ -354,8 +349,8 @@ export default function GruposPage() {
               value={filters.academicYear}
               onChange={(e) => setFilters({ ...filters, academicYear: e.target.value })}
               options={[
-                { value: '', label: 'Todos los años' },
-                ...MOCK_YEARS.map(y => ({ value: y, label: y }))
+                { value: 'Todos los años', label: 'Todos los años' },
+                ...academicYears.map((y: any) => ({ value: y.value, label: y.value }))
               ]}
             />
             <Select
@@ -363,8 +358,8 @@ export default function GruposPage() {
               value={filters.modulo}
               onChange={(e) => setFilters({ ...filters, modulo: e.target.value })}
               options={[
-                { value: '', label: 'Todos los bimestres' },
-                ...MOCK_BIMESTRES.map(b => ({ value: b.value.toString(), label: b.label }))
+                { value: 'Todos los módulos', label: 'Todos los módulos' },
+                ...bimestres.map((b: any) => ({ value: b.value.toString(), label: b.label }))
               ]}
             />
             <Select
@@ -373,7 +368,7 @@ export default function GruposPage() {
               onChange={(e) => setFilters({ ...filters, cuatrimestre: e.target.value })}
               options={[
                 { value: '', label: 'Todos los cuatrimestres' },
-                ...CUATRIMESTRES.map(c => ({ value: c.value.toString(), label: c.label }))
+                ...cuatrimestres.map((c: any) => ({ value: c.value.toString(), label: c.label }))
               ]}
             />
             <Select
@@ -572,21 +567,27 @@ export default function GruposPage() {
           setTimeout(() => setTemplateToEdit(null), 300);
         }}
         onSave={(newTemplate) => {
-          if (templateToEdit) {
-            const updatedTemplates = templates.map(t => 
-              t.id === templateToEdit.id ? { ...t, ...newTemplate } : t
-            );
-            setTemplates(updatedTemplates);
-            const idx = MOCK_GROUP_TEMPLATES.findIndex(t => t.id === templateToEdit.id);
-            if (idx !== -1) MOCK_GROUP_TEMPLATES[idx] = { ...MOCK_GROUP_TEMPLATES[idx], ...newTemplate };
-          } else {
-            const tpl: MockGroupTemplate = {
-              id: `tpl-${Date.now()}`,
-              ...newTemplate
-            };
-            MOCK_GROUP_TEMPLATES.push(tpl);
-            setTemplates([...templates, tpl]);
-          }
+          const url = '/api/templates';
+          const method = templateToEdit ? 'PUT' : 'POST';
+          const body = templateToEdit ? { id: templateToEdit.id, ...newTemplate } : newTemplate;
+          
+          fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.error) {
+              alert('Error al guardar la plantilla: ' + data.error);
+            } else {
+              refreshData();
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            alert('Ocurrió un error inesperado al guardar la plantilla.');
+          });
         }}
       />
 
