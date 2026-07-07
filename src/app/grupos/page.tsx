@@ -556,10 +556,10 @@ export default function GruposPage() {
       />
 
       <AssignmentEditModal
-        isOpen={isAssignmentModalOpen}
-        onClose={() => setIsAssignmentModalOpen(false)}
-        assignment={assignmentToEdit}
-        subjectName={assignmentToEdit?.subjectName || ''}
+        isOpen={!!editingAssignment}
+        onClose={() => setEditingAssignment(null)}
+        assignment={editingAssignment}
+        subjectName={assignmentSubjectName}
         teachers={teachers}
         onSave={handleSaveAssignment}
       />
