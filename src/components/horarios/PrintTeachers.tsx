@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { MOCK_SUBJECTS, DAYS_OF_WEEK, getGroupById } from '@/lib/mockData';
+import { DAYS_OF_WEEK, getGroupById } from '@/lib/mockData';
 
-export function PrintTeachers({ assignments, teachers, isCapturing }: { assignments: any[], teachers: any[], isCapturing?: boolean }) {
+export function PrintTeachers({ assignments, teachers, subjects, isCapturing }: { assignments: any[], teachers: any[], subjects: any[], isCapturing?: boolean }) {
   // Solo los maestros que tienen asignaciones reales en el arreglo actual (filtrado)
   const activeTeacherIds = Array.from(new Set(assignments.filter(a => !a.isAvailable).map(a => a.teacherId)));
 
@@ -54,7 +54,7 @@ export function PrintTeachers({ assignments, teachers, isCapturing }: { assignme
                     </thead>
                     <tbody>
                       {dayAssignments.map((a, index) => {
-                        const subject = MOCK_SUBJECTS.find(s => s.id === a.subjectId);
+                        const subject = subjects.find((s: any) => s.id === a.subjectId);
                         const group = getGroupById(a.groupId);
                         return (
                           <tr key={index}>

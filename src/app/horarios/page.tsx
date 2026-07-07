@@ -43,6 +43,7 @@ function HorariosContent() {
   const initialView = searchParams.get('view') as 'table' | 'week' | null;
 
   const [teachers, setTeachers] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
   const [loadingTeachers, setLoadingTeachers] = useState(true);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -138,9 +139,12 @@ function HorariosContent() {
 
     Promise.all([
       fetch('/api/assignments').then(res => res.json()),
-      fetch('/api/availability').then(res => res.json())
+      fetch('/api/availability').then(res => res.json()),
+      fetch('/api/subjects').then(res => res.json())
     ])
-    .then(([assignmentsRes, availabilityRes]) => {
+    .then(([assignmentsRes, availabilityRes, subjectsData]) => {
+      if (Array.isArray(subjectsData)) setSubjects(subjectsData);
+      
       let loaded: any[] = [];
       if (assignmentsRes.success) {
         // Asignaciones reales
@@ -493,15 +497,15 @@ function HorariosContent() {
               <div className="flex flex-col px-2 border-r border-gray-200">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Para Alumnos</span>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => handlePrint('groups')} className="h-8 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50" title="PDF Alumnos">📄 PDF</Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('groups')} disabled={isCapturing} className="h-8 px-2 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50" title="PNG Alumnos">{isCapturing && printMode === 'groups' ? '⏳...' : '🖼️ PNG'}</Button>
+                  <Button size="sm" variant="outline" onClick={() => handlePrint('groups')} className="h-8 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50" title="PDF Alumnos">📄 PDF {filterGroup ? '(1)' : '(Todos)'}</Button>
+                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('groups')} disabled={isCapturing} className="h-8 px-2 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50" title="PNG Alumnos">{isCapturing && printMode === 'groups' ? '⏳...' : `🖼️ PNG ${filterGroup ? '(1 Grupo)' : '(Todos)'}`}</Button>
                 </div>
               </div>
               <div className="flex flex-col px-2">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Para Docentes</span>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => handlePrint('teachers')} className="h-8 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50" title="PDF Maestros">📄 PDF</Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('teachers')} disabled={isCapturing} className="h-8 px-2 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50" title="PNG Maestros">{isCapturing && printMode === 'teachers' ? '⏳...' : '🖼️ PNG'}</Button>
+                  <Button size="sm" variant="outline" onClick={() => handlePrint('teachers')} className="h-8 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50" title="PDF Maestros">📄 PDF {filterTeacher ? '(1)' : '(Todos)'}</Button>
+                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('teachers')} disabled={isCapturing} className="h-8 px-2 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50" title="PNG Maestros">{isCapturing && printMode === 'teachers' ? '⏳...' : `🖼️ PNG ${filterTeacher ? '(1 Maestro)' : '(Todos)'}`}</Button>
                 </div>
               </div>
             </div>
@@ -1045,10 +1049,20 @@ function HorariosContent() {
     </div>
     
     {printMode === 'groups' && (
-      <PrintGroups assignments={filteredAssignments} teachers={teachers} isCapturing={isCapturing && printMode === 'groups'} />
+      <PrintGroups 
+        assignments={assignments.filter(a => filterGroup ? a.groupId === filterGroup : true)} 
+        teachers={teachers}
+        subjects={subjects.length > 0 ? subjects : MOCK_SUBJECTS}
+        isCapturing={isCapturing && printMode === 'groups'} 
+      />
     )}
     {printMode === 'teachers' && (
-      <PrintTeachers assignments={filteredAssignments} teachers={teachers} isCapturing={isCapturing && printMode === 'teachers'} />
+      <PrintTeachers 
+        assignments={assignments.filter(a => filterTeacher ? a.teacherId === filterTeacher : true)} 
+        teachers={teachers}
+        subjects={subjects.length > 0 ? subjects : MOCK_SUBJECTS}
+        isCapturing={isCapturing && printMode === 'teachers'} 
+      />
     )}
     </>
   );

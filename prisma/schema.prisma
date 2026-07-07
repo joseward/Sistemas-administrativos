@@ -15,13 +15,13 @@ datasource db {
 // ESCUELA (Institución)
 // ============================================
 model School {
-  id            String   @id @default(cuid())
-  name          String
-  email         String?
-  phone         String?
-  address       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relaciones
   teachers      Teacher[]
@@ -30,6 +30,8 @@ model School {
   students      Student[]
   contracts     Contract[]
   attendance    Attendance[]
+  AcademicLevel AcademicLevel[]
+  Career        Career[]
 
   @@map("schools")
 }
@@ -38,273 +40,363 @@ model School {
 // MAESTROS
 // ============================================
 model Teacher {
-  id                String    @id @default(cuid())
-  schoolId          String
-  firstName         String
-  lastName          String
-  email             String    @unique
-  phone             String?
-  cedula            String?   @unique
-  specialization    String?
-  contractStatus    String    @default("pending") // active, inactive, pending
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id             String   @id @default(cuid())
+  schoolId       String
+  firstName      String
+  lastName       String
+  email          String   @unique
+  phone          String?
+  cedula         String?  @unique
+  specialization String?
+  contractStatus String   @default("pending") // active, inactive, pending
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relaciones
-  school            School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  availability      TeacherAvailability[]
-  assignments       TeacherSubjectGroup[]
-  contracts         Contract[]
-  documents         TeacherDocument[]
-  createdByUserId   String?
-  createdByUser     User?                  @relation("TeacherCreator", fields: [createdByUserId], references: [id])
+  school          School                @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  availability    TeacherAvailability[]
+  assignments     TeacherSubjectGroup[]
+  contracts       Contract[]
+  documents       TeacherDocument[]
+  createdByUserId String?
+  createdByUser   User?                 @relation("TeacherCreator", fields: [createdByUserId], references: [id])
 
-  @@map("teachers")
   @@index([schoolId])
   @@index([email])
+  @@map("teachers")
 }
 
 // ============================================
 // DOCUMENTOS DEL MAESTRO
 // ============================================
 model TeacherDocument {
-  id           String   @id @default(cuid())
-  teacherId    String
-  type         String   // Ej. "CV", "ACTA_NACIMIENTO", "INE", "COMPROBANTE_DOMICILIO", "CONSTANCIA_FISCAL", "CURP", "TITULO", "CEDULA", "REGISTRO_PROFESIONAL", "INFO_BANCO"
-  fileUrl      String   // URL del archivo almacenado
-  fileName     String   // Nombre original del archivo
-  description  String?  // Breve descripción
-  uploadedAt   DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  teacherId   String
+  type        String // Ej. "CV", "ACTA_NACIMIENTO", "INE", "COMPROBANTE_DOMICILIO", "CONSTANCIA_FISCAL", "CURP", "TITULO", "CEDULA", "REGISTRO_PROFESIONAL", "INFO_BANCO"
+  fileUrl     String // URL del archivo almacenado
+  fileName    String // Nombre original del archivo
+  description String? // Breve descripción
+  uploadedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@unique([teacherId, type])
-  @@map("teacher_documents")
   @@index([teacherId])
+  @@map("teacher_documents")
 }
 
 // ============================================
 // MATERIAS/ASIGNATURAS
 // ============================================
 model Subject {
-  id            String   @id @default(cuid())
-  schoolId      String
-  name          String
-  code          String
-  description   String?
-  credits       Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  schoolId     String
+  careerId     String?
+  cuatrimestre Int?
+  name         String
+  code         String
+  description  String?
+  credits      Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relaciones
-  school        School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  assignments   TeacherSubjectGroup[]
+  school      School                @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  career      Career?               @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  assignments TeacherSubjectGroup[]
+  templates   TemplateSubject[]
 
   @@unique([schoolId, code])
-  @@map("subjects")
   @@index([schoolId])
+  @@index([careerId])
+  @@map("subjects")
+}
+
+// ============================================
+// NIVEL ACADÉMICO
+// ============================================
+model AcademicLevel {
+  id          String   @id @default(cuid())
+  schoolId    String
+  name        String // Ej. "Licenciaturas Ejecutivas"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school  School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  careers Career[]
+
+  @@index([schoolId])
+  @@map("academic_levels")
+}
+
+// ============================================
+// CARRERAS / PROGRAMAS
+// ============================================
+model Career {
+  id              String   @id @default(cuid())
+  schoolId        String
+  academicLevelId String
+  name            String // Ej. "Ingeniería en Sistemas Computacionales"
+  rvoe            String? // Ej. "RVOE/202177LISC"
+  durationMonths  Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  school        School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  academicLevel AcademicLevel @relation(fields: [academicLevelId], references: [id], onDelete: Cascade)
+  subjects      Subject[]
+  groups        Group[]
+
+  @@index([schoolId])
+  @@index([academicLevelId])
+  @@map("careers")
 }
 
 // ============================================
 // GRUPOS/GRADOS
 // ============================================
 model Group {
-  id              String   @id @default(cuid())
-  schoolId        String
-  name            String   // "1ro A", "2do B", etc.
-  grade           Int
-  section         String?
-  totalStudents   Int?
-  academicYear    String   // "2025-2026"
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  schoolId      String
+  careerId      String?
+  name          String // "1ro A", "2do B", etc.
+  grade         Int
+  cuatrimestre  Int?
+  section       String?
+  modality      String? // "SMART" o "EJECUTIVA"
+  totalStudents Int?
+  academicYear  String // "2025-2026"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relaciones
-  school          School                 @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  students        Student[]
-  assignments     TeacherSubjectGroup[]
+  school      School                @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  career      Career?               @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  students    Student[]
+  assignments TeacherSubjectGroup[]
+  templates   GroupTemplate[]
 
   @@unique([schoolId, name, academicYear])
-  @@map("groups")
   @@index([schoolId])
+  @@index([careerId])
+  @@map("groups")
+}
+
+// ============================================
+// PLANTILLAS DE GRUPO
+// ============================================
+model GroupTemplate {
+  id        String   @id @default(cuid())
+  groupId   String
+  modulo    Int
+  turno     String
+  classroom String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group    Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subjects TemplateSubject[]
+
+  @@index([groupId])
+  @@map("group_templates")
+}
+
+// ============================================
+// MATERIAS DE LA PLANTILLA
+// ============================================
+model TemplateSubject {
+  id         String   @id @default(cuid())
+  templateId String
+  subjectId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  template GroupTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  subject  Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, subjectId])
+  @@index([templateId])
+  @@index([subjectId])
+  @@map("template_subjects")
 }
 
 // ============================================
 // ALUMNOS/ESTUDIANTES
 // ============================================
 model Student {
-  id                  String   @id @default(cuid())
-  schoolId            String
-  groupId             String
-  firstName           String
-  lastName            String
-  registrationNumber  String   @unique
-  dateOfBirth         DateTime?
-  email               String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String    @id @default(cuid())
+  schoolId           String
+  groupId            String
+  firstName          String
+  lastName           String
+  registrationNumber String    @unique
+  dateOfBirth        DateTime?
+  email              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   // Relaciones
-  school              School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  group               Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  attendance          Attendance[]
+  school     School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  group      Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendance Attendance[]
 
-  @@map("students")
   @@index([schoolId])
   @@index([groupId])
   @@index([registrationNumber])
+  @@map("students")
 }
 
 // ============================================
 // DISPONIBILIDAD DE MAESTROS
 // ============================================
 model TeacherAvailability {
-  id            String   @id @default(cuid())
-  teacherId     String
-  dayOfWeek     Int      // 0=Lunes, 1=Martes, ..., 5=Sábado, 6=Domingo
-  startTime     DateTime // Hora de inicio
-  endTime       DateTime // Hora de fin
-  isAvailable   Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(cuid())
+  teacherId   String
+  dayOfWeek   Int // 0=Lunes, 1=Martes, ..., 5=Sábado, 6=Domingo
+  startTime   DateTime // Hora de inicio
+  endTime     DateTime // Hora de fin
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relaciones
-  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
-  @@map("teacher_availability")
   @@index([teacherId])
+  @@map("teacher_availability")
 }
 
 // ============================================
 // ASIGNACIONES: Maestro - Materia - Grupo
 // ============================================
 model TeacherSubjectGroup {
-  id            String   @id @default(cuid())
-  teacherId     String
-  subjectId     String
-  groupId       String
-  scheduleDay   Int?     // Día de la semana
-  startTime     String?  // Ej. "08:00"
-  endTime       String?  // Ej. "09:30"
-  classroom     String?
-  academicYear  String
-  modulo        Int?     // Ej. 1 o 2
-  cuatrimestre  Int?     // Ej. 1
-  isAvailable   Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  teacherId    String
+  subjectId    String
+  groupId      String
+  scheduleDay  Int? // Día de la semana
+  startTime    String? // Ej. "08:00"
+  endTime      String? // Ej. "09:30"
+  classroom    String?
+  academicYear String
+  modulo       Int? // Ej. 1 o 2
+  cuatrimestre Int? // Ej. 1
+  isAvailable  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relaciones
-  teacher       Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  subject       Subject           @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  group         Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  attendance    Attendance[]
-  signatures    AttendanceSignature[]
+  teacher    Teacher               @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject    Subject               @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  group      Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendance Attendance[]
+  signatures AttendanceSignature[]
 
   @@unique([teacherId, subjectId, groupId, academicYear, scheduleDay, startTime])
-  @@map("teacher_subject_groups")
   @@index([teacherId])
   @@index([subjectId])
   @@index([groupId])
+  @@map("teacher_subject_groups")
 }
 
 // ============================================
 // CONTRATOS
 // ============================================
 model Contract {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   schoolId      String
   teacherId     String
   academicYear  String
-  contractType  String   // "full-time", "part-time", "hourly"
+  contractType  String // "full-time", "part-time", "hourly"
   startDate     DateTime
   endDate       DateTime
-  salary        Decimal  @db.Decimal(10, 2)
+  salary        Decimal   @db.Decimal(10, 2)
   signedDate    DateTime?
-  isSigned      Boolean  @default(false)
+  isSigned      Boolean   @default(false)
   signaturePath String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relaciones
-  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  school  School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
-  @@map("contracts")
   @@index([teacherId])
   @@index([schoolId])
+  @@map("contracts")
 }
 
 // ============================================
 // ASISTENCIA
 // ============================================
 model Attendance {
-  id                      String   @id @default(cuid())
-  teacherSubjectGroupId   String
-  studentId               String
-  sessionDate             DateTime
-  status                  String   // "present", "absent", "late", "excused"
-  notes                   String?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  teacherSubjectGroupId String
+  studentId             String
+  sessionDate           DateTime
+  status                String // "present", "absent", "late", "excused"
+  notes                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   // Relaciones
-  teacherSubjectGroup     TeacherSubjectGroup @relation(fields: [teacherSubjectGroupId], references: [id], onDelete: Cascade)
-  student                 Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  signature               AttendanceSignature?
-  
-  schoolId                String
-  school                  School              @relation(fields: [schoolId], references: [id])
+  teacherSubjectGroup TeacherSubjectGroup  @relation(fields: [teacherSubjectGroupId], references: [id], onDelete: Cascade)
+  student             Student              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  signature           AttendanceSignature?
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
 
   @@unique([teacherSubjectGroupId, studentId, sessionDate])
-  @@map("attendance")
   @@index([teacherSubjectGroupId])
   @@index([studentId])
+  @@map("attendance")
 }
 
 // ============================================
 // FIRMAS DE ASISTENCIA
 // ============================================
 model AttendanceSignature {
-  id                      String   @id @default(cuid())
-  attendanceId            String   @unique
-  teacherSubjectGroupId   String
-  teacherSignaturePath    String?
-  principalSignaturePath  String?
-  signedDate              DateTime?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                     String    @id @default(cuid())
+  attendanceId           String    @unique
+  teacherSubjectGroupId  String
+  teacherSignaturePath   String?
+  principalSignaturePath String?
+  signedDate             DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   // Relaciones
-  attendance              Attendance          @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  teacherSubjectGroup     TeacherSubjectGroup @relation(fields: [teacherSubjectGroupId], references: [id], onDelete: Cascade)
+  attendance          Attendance          @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  teacherSubjectGroup TeacherSubjectGroup @relation(fields: [teacherSubjectGroupId], references: [id], onDelete: Cascade)
 
-  @@map("attendance_signatures")
   @@index([attendanceId])
   @@index([teacherSubjectGroupId])
+  @@map("attendance_signatures")
 }
 
 // ============================================
 // USUARIOS (para autenticación local)
 // ============================================
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  password      String   // Debe estar hasheado
-  role          String   @default("teacher") // admin, teacher, principal
-  firstName     String?
-  lastName      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  lastLogin     DateTime?
-  status        String   @default("active") // active, inactive, blocked
-  failedAttempts Int     @default(0)
-  blockReason   String?
+  id             String    @id @default(cuid())
+  email          String    @unique
+  password       String // Debe estar hasheado
+  role           String    @default("teacher") // admin, teacher, principal
+  firstName      String?
+  lastName       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastLogin      DateTime?
+  status         String    @default("active") // active, inactive, blocked
+  failedAttempts Int       @default(0)
+  blockReason    String?
 
   // Relaciones
   createdTeachers Teacher[] @relation("TeacherCreator")
 
-  @@map("users")
   @@index([email])
+  @@map("users")
 }

@@ -4,14 +4,11 @@ import React, { useState, useMemo } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
 import {
-  MOCK_ACADEMIC_LEVELS,
-  MOCK_CAREERS,
-  MOCK_GROUPS,
-  MOCK_SUBJECTS,
   CUATRIMESTRES,
   MOCK_BIMESTRES,
   MockGroupTemplate,
 } from '@/lib/mockData';
+import { useCurriculum } from '@/context/CurriculumContext';
 
 interface TemplateCreatorModalProps {
   isOpen: boolean;
@@ -29,16 +26,17 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
   const [turno, setTurno] = useState('');
   const [classroom, setClassroom] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const { academicLevels = [], careers = [], subjects = [], groups = [], refreshData = () => {} } = useCurriculum() || {};
 
   React.useEffect(() => {
     if (isOpen && initialData) {
-      const group = MOCK_GROUPS.find(g => g.id === initialData.groupId);
+      const group = groups.find((g: any) => g.id === initialData.groupId);
       if (group) {
-        const career = MOCK_CAREERS.find(c => c.id === group.carreraId);
+        const career = careers.find((c: any) => c.id === group.careerId);
         if (career) {
           setNivelAcademico(career.academicLevelId);
         }
-        setCarreraId(group.carreraId);
+        setCarreraId(group.careerId);
         setCuatrimestre(group.cuatrimestre.toString());
         setGroupId(initialData.groupId);
         setModulo(initialData.modulo.toString());
@@ -60,24 +58,24 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
 
   // Filtrar carreras por nivel
   const filteredCareers = useMemo(() => {
-    return MOCK_CAREERS.filter(c => !nivelAcademico || c.academicLevelId === nivelAcademico);
-  }, [nivelAcademico]);
+    return careers.filter((c: any) => !nivelAcademico || c.academicLevelId === nivelAcademico);
+  }, [nivelAcademico, careers]);
 
   // Filtrar grupos por carrera y cuatrimestre
   const filteredGroups = useMemo(() => {
-    return MOCK_GROUPS.filter(g => 
-      (!carreraId || g.carreraId === carreraId) && 
+    return groups.filter((g: any) => 
+      (!carreraId || g.careerId === carreraId) && 
       (!cuatrimestre || g.cuatrimestre === Number(cuatrimestre))
     );
-  }, [carreraId, cuatrimestre]);
+  }, [carreraId, cuatrimestre, groups]);
 
   // Materias de la carrera seleccionada
   const availableSubjects = useMemo(() => {
     if (!carreraId) return [];
-    return MOCK_SUBJECTS.filter(s => 
+    return subjects.filter((s: any) => 
       s.careerId === carreraId
     );
-  }, [carreraId]);
+  }, [carreraId, subjects]);
 
   const handleToggleSubject = (subjectId: string) => {
     setSelectedSubjects(prev => 
@@ -128,7 +126,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
             }}
             options={[
               { value: '', label: 'Seleccionar...' },
-              ...MOCK_ACADEMIC_LEVELS.map(al => ({ value: al.id, label: al.name }))
+              ...academicLevels.map((al: any) => ({ value: al.id, label: al.name }))
             ]}
           />
           <Select

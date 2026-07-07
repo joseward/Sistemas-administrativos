@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { MOCK_GROUP_TEMPLATES, MOCK_SUBJECTS, DAYS_OF_WEEK, getGroupById } from '@/lib/mockData';
+import { MOCK_GROUP_TEMPLATES, DAYS_OF_WEEK, getGroupById } from '@/lib/mockData';
 
-export function PrintGroups({ assignments, teachers, isCapturing }: { assignments: any[], teachers: any[], isCapturing?: boolean }) {
+export function PrintGroups({ assignments, teachers, subjects, isCapturing }: { assignments: any[], teachers: any[], subjects: any[], isCapturing?: boolean }) {
   // Solo los templates que tienen asignaciones en el arreglo actual (filtrado)
   const activeGroups = Array.from(new Set(assignments.map(a => a.groupId)));
 
@@ -55,7 +55,7 @@ export function PrintGroups({ assignments, teachers, isCapturing }: { assignment
                     </thead>
                     <tbody>
                       {dayAssignments.map((a, index) => {
-                        const subject = MOCK_SUBJECTS.find(s => s.id === a.subjectId);
+                        const subject = subjects.find((s: any) => s.id === a.subjectId);
                         const teacher = teachers.find(t => t.id === a.teacherId);
                         return (
                           <tr key={index}>

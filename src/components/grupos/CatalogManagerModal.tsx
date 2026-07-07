@@ -7,11 +7,9 @@ import {
   CUATRIMESTRES,
   MOCK_CARRERAS,
   MOCK_BIMESTRES,
-  MOCK_YEARS,
-  MOCK_SUBJECTS,
-  MOCK_GROUPS,
-  MOCK_CAREERS
+  MOCK_YEARS
 } from '@/lib/mockData';
+import { useCurriculum } from '@/context/CurriculumContext';
 
 interface CatalogManagerModalProps {
   isOpen: boolean;
@@ -29,6 +27,8 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
   const [newValue, setNewValue] = useState('');
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
+  
+  const { careers = [], subjects = [], groups = [], refreshData = () => {} } = useCurriculum() || {};
 
   const handleAdd = () => {
     if (!newValue.trim()) return;
@@ -42,11 +42,20 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     } else if (activeTab === 'cuatrimestres') {
       CUATRIMESTRES.push({ value: CUATRIMESTRES.length + 1, label: newValue.trim() });
     } else if (activeTab === 'materias') {
-      if (!selectedCarreraId) { alert('Selecciona una carrera para la materia'); return; }
-      MOCK_SUBJECTS.push({ id: `mock-s${Date.now()}`, name: newValue.trim(), code: `MAT-${Date.now()}`.substring(0,8), careerId: selectedCarreraId, cuatrimestre: Number(selectedCuatri) || 1 });
+      alert("Para agregar materias, se requiere un módulo de administración de base de datos.");
     } else if (activeTab === 'grupos') {
       if (!selectedCarreraId || !selectedCuatri) { alert('Selecciona una carrera y cuatrimestre para el grupo'); return; }
-      MOCK_GROUPS.push({ id: `g-${Date.now()}`, name: newValue.trim(), carreraId: selectedCarreraId, cuatrimestre: Number(selectedCuatri), section: 'A', shift: 'Matutino', campusId: 'pdc' });
+      fetch('/api/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newValue.trim(),
+          careerId: selectedCarreraId,
+          cuatrimestre: Number(selectedCuatri),
+          section: 'A',
+          modality: 'SMART',
+        })
+      }).then(() => refreshData());
     }
     
     setNewValue('');
@@ -67,9 +76,9 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     } else if (activeTab === 'cuatrimestres') {
       CUATRIMESTRES[originalIndex].label = editValue.trim();
     } else if (activeTab === 'materias') {
-      MOCK_SUBJECTS[originalIndex].name = editValue.trim();
+      alert("Edición de materias deshabilitada en esta vista.");
     } else if (activeTab === 'grupos') {
-      MOCK_GROUPS[originalIndex].name = editValue.trim();
+      alert("Edición de grupos deshabilitada en esta vista.");
     }
     
     setEditingIndex(null);
@@ -89,9 +98,12 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     } else if (activeTab === 'cuatrimestres') {
       CUATRIMESTRES.splice(originalIndex, 1);
     } else if (activeTab === 'materias') {
-      MOCK_SUBJECTS.splice(originalIndex, 1);
+      alert("Eliminación de materias deshabilitada en esta vista.");
     } else if (activeTab === 'grupos') {
-      MOCK_GROUPS.splice(originalIndex, 1);
+      const gId = groups[originalIndex]?.id;
+      if (gId) {
+        fetch(`/api/groups?id=${gId}`, { method: 'DELETE' }).then(() => refreshData());
+      }
     }
     onSuccess();
   };
@@ -105,13 +117,13 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     if (activeTab === 'cuatrimestres') items = CUATRIMESTRES.map((c, i) => ({ display: c.label, originalIndex: i }));
     
     if (activeTab === 'materias') {
-      MOCK_SUBJECTS.forEach((s, i) => {
+      subjects.forEach((s: any, i: number) => {
          if (!selectedCarreraId || s.careerId === selectedCarreraId) items.push({ display: s.name, originalIndex: i });
       });
     }
     if (activeTab === 'grupos') {
-      MOCK_GROUPS.forEach((g, i) => {
-         if ((!selectedCarreraId || g.carreraId === selectedCarreraId) && (!selectedCuatri || g.cuatrimestre.toString() === selectedCuatri)) {
+      groups.forEach((g: any, i: number) => {
+         if ((!selectedCarreraId || g.careerId === selectedCarreraId) && (!selectedCuatri || g.cuatrimestre.toString() === selectedCuatri)) {
             items.push({ display: g.name, originalIndex: i });
          }
       });
@@ -200,8 +212,8 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
               value={selectedCarreraId}
               onChange={(e) => setSelectedCarreraId(e.target.value)}
               options={[
-                { value: '', label: 'Seleccionar...' },
-                ...MOCK_CAREERS.map(c => ({ value: c.id, label: c.name }))
+                { value: '', label: 'Todas las Carreras' },
+                ...careers.map((c: any) => ({ value: c.id, label: c.name }))
               ]}
             />
             {activeTab === 'grupos' && (

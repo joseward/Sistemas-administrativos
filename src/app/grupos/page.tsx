@@ -7,23 +7,18 @@ import { cn } from '@/lib/utils';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import {
-  MOCK_SUBJECTS,
-  MOCK_GROUPS,
   DAYS_OF_WEEK,
   CUATRIMESTRES,
-  MOCK_ACADEMIC_LEVELS,
-  MOCK_CAREERS,
   MOCK_BIMESTRES,
   MOCK_YEARS,
-  getSubjectById,
-  getGroupById,
   MOCK_ASSIGNMENTS
 } from '@/lib/mockData';
 import { Select } from '@/components/ui/Select';
 import { CatalogManagerModal } from '@/components/grupos/CatalogManagerModal';
 import { AssignmentEditModal } from '@/components/grupos/AssignmentEditModal';
 import { TemplateCreatorModal } from '@/components/grupos/TemplateCreatorModal';
-import { MOCK_GROUP_TEMPLATES, MockGroupTemplate } from '@/lib/mockData';
+import { MockGroupTemplate } from '@/lib/mockData';
+import { useCurriculum } from '@/context/CurriculumContext';
 
 export default function GruposPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -46,7 +41,7 @@ export default function GruposPage() {
   const [templateToEdit, setTemplateToEdit] = useState<MockGroupTemplate | null>(null);
 
   const [assignments, setAssignments] = useState<any[]>(MOCK_ASSIGNMENTS);
-  const [templates, setTemplates] = useState<MockGroupTemplate[]>(MOCK_GROUP_TEMPLATES);
+  const { academicLevels = [], careers = [], subjects = [], groups = [], templates = [], refreshData = () => {} } = useCurriculum() || {};
 
   useEffect(() => {
     fetch('/api/teachers')
@@ -87,7 +82,7 @@ export default function GruposPage() {
     templates.forEach((tpl) => {
       if (filters.modulo && tpl.modulo !== Number(filters.modulo)) return;
       
-      const group = getGroupById(tpl.groupId);
+      const group = groups.find(g => g.id === tpl.groupId);
       if (!group) return;
       
       if (filters.cuatrimestre && group.cuatrimestre !== Number(filters.cuatrimestre)) return;
@@ -95,14 +90,15 @@ export default function GruposPage() {
       
       // Filtrar por nivel académico si aplica
       if (filters.nivelAcademico) {
-        const groupCareer = MOCK_CAREERS.find(c => c.id === group.carreraId);
+        const groupCareer = careers.find(c => c.id === group.carreraId);
         if (!groupCareer || groupCareer.academicLevelId !== filters.nivelAcademico) return;
       }
 
       if (filters.carreraId && group.carreraId !== filters.carreraId) return;
 
       const cuatriLabel = CUATRIMESTRES.find(c => c.value === group.cuatrimestre)?.label || `${group.cuatrimestre}er Cuatrimestre`;
-      const groupKey = `${group.carrera} - ${cuatriLabel} - Grupo ${group.name}`;
+      const carreraName = group.career?.name || 'Carrera';
+      const groupKey = `${carreraName} - ${cuatriLabel} - Grupo ${group.name}`;
       
       if (!grouped.has(groupKey)) {
         grouped.set(groupKey, {
@@ -153,7 +149,7 @@ export default function GruposPage() {
     });
     
     return result;
-  }, [templates, assignments, filters, refreshTick]);
+  }, [templates, assignments, filters, groups, careers]);
 
   // Aplicar filtro de búsqueda de docente
   const filteredGroups = useMemo(() => {
@@ -178,8 +174,8 @@ export default function GruposPage() {
     const currentModulo = template.modulo;
     
     // Todas las materias del cuatrimestre actual
-    const currentCuatriSubjects = MOCK_SUBJECTS.filter(s => 
-      s.carreraId === group.carreraId && 
+    const currentCuatriSubjects = subjects.filter(s => 
+      s.careerId === group.carreraId && 
       s.cuatrimestre === currentCuatri
     );
 
@@ -205,8 +201,8 @@ export default function GruposPage() {
       nextCuatri = currentCuatri + 1;
       nextModulo = 1;
       isNextCuatri = true;
-      nextSubjects = MOCK_SUBJECTS.filter(s => 
-        s.carreraId === group.carreraId && 
+      nextSubjects = subjects.filter(s => 
+        s.careerId === group.carreraId && 
         s.cuatrimestre === nextCuatri
       ).slice(0, 3);
     }
@@ -248,8 +244,21 @@ export default function GruposPage() {
       createdAt: new Date().toISOString()
     };
 
-    setTemplates([...templates, newTemplate]);
-    setPromotePreview(null);
+    fetch('/api/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        groupId: newTemplate.groupId,
+        modulo: newTemplate.modulo,
+        turno: newTemplate.turno,
+        classroom: newTemplate.classroom,
+        subjectIds: newTemplate.subjectIds,
+      })
+    }).then(res => res.json())
+      .then(data => {
+        setPromotePreview(null);
+        refreshData();
+      });
   };
 
   const handleEditTemplate = (template: MockGroupTemplate) => {
@@ -257,11 +266,12 @@ export default function GruposPage() {
     setIsTemplateModalOpen(true);
   };
 
-  const handleDeleteTemplate = (templateId: string) => {
-    if (confirm("¿Estás seguro de que deseas eliminar esta plantilla? Las asignaciones en los horarios podrían verse afectadas.")) {
-      setTemplates(prev => prev.filter(t => t.id !== templateId));
-      const idx = MOCK_GROUP_TEMPLATES.findIndex(t => t.id === templateId);
-      if (idx !== -1) MOCK_GROUP_TEMPLATES.splice(idx, 1);
+  const handleRemoveTemplate = (templateId: string) => {
+    if (confirm("¿Estás seguro de eliminar esta plantilla? (No eliminará las asignaciones de horarios individuales, pero se ocultarán de esta vista si no hay plantilla).")) {
+      fetch(`/api/templates?id=${templateId}`, { method: 'DELETE' })
+        .then(() => {
+          refreshData();
+        });
     }
   };
 
@@ -367,26 +377,24 @@ export default function GruposPage() {
               ]}
             />
             <Select
-              label="Nivel Académico"
+              className="w-[180px]"
               value={filters.nivelAcademico}
               onChange={(e) => {
-                setFilters({ ...filters, nivelAcademico: e.target.value, carreraId: '' }); // Reset carrera on level change
+                setFilters({...filters, nivelAcademico: e.target.value, carreraId: ''});
               }}
               options={[
-                { value: '', label: 'Todos los niveles' },
-                ...MOCK_ACADEMIC_LEVELS.map(al => ({ value: al.id, label: al.name }))
+                { value: '', label: 'Nivel: Seleccionar...' },
+                ...academicLevels.map((al: any) => ({ value: al.id, label: al.name }))
               ]}
             />
             <Select
-              label="Carrera / Programa"
+              className="w-[180px]"
               value={filters.carreraId}
-              onChange={(e) => setFilters({ ...filters, carreraId: e.target.value })}
-              disabled={!filters.nivelAcademico && false} 
+              onChange={(e) => setFilters({...filters, carreraId: e.target.value})}
+              disabled={!filters.nivelAcademico}
               options={[
-                { value: '', label: 'Todas las carreras' },
-                ...MOCK_CAREERS
-                  .filter(c => !filters.nivelAcademico || c.academicLevelId === filters.nivelAcademico)
-                  .map(c => ({ value: c.id, label: c.name }))
+                { value: '', label: 'Carrera: Seleccionar...' },
+                ...careers.filter((c: any) => c.academicLevelId === filters.nivelAcademico).map((c: any) => ({ value: c.id, label: c.name }))
               ]}
             />
           </div>
@@ -450,7 +458,7 @@ export default function GruposPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                     </button>
                     <button 
-                      onClick={() => handleDeleteTemplate(g.template.id)}
+                      onClick={() => handleRemoveTemplate(g.template.id)}
                       className="text-gray-400 hover:text-red-600 transition-colors p-1.5 rounded hover:bg-red-50"
                       title="Eliminar Plantilla"
                     >
@@ -544,8 +552,7 @@ export default function GruposPage() {
         isOpen={isCatalogModalOpen} 
         onClose={() => setIsCatalogModalOpen(false)} 
         onSuccess={() => {
-          setIsCatalogModalOpen(false);
-          setRefreshTick(t => t + 1);
+          refreshData();
         }}
       />
 
