@@ -382,23 +382,21 @@ export default function GruposPage() {
               onChange={(e) => {
                 setFilters({...filters, nivelAcademico: e.target.value, carreraId: ''});
               }}
-            >
-              <option value="">Nivel: Seleccionar...</option>
-              {academicLevels.map(al => (
-                <option key={al.id} value={al.id}>{al.name}</option>
-              ))}
-            </Select>
+              options={[
+                { value: '', label: 'Nivel: Seleccionar...' },
+                ...academicLevels.map((al: any) => ({ value: al.id, label: al.name }))
+              ]}
+            />
             <Select
               className="w-[180px]"
               value={filters.carreraId}
               onChange={(e) => setFilters({...filters, carreraId: e.target.value})}
               disabled={!filters.nivelAcademico}
-            >
-              <option value="">Carrera: Seleccionar...</option>
-              {careers.filter(c => c.academicLevelId === filters.nivelAcademico).map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </Select>
+              options={[
+                { value: '', label: 'Carrera: Seleccionar...' },
+                ...careers.filter((c: any) => c.academicLevelId === filters.nivelAcademico).map((c: any) => ({ value: c.id, label: c.name }))
+              ]}
+            />
           </div>
           
           <div className="mt-4 pt-4 border-t flex gap-4">

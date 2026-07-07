@@ -211,12 +211,11 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
               label="Filtrar por Carrera"
               value={selectedCarreraId}
               onChange={(e) => setSelectedCarreraId(e.target.value)}
-            >
-              <option value="">Todas las Carreras</option>
-              {careers.map((c: any) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </Select>
+              options={[
+                { value: '', label: 'Todas las Carreras' },
+                ...careers.map((c: any) => ({ value: c.id, label: c.name }))
+              ]}
+            />
             {activeTab === 'grupos' && (
               <Select
                 label="Filtrar por Cuatrimestre"
