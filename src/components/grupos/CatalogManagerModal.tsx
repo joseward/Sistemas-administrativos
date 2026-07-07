@@ -66,6 +66,7 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
             cuatrimestre: Number(selectedCuatri),
             section: 'A',
             modality: 'SMART',
+            academicYear: academicYears.length > 0 ? academicYears[0].value : '2026-2027',
           })
         });
       }
@@ -79,14 +80,7 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     }
   };
 
-  const handleSaveEdit = (originalIndex: number) => {
-    alert("Edición deshabilitada. Si deseas cambiar el nombre, elimina el elemento y vuelve a crearlo. Esto es para proteger la consistencia de los datos históricos.");
-    setEditingIndex(null);
-    setEditValue('');
-  };
-
   const handleRemove = async (originalIndex: number) => {
-    if (!confirm('¿Seguro que quieres eliminar este elemento?')) return;
     
     let url = '';
     
@@ -141,29 +135,8 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
       <div className="space-y-2 max-h-60 overflow-y-auto pr-2 mt-4">
         {items.map((item) => (
           <div key={item.originalIndex} className="flex items-center justify-between p-2 bg-gray-50 border rounded text-sm">
-            {editingIndex === item.originalIndex ? (
-              <div className="flex items-center gap-2 flex-1 mr-2">
-                <Input 
-                  value={editValue} 
-                  onChange={(e) => setEditValue(e.target.value)} 
-                  className="flex-1 h-8"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit(item.originalIndex)}
-                  autoFocus
-                />
-                <button onClick={() => handleSaveEdit(item.originalIndex)} className="text-green-600 font-bold hover:text-green-800">✓</button>
-                <button onClick={() => setEditingIndex(null)} className="text-gray-500 font-bold hover:text-gray-700">✕</button>
-              </div>
-            ) : (
-              <>
                 <span>{item.display}</span>
                 <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => { setEditingIndex(item.originalIndex); setEditValue(item.display); }}
-                    className="text-blue-500 hover:text-blue-700 px-2 font-bold"
-                    title="Editar"
-                  >
-                    ✎
-                  </button>
                   <button 
                     onClick={() => handleRemove(item.originalIndex)}
                     className="text-red-500 hover:text-red-700 px-2 font-bold"
@@ -172,8 +145,6 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
                     ×
                   </button>
                 </div>
-              </>
-            )}
           </div>
         ))}
         {items.length === 0 && (

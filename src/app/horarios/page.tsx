@@ -186,9 +186,8 @@ function HorariosContent() {
           prevBtnText: '← Anterior',
           doneBtnText: '¡Entendido!',
           steps: [
-            { element: '#btn-nueva-asignacion', popover: { title: 'Nueva Asignación', description: 'Comienza haciendo clic aquí para cruzar un Maestro con una Materia de una Plantilla.', side: "left", align: 'start' }},
-            { element: '#btn-generar-pdfs', popover: { title: 'Imprimir Horarios', description: 'Una vez asignados, usa este botón para generar los PDFs formateados por cada grupo listos para descargar.', side: "bottom", align: 'start' }},
-            { element: '#filtros-horarios', popover: { title: 'Filtros Flexibles', description: 'Puedes ver cómo queda el horario filtrando por Maestro o por Grupo en estas vistas.', side: "bottom", align: 'start' }}
+            { element: '#filtros-horarios', popover: { title: 'Vista Inteligente', description: 'Usa los filtros para ver solo el horario de un maestro específico o de un grupo particular.', side: "bottom", align: 'start' }},
+            { element: '#vistas-horarios', popover: { title: 'Cambio de Vista', description: 'Alterna entre la Vista Semanal (tipo calendario) y la Vista de Tabla clásica.', side: "bottom", align: 'start' }}
           ]
         });
         driverObj.drive();
@@ -497,27 +496,20 @@ function HorariosContent() {
               <div className="flex flex-col px-2 border-r border-gray-200">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Para Alumnos</span>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => handlePrint('groups')} className="h-8 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50" title="PDF Alumnos">📄 PDF {filterGroup ? '(1)' : '(Todos)'}</Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('groups')} disabled={isCapturing} className="h-8 px-2 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50" title="PNG Alumnos">{isCapturing && printMode === 'groups' ? '⏳...' : `🖼️ PNG ${filterGroup ? '(1 Grupo)' : '(Todos)'}`}</Button>
+                  <Button size="sm" variant="outline" onClick={() => handlePrint('groups')} className="h-8 px-4 font-bold text-xs border-red-200 text-red-600 hover:bg-red-50 shadow-sm" title="PDF Alumnos">PDF</Button>
+                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('groups')} disabled={isCapturing} className="h-8 px-4 font-bold text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50 shadow-sm" title="PNG Alumnos">{isCapturing && printMode === 'groups' ? '...' : 'PNG'}</Button>
                 </div>
               </div>
               <div className="flex flex-col px-2">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Para Docentes</span>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => handlePrint('teachers')} className="h-8 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50" title="PDF Maestros">📄 PDF {filterTeacher ? '(1)' : '(Todos)'}</Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('teachers')} disabled={isCapturing} className="h-8 px-2 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50" title="PNG Maestros">{isCapturing && printMode === 'teachers' ? '⏳...' : `🖼️ PNG ${filterTeacher ? '(1 Maestro)' : '(Todos)'}`}</Button>
+                  <Button size="sm" variant="outline" onClick={() => handlePrint('teachers')} className="h-8 px-4 font-bold text-xs border-red-200 text-red-600 hover:bg-red-50 shadow-sm" title="PDF Maestros">PDF</Button>
+                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('teachers')} disabled={isCapturing} className="h-8 px-4 font-bold text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50 shadow-sm" title="PNG Maestros">{isCapturing && printMode === 'teachers' ? '...' : 'PNG'}</Button>
                 </div>
               </div>
             </div>
 
-            <Button
-              id="btn-nueva-asignacion"
-              size="lg"
-              onClick={() => setIsFormOpen(true)}
-              className="shadow-lg bg-[#1877f2] hover:bg-blue-600"
-            >
-              + Nueva Asignación
-            </Button>
+
           </div>
         </div>
 

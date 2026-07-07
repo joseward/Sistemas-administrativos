@@ -17,11 +17,11 @@ import { useCurriculum } from '@/context/CurriculumContext';
 export default function GruposPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [filters, setFilters] = useState({
+    academicYear: 'Todos los años',
     modulo: '1',
     cuatrimestre: '',
-    academicYear: '2026-2027',
     nivelAcademico: '',
-    carreraId: '',
+    careerId: '',
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
@@ -80,17 +80,17 @@ export default function GruposPage() {
       if (!group) return;
       
       if (filters.cuatrimestre && group.cuatrimestre !== Number(filters.cuatrimestre)) return;
-      if (filters.academicYear && group.academicYear !== filters.academicYear) return;
+      if (filters.academicYear && filters.academicYear !== 'Todos los años' && group.academicYear !== filters.academicYear) return;
       
       // Filtrar por nivel académico si aplica
       if (filters.nivelAcademico) {
-        const groupCareer = careers.find(c => c.id === group.carreraId);
+        const groupCareer = careers.find(c => c.id === group.careerId);
         if (!groupCareer || groupCareer.academicLevelId !== filters.nivelAcademico) return;
       }
 
-      if (filters.carreraId && group.carreraId !== filters.carreraId) return;
+      if (filters.carreraId && group.careerId !== filters.carreraId) return;
 
-      const cuatriLabel = CUATRIMESTRES.find(c => c.value === group.cuatrimestre)?.label || `${group.cuatrimestre}er Cuatrimestre`;
+      const cuatriLabel = cuatrimestres.find((c: any) => c.value === group.cuatrimestre)?.label || `${group.cuatrimestre}er Cuatrimestre`;
       const carreraName = group.career?.name || 'Carrera';
       const groupKey = `${carreraName} - ${cuatriLabel} - Grupo ${group.name}`;
       
@@ -169,7 +169,7 @@ export default function GruposPage() {
     
     // Todas las materias del cuatrimestre actual
     const currentCuatriSubjects = subjects.filter(s => 
-      s.careerId === group.carreraId && 
+      s.careerId === group.careerId && 
       s.cuatrimestre === currentCuatri
     );
 
@@ -196,7 +196,7 @@ export default function GruposPage() {
       nextModulo = 1;
       isNextCuatri = true;
       nextSubjects = subjects.filter(s => 
-        s.careerId === group.carreraId && 
+        s.careerId === group.careerId && 
         s.cuatrimestre === nextCuatri
       ).slice(0, 3);
     }
