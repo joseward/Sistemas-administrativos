@@ -55,12 +55,33 @@ model Teacher {
   availability      TeacherAvailability[]
   assignments       TeacherSubjectGroup[]
   contracts         Contract[]
+  documents         TeacherDocument[]
   createdByUserId   String?
   createdByUser     User?                  @relation("TeacherCreator", fields: [createdByUserId], references: [id])
 
   @@map("teachers")
   @@index([schoolId])
   @@index([email])
+}
+
+// ============================================
+// DOCUMENTOS DEL MAESTRO
+// ============================================
+model TeacherDocument {
+  id           String   @id @default(cuid())
+  teacherId    String
+  type         String   // Ej. "CV", "ACTA_NACIMIENTO", "INE", "COMPROBANTE_DOMICILIO", "CONSTANCIA_FISCAL", "CURP", "TITULO", "CEDULA", "REGISTRO_PROFESIONAL", "INFO_BANCO"
+  fileUrl      String   // URL del archivo almacenado
+  fileName     String   // Nombre original del archivo
+  description  String?  // Breve descripción
+  uploadedAt   DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, type])
+  @@map("teacher_documents")
+  @@index([teacherId])
 }
 
 // ============================================

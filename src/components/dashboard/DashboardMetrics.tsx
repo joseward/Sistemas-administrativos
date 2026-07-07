@@ -8,15 +8,17 @@ export function DashboardMetrics() {
   const [assignments, setAssignments] = useState<any[]>([]);
   const [availability, setAvailability] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
+  const [docStats, setDocStats] = useState({ missingDocsCount: 0, completeDocsCount: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/assignments').then(res => res.json()),
       fetch('/api/availability').then(res => res.json()),
-      fetch('/api/teachers').then(res => res.json())
+      fetch('/api/teachers').then(res => res.json()),
+      fetch('/api/documents/stats').then(res => res.json())
     ])
-      .then(([assignData, availData, teacherData]) => {
+      .then(([assignData, availData, teacherData, docData]) => {
         if (assignData.success) {
           setAssignments(assignData.data);
         }
@@ -25,6 +27,9 @@ export function DashboardMetrics() {
         }
         if (teacherData.success) {
           setTeachers(teacherData.data);
+        }
+        if (docData?.success) {
+          setDocStats(docData.data);
         }
         setLoading(false);
       })
@@ -74,7 +79,7 @@ export function DashboardMetrics() {
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {/* Tarjeta Roja: Faltan Asignaciones */}
       <Link href="/horarios?view=table" className="bg-red-50 hover:bg-red-100 transition-colors rounded-xl p-6 border-l-4 border-red-500 shadow-sm flex flex-col justify-between cursor-pointer group">
         <div>
@@ -90,6 +95,15 @@ export function DashboardMetrics() {
           <p className="text-sm font-bold text-amber-700 uppercase tracking-wide group-hover:text-amber-900 transition-colors">Pendientes de Docentes</p>
           <h3 className="text-3xl font-black text-amber-900 mt-2">{missingAvailabilityCount}</h3>
           <p className="text-amber-800 text-sm mt-1">Maestros activos que no han enviado su disponibilidad</p>
+        </div>
+      </Link>
+
+      {/* Tarjeta Naranja: Faltan Documentos */}
+      <Link href="/documentos" className="bg-orange-50 hover:bg-orange-100 transition-colors rounded-xl p-6 border-l-4 border-orange-500 shadow-sm flex flex-col justify-between cursor-pointer group">
+        <div>
+          <p className="text-sm font-bold text-orange-700 uppercase tracking-wide group-hover:text-orange-900 transition-colors">Faltan Documentos</p>
+          <h3 className="text-3xl font-black text-orange-900 mt-2">{docStats.missingDocsCount}</h3>
+          <p className="text-orange-800 text-sm mt-1">Maestros con documentación incompleta</p>
         </div>
       </Link>
 

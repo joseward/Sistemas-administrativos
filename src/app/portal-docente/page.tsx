@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import prisma from '@/lib/prisma';
 import { TeacherScheduleEditor } from '@/components/portal-docente/TeacherScheduleEditor';
+import { TeacherDocumentUpload } from '@/components/portal-docente/TeacherDocumentUpload';
 
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
@@ -76,8 +77,9 @@ export default async function PortalDocentePage() {
         </div>
 
         {/* Área dinámica */}
-        <div className="min-h-[500px]">
+        <div className="min-h-[500px] flex flex-col gap-6">
           <TeacherScheduleEditor teacherId={teacherId} />
+          <TeacherDocumentUpload teacherId={teacherId} />
         </div>
 
       </main>
