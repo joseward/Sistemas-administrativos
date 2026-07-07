@@ -121,3 +121,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Error al guardar asignaciones' }, { status: 500 });
   }
 }
+
+// DELETE: Eliminar una asignación individual
+export async function DELETE(request: NextRequest) {
+  try {
+    const id = request.nextUrl.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'Se requiere id' }, { status: 400 });
+    }
+
+    await prisma.teacherSubjectGroup.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting assignment:', error);
+    return NextResponse.json({ success: false, error: 'Error al eliminar asignación' }, { status: 500 });
+  }
+}

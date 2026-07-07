@@ -265,12 +265,11 @@ export default function GruposPage() {
   };
 
   const handleRemoveTemplate = (templateId: string) => {
-    if (confirm("¿Estás seguro de eliminar esta plantilla? (No eliminará las asignaciones de horarios individuales, pero se ocultarán de esta vista si no hay plantilla).")) {
-      fetch(`/api/templates?id=${templateId}`, { method: 'DELETE' })
-        .then(() => {
-          refreshData();
-        });
-    }
+    fetch(`/api/templates?id=${templateId}`, { method: 'DELETE' })
+      .then(() => {
+        refreshData();
+      })
+      .catch(err => console.error('Error al eliminar plantilla:', err));
   };
 
   const handleSaveAssignment = (updatedAssignment: any) => {
@@ -285,18 +284,21 @@ export default function GruposPage() {
     setEditingAssignment(null);
   };
 
-  const handleRemoveAssignment = (assignmentId: string, templateId: string, subjectId: string) => {
-    if (!confirm('¿Seguro que quieres remover esta materia del grupo?')) return;
-    
-    // Remover de MOCK_ASSIGNMENTS
-    const aIndex = MOCK_ASSIGNMENTS.findIndex(a => a.id === assignmentId);
-    if (aIndex !== -1) MOCK_ASSIGNMENTS.splice(aIndex, 1);
-    setAssignments([...MOCK_ASSIGNMENTS]);
-
-    // Remover de template.subjectIds
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
-      template.subjectIds = template.subjectIds.filter(id => id !== subjectId);
+  const handleRemoveAssignment = async (assignmentId: string, templateId: string, subjectId: string) => {
+    try {
+      // Delete the assignment from the API if it exists
+      if (assignmentId && !assignmentId.startsWith('pending-')) {
+        await fetch(`/api/assignments?id=${assignmentId}`, { method: 'DELETE' });
+      }
+      // Remove subject from template via API
+      await fetch(`/api/templates/remove-subject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId, subjectId })
+      });
+      refreshData();
+    } catch (err) {
+      console.error('Error al eliminar asignación:', err);
     }
   };
 
