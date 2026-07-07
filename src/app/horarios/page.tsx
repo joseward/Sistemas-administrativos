@@ -1045,10 +1045,18 @@ function HorariosContent() {
     </div>
     
     {printMode === 'groups' && (
-      <PrintGroups assignments={filteredAssignments} teachers={teachers} isCapturing={isCapturing && printMode === 'groups'} />
+      <PrintGroups 
+        assignments={assignments.filter(a => filterGroup ? a.groupId === filterGroup : true)} 
+        teachers={teachers} 
+        isCapturing={isCapturing && printMode === 'groups'} 
+      />
     )}
     {printMode === 'teachers' && (
-      <PrintTeachers assignments={filteredAssignments} teachers={teachers} isCapturing={isCapturing && printMode === 'teachers'} />
+      <PrintTeachers 
+        assignments={assignments.filter(a => filterTeacher ? a.teacherId === filterTeacher : true)} 
+        teachers={teachers} 
+        isCapturing={isCapturing && printMode === 'teachers'} 
+      />
     )}
     </>
   );
