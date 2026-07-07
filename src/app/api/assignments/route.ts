@@ -16,6 +16,12 @@ export async function GET(request: NextRequest) {
       where: teacherId ? { teacherId } : undefined,
       include: {
         teacher: true,
+        subject: true,
+        group: {
+          include: {
+            career: true
+          }
+        },
       },
     });
 
