@@ -400,3 +400,38 @@ model User {
   @@index([email])
   @@map("users")
 }
+
+// ============================================
+// CATÁLOGOS GLOBALES
+// ============================================
+model AcademicYear {
+  id        String   @id @default(cuid())
+  value     String   @unique // Ej. "2026-2027"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("academic_years")
+}
+
+model Bimestre {
+  id        String   @id @default(cuid())
+  value     Int      @unique // Ej. 1, 2, 3
+  label     String   // Ej. "Módulo 1"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("bimestres")
+}
+
+model Cuatrimestre {
+  id        String   @id @default(cuid())
+  value     Int      @unique // Ej. 1, 2
+  label     String   // Ej. "1er Cuatrimestre (Ene-Abr)"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cuatrimestres")
+}

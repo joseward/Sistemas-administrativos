@@ -3,11 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
-import {
-  CUATRIMESTRES,
-  MOCK_BIMESTRES,
-  MockGroupTemplate,
-} from '@/lib/mockData';
+import { MockGroupTemplate } from '@/lib/mockData';
 import { useCurriculum } from '@/context/CurriculumContext';
 
 interface TemplateCreatorModalProps {
@@ -26,7 +22,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
   const [turno, setTurno] = useState('');
   const [classroom, setClassroom] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const { academicLevels = [], careers = [], subjects = [], groups = [], refreshData = () => {} } = useCurriculum() || {};
+  const { academicLevels = [], careers = [], subjects = [], groups = [], bimestres = [], cuatrimestres = [], refreshData = () => {} } = useCurriculum() || {};
 
   React.useEffect(() => {
     if (isOpen && initialData) {
@@ -155,7 +151,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
             }}
             options={[
               { value: '', label: 'Seleccionar...' },
-              ...CUATRIMESTRES.map(c => ({ value: c.value.toString(), label: c.label }))
+              ...cuatrimestres.map((c: any) => ({ value: c.value.toString(), label: c.label }))
             ]}
           />
           <Select
@@ -164,7 +160,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
             onChange={(e) => setModulo(e.target.value)}
             options={[
               { value: '', label: 'Seleccionar...' },
-              ...MOCK_BIMESTRES.map(b => ({ value: b.value.toString(), label: b.label }))
+              ...bimestres.map((b: any) => ({ value: b.value.toString(), label: b.label }))
             ]}
           />
         </div>

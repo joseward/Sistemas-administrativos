@@ -72,6 +72,38 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    
+    // First, delete existing subjects for this template
+    await prisma.templateSubject.deleteMany({
+      where: { templateId: body.id }
+    });
+
+    // Then update the template and recreate the subject relationships
+    const template = await prisma.groupTemplate.update({
+      where: { id: body.id },
+      data: {
+        groupId: body.groupId,
+        modulo: body.modulo,
+        turno: body.turno,
+        classroom: body.classroom,
+        subjects: {
+          create: body.subjectIds.map((id: string) => ({
+            subject: { connect: { id } }
+          }))
+        }
+      }
+    });
+
+    return NextResponse.json(template);
+  } catch (error) {
+    console.error('Error updating template:', error);
+    return NextResponse.json({ error: 'Failed to update template' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

@@ -3,12 +3,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
-import {
-  CUATRIMESTRES,
-  MOCK_CARRERAS,
-  MOCK_BIMESTRES,
-  MOCK_YEARS
-} from '@/lib/mockData';
+
 import { useCurriculum } from '@/context/CurriculumContext';
 
 interface CatalogManagerModalProps {
@@ -28,93 +23,106 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
   
-  const { careers = [], subjects = [], groups = [], refreshData = () => {} } = useCurriculum() || {};
+  const { careers = [], subjects = [], groups = [], academicYears = [], bimestres = [], cuatrimestres = [], refreshData = () => {} } = useCurriculum() || {};
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newValue.trim()) return;
 
-    if (activeTab === 'carreras') {
-      MOCK_CARRERAS.push(newValue.trim());
-    } else if (activeTab === 'años') {
-      MOCK_YEARS.push(newValue.trim());
-    } else if (activeTab === 'bimestres') {
-      MOCK_BIMESTRES.push({ value: MOCK_BIMESTRES.length + 1, label: newValue.trim() });
-    } else if (activeTab === 'cuatrimestres') {
-      CUATRIMESTRES.push({ value: CUATRIMESTRES.length + 1, label: newValue.trim() });
-    } else if (activeTab === 'materias') {
-      alert("Para agregar materias, se requiere un módulo de administración de base de datos.");
-    } else if (activeTab === 'grupos') {
-      if (!selectedCarreraId || !selectedCuatri) { alert('Selecciona una carrera y cuatrimestre para el grupo'); return; }
-      fetch('/api/groups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newValue.trim(),
-          careerId: selectedCarreraId,
-          cuatrimestre: Number(selectedCuatri),
-          section: 'A',
-          modality: 'SMART',
-        })
-      }).then(() => refreshData());
+    try {
+      if (activeTab === 'carreras') {
+        await fetch('/api/careers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newValue.trim() })
+        });
+      } else if (activeTab === 'años') {
+        await fetch('/api/academic-years', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: newValue.trim() })
+        });
+      } else if (activeTab === 'bimestres') {
+        await fetch('/api/bimestres', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: bimestres.length + 1, label: newValue.trim() })
+        });
+      } else if (activeTab === 'cuatrimestres') {
+        await fetch('/api/cuatrimestres', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: cuatrimestres.length + 1, label: newValue.trim() })
+        });
+      } else if (activeTab === 'materias') {
+        alert("Para agregar materias, se requiere un módulo de administración de base de datos.");
+      } else if (activeTab === 'grupos') {
+        if (!selectedCarreraId || !selectedCuatri) { alert('Selecciona una carrera y cuatrimestre para el grupo'); return; }
+        await fetch('/api/groups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newValue.trim(),
+            careerId: selectedCarreraId,
+            cuatrimestre: Number(selectedCuatri),
+            section: 'A',
+            modality: 'SMART',
+          })
+        });
+      }
+      
+      refreshData();
+      setNewValue('');
+      onSuccess();
+    } catch (err) {
+      console.error(err);
+      alert('Error al guardar');
     }
-    
-    setNewValue('');
-    onSuccess();
   };
 
   const handleSaveEdit = (originalIndex: number) => {
-    if (!editValue.trim()) return;
-
-    if (activeTab === 'carreras') {
-      const oldName = MOCK_CARRERAS[originalIndex];
-      const newName = editValue.trim();
-      MOCK_CARRERAS[originalIndex] = newName;
-    } else if (activeTab === 'años') {
-      MOCK_YEARS[originalIndex] = editValue.trim();
-    } else if (activeTab === 'bimestres') {
-      MOCK_BIMESTRES[originalIndex].label = editValue.trim();
-    } else if (activeTab === 'cuatrimestres') {
-      CUATRIMESTRES[originalIndex].label = editValue.trim();
-    } else if (activeTab === 'materias') {
-      alert("Edición de materias deshabilitada en esta vista.");
-    } else if (activeTab === 'grupos') {
-      alert("Edición de grupos deshabilitada en esta vista.");
-    }
-    
+    alert("Edición deshabilitada. Si deseas cambiar el nombre, elimina el elemento y vuelve a crearlo. Esto es para proteger la consistencia de los datos históricos.");
     setEditingIndex(null);
     setEditValue('');
-    onSuccess();
   };
 
-  const handleRemove = (originalIndex: number) => {
+  const handleRemove = async (originalIndex: number) => {
     if (!confirm('¿Seguro que quieres eliminar este elemento?')) return;
     
+    let url = '';
+    
     if (activeTab === 'carreras') {
-      MOCK_CARRERAS.splice(originalIndex, 1);
+      url = `/api/careers?id=${careers[originalIndex]?.id}`;
     } else if (activeTab === 'años') {
-      MOCK_YEARS.splice(originalIndex, 1);
+      url = `/api/academic-years?id=${academicYears[originalIndex]?.id}`;
     } else if (activeTab === 'bimestres') {
-      MOCK_BIMESTRES.splice(originalIndex, 1);
+      url = `/api/bimestres?id=${bimestres[originalIndex]?.id}`;
     } else if (activeTab === 'cuatrimestres') {
-      CUATRIMESTRES.splice(originalIndex, 1);
+      url = `/api/cuatrimestres?id=${cuatrimestres[originalIndex]?.id}`;
     } else if (activeTab === 'materias') {
       alert("Eliminación de materias deshabilitada en esta vista.");
+      return;
     } else if (activeTab === 'grupos') {
-      const gId = groups[originalIndex]?.id;
-      if (gId) {
-        fetch(`/api/groups?id=${gId}`, { method: 'DELETE' }).then(() => refreshData());
+      url = `/api/groups?id=${groups[originalIndex]?.id}`;
+    }
+
+    if (url && !url.includes('undefined')) {
+      try {
+        await fetch(url, { method: 'DELETE' });
+        refreshData();
+        onSuccess();
+      } catch (e) {
+        alert('Error al eliminar');
       }
     }
-    onSuccess();
   };
 
   const renderList = () => {
     let items: { display: string, originalIndex: number }[] = [];
     
-    if (activeTab === 'carreras') items = MOCK_CARRERAS.map((c, i) => ({ display: c, originalIndex: i }));
-    if (activeTab === 'años') items = MOCK_YEARS.map((y, i) => ({ display: y, originalIndex: i }));
-    if (activeTab === 'bimestres') items = MOCK_BIMESTRES.map((b, i) => ({ display: b.label, originalIndex: i }));
-    if (activeTab === 'cuatrimestres') items = CUATRIMESTRES.map((c, i) => ({ display: c.label, originalIndex: i }));
+    if (activeTab === 'carreras') items = careers.map((c: any, i: number) => ({ display: c.name, originalIndex: i }));
+    if (activeTab === 'años') items = academicYears.map((y: any, i: number) => ({ display: y.value, originalIndex: i }));
+    if (activeTab === 'bimestres') items = bimestres.map((b: any, i: number) => ({ display: b.label, originalIndex: i }));
+    if (activeTab === 'cuatrimestres') items = cuatrimestres.map((c: any, i: number) => ({ display: c.label, originalIndex: i }));
     
     if (activeTab === 'materias') {
       subjects.forEach((s: any, i: number) => {
@@ -223,7 +231,7 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
                 onChange={(e) => setSelectedCuatri(e.target.value)}
                 options={[
                   { value: '', label: 'Seleccionar...' },
-                  ...CUATRIMESTRES.map(c => ({ value: c.value.toString(), label: c.label }))
+                  ...cuatrimestres.map((c: any) => ({ value: c.value.toString(), label: c.label }))
                 ]}
               />
             )}
