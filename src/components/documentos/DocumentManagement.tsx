@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { Button, Modal } from '@/components/ui';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 interface DocumentManagementProps {
   teacher: any;
@@ -23,7 +25,44 @@ const REQUIRED_DOCUMENTS = [
 
 export function DocumentManagement({ teacher, requiredDocs }: DocumentManagementProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isZipping, setIsZipping] = useState(false);
   const documents = teacher.documents || [];
+
+  const handleDownloadAll = async () => {
+    if (documents.length === 0) return;
+    
+    setIsZipping(true);
+    try {
+      const zip = new JSZip();
+      
+      // Creamos una promesa para cada descarga
+      const downloadPromises = documents.map(async (doc: any) => {
+        try {
+          const response = await fetch(doc.fileUrl);
+          if (response.ok) {
+            const blob = await response.blob();
+            // Agregar al zip (el nombre será algo como: ACTA_NACIMIENTO_Jose_Cruz.pdf)
+            const extension = doc.fileName.split('.').pop() || 'pdf';
+            const safeName = `${doc.type}_${teacher.lastName}_${teacher.firstName}.${extension}`.replace(/\s+/g, '_');
+            zip.file(safeName, blob);
+          }
+        } catch (error) {
+          console.error(`Error descargando ${doc.fileName}:`, error);
+        }
+      });
+
+      await Promise.all(downloadPromises);
+      
+      // Generar y descargar el archivo ZIP
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `Expediente_${teacher.lastName}_${teacher.firstName}.zip`.replace(/\s+/g, '_'));
+    } catch (error) {
+      console.error('Error generando el ZIP:', error);
+      alert('Hubo un error al generar el archivo ZIP.');
+    } finally {
+      setIsZipping(false);
+    }
+  };
 
   return (
     <>
@@ -51,6 +90,19 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
               <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">Incompleto</span>
             )}
           </div>
+          
+          {documents.length > 0 && (
+            <div className="flex justify-end">
+              <Button 
+                variant="primary" 
+                onClick={handleDownloadAll} 
+                isLoading={isZipping}
+                className="text-sm"
+              >
+                📦 Descargar Todos (.ZIP)
+              </Button>
+            </div>
+          )}
 
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <table className="w-full text-left text-sm">
@@ -92,15 +144,25 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
                       </td>
                       <td className="p-3 text-right">
                         {doc ? (
-                          <a 
-                            href={doc.fileUrl}
-                            download={doc.fileName}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded transition-colors"
-                          >
-                            Descargar
-                          </a>
+                          <div className="flex items-center justify-end gap-2">
+                            <a 
+                              href={doc.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 rounded transition-colors"
+                              title="Ver en el navegador"
+                            >
+                              👁️ Ver
+                            </a>
+                            <a 
+                              href={`${doc.fileUrl}?download=`}
+                              download={doc.fileName}
+                              className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded transition-colors"
+                              title="Forzar descarga"
+                            >
+                              ⬇️ Descargar
+                            </a>
+                          </div>
                         ) : (
                           <span className="text-gray-400 text-xs">No disponible</span>
                         )}

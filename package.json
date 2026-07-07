@@ -26,8 +26,10 @@
     "clsx": "^2.0.0",
     "date-fns": "^3.0.0",
     "driver.js": "^1.4.0",
+    "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
     "jose": "^6.2.3",
+    "jszip": "^3.10.1",
     "next": "^14.1.0",
     "postcss": "^8.4.33",
     "react": "^18.3.0",
@@ -38,6 +40,7 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20.13.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
