@@ -7,6 +7,7 @@ import { Button, Badge, Modal, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 import { PrintGroups } from '@/components/horarios/PrintGroups';
+import { PrintTeachers } from '@/components/horarios/PrintTeachers';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,7 @@ function HorariosContent() {
   const [filterTeacher, setFilterTeacher] = useState<string>('');
   const [filterGroup, setFilterGroup] = useState<string>('');
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
+  const [printMode, setPrintMode] = useState<'groups' | 'teachers'>('groups');
 
   // Datos agrupados para los selects en línea
   const groupedSubjects = useMemo(() => {
@@ -434,19 +436,26 @@ function HorariosContent() {
 
   const activeTeachers = getActiveTeachers();
 
-  const handleDownloadPNG = () => {
+  const handlePrint = (mode: 'groups' | 'teachers') => {
+    setPrintMode(mode);
+    setTimeout(() => window.print(), 300);
+  };
+
+  const handleDownloadPNG = (mode: 'groups' | 'teachers') => {
     setIsCapturing(true);
+    setPrintMode(mode);
     // Le damos tiempo a que React actualice el DOM quitando la clase hidden
     setTimeout(async () => {
       try {
         const html2canvas = (await import('html2canvas')).default;
-        const element = document.getElementById('print-container');
+        const containerId = mode === 'groups' ? 'print-container' : 'print-container-teachers';
+        const element = document.getElementById(containerId);
         if (element) {
           const canvas = await html2canvas(element, { scale: 2 });
           const dataURL = canvas.toDataURL('image/png');
           const link = document.createElement('a');
           link.href = dataURL;
-          link.download = 'Horarios_Exportados.png';
+          link.download = `Horarios_${mode === 'groups' ? 'Alumnos' : 'Docentes'}.png`;
           link.click();
         }
       } catch (error) {
@@ -478,29 +487,25 @@ function HorariosContent() {
               Asigna horarios vinculando Maestro → Materia → Grupo. Se validan conflictos automáticamente.
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              id="btn-generar-pdfs"
-              size="lg"
-              variant="outline"
-              onClick={() => window.print()}
-              className="shadow-sm border-red-500 text-red-600 hover:bg-red-50 flex items-center gap-2"
-              title="Descargar como PDF"
-            >
-              📄 PDF
-            </Button>
-
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={handleDownloadPNG}
-              disabled={isCapturing}
-              className="shadow-sm border-emerald-500 text-emerald-600 hover:bg-emerald-50 flex items-center gap-2 mr-2"
-              title="Descargar como Imagen (PNG)"
-            >
-              {isCapturing ? '⏳...' : '🖼️ PNG'}
-            </Button>
+          <div className="flex flex-col md:flex-row items-end md:items-center gap-4">
             
+            <div className="flex bg-gray-50 border border-gray-200 rounded-lg p-1.5 gap-2 shadow-sm">
+              <div className="flex flex-col px-2 border-r border-gray-200">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Para Alumnos</span>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" onClick={() => handlePrint('groups')} className="h-8 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50" title="PDF Alumnos">📄 PDF</Button>
+                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('groups')} disabled={isCapturing} className="h-8 px-2 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50" title="PNG Alumnos">{isCapturing && printMode === 'groups' ? '⏳...' : '🖼️ PNG'}</Button>
+                </div>
+              </div>
+              <div className="flex flex-col px-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Para Docentes</span>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" onClick={() => handlePrint('teachers')} className="h-8 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50" title="PDF Maestros">📄 PDF</Button>
+                  <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('teachers')} disabled={isCapturing} className="h-8 px-2 text-xs border-emerald-200 text-emerald-600 hover:bg-emerald-50" title="PNG Maestros">{isCapturing && printMode === 'teachers' ? '⏳...' : '🖼️ PNG'}</Button>
+                </div>
+              </div>
+            </div>
+
             <Button
               id="btn-nueva-asignacion"
               size="lg"
@@ -1039,7 +1044,12 @@ function HorariosContent() {
       )}
     </div>
     
-    <PrintGroups assignments={assignments} isCapturing={isCapturing} />
+    {printMode === 'groups' && (
+      <PrintGroups assignments={filteredAssignments} teachers={teachers} isCapturing={isCapturing && printMode === 'groups'} />
+    )}
+    {printMode === 'teachers' && (
+      <PrintTeachers assignments={filteredAssignments} teachers={teachers} isCapturing={isCapturing && printMode === 'teachers'} />
+    )}
     </>
   );
 }
