@@ -2,26 +2,16 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { Button, Input } from '@/components/ui';
-import { cn } from '@/lib/utils';
-import {
-  MOCK_SUBJECTS,
-  MOCK_GROUPS,
-  CUATRIMESTRES,
-  MOCK_BIMESTRES,
-  getSubjectById,
-  getGroupById,
-  getStudentsByGroup,
-} from '@/lib/mockData';
+import { Button } from '@/components/ui';
 
 const DAYS_OF_WEEK: Record<number, string> = {
-  0: 'Domingo',
-  1: 'Lunes',
-  2: 'Martes',
-  3: 'Miércoles',
-  4: 'Jueves',
-  5: 'Viernes',
-  6: 'Sábado'
+  0: 'Lunes',
+  1: 'Martes',
+  2: 'Miércoles',
+  3: 'Jueves',
+  4: 'Viernes',
+  5: 'Sábado',
+  6: 'Domingo'
 };
 
 export default function AsistenciaPage() {
@@ -31,6 +21,7 @@ export default function AsistenciaPage() {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   const [assignments, setAssignments] = useState<any[]>([]);
+  const [bimestres, setBimestres] = useState<any[]>([]);
 
   useEffect(() => {
     fetch('/api/teachers')
@@ -50,19 +41,33 @@ export default function AsistenciaPage() {
         }
       })
       .catch(err => console.error("Error fetching assignments", err));
+
+    fetch('/api/bimestres')
+      .then(res => res.json())
+      .then(data => {
+        const arr = Array.isArray(data) ? data : (data.data || []);
+        setBimestres(arr);
+      })
+      .catch(err => console.error("Error fetching bimestres", err));
   }, []);
 
   // Obtener docentes que tienen clases asignadas
   const teachersWithAssignments = useMemo(() => {
-    const activeTeacherIds = new Set(assignments.map(a => a.teacherId));
+    const activeTeacherIds = new Set(assignments.filter(a => !a.isAvailable).map(a => a.teacherId));
     return teachers.filter(t => activeTeacherIds.has(t.id));
   }, [teachers, assignments]);
 
-  // Asignaciones del maestro seleccionado filtradas por módulo
+  // Asignaciones del maestro seleccionado (solo clases, no disponibilidad)
   const teacherAssignments = useMemo(() => {
     if (!selectedTeacherId) return [];
     return assignments.filter(a => a.teacherId === selectedTeacherId && !a.isAvailable);
   }, [selectedTeacherId, assignments]);
+
+  // Módulos disponibles para el maestro seleccionado
+  const availableModulos = useMemo(() => {
+    const moduloSet = new Set(teacherAssignments.map(a => a.modulo).filter(Boolean));
+    return Array.from(moduloSet).sort((a, b) => a - b);
+  }, [teacherAssignments]);
 
   const filteredAssignments = useMemo(() => {
     if (!selectedModulo) return [];
@@ -79,6 +84,12 @@ export default function AsistenciaPage() {
   // Función para imprimir
   const handlePrint = () => {
     window.print();
+  };
+
+  // Obtener el label del bimestre
+  const getBimestreLabel = (moduloValue: string | number) => {
+    const bim = bimestres.find(b => b.value === Number(moduloValue) || b.value?.toString() === moduloValue?.toString());
+    return bim?.label || `Módulo ${moduloValue}`;
   };
 
   return (
@@ -123,7 +134,7 @@ export default function AsistenciaPage() {
                 </select>
               </div>
 
-              {/* Selector de Bimestre */}
+              {/* Selector de Bimestre/Módulo */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">2. Bimestre (Módulo)</label>
                 <select
@@ -133,9 +144,9 @@ export default function AsistenciaPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400"
                 >
                   <option value="">-- Elija un bimestre --</option>
-                  {MOCK_BIMESTRES.map((b) => (
-                    <option key={b.value} value={b.value}>
-                      {b.label}
+                  {availableModulos.map((mod) => (
+                    <option key={mod} value={mod}>
+                      {getBimestreLabel(mod)}
                     </option>
                   ))}
                 </select>
@@ -179,7 +190,7 @@ export default function AsistenciaPage() {
                 </div>
                 <div className="text-right text-sm">
                   <p><span className="font-bold">Fecha:</span> {new Date(selectedDate).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                  <p><span className="font-bold">Bimestre:</span> {MOCK_BIMESTRES.find(b => b.value === selectedModulo)?.label || selectedModulo}</p>
+                  <p><span className="font-bold">Bimestre:</span> {getBimestreLabel(selectedModulo)}</p>
                 </div>
               </div>
 
@@ -209,18 +220,19 @@ export default function AsistenciaPage() {
                   </thead>
                   <tbody>
                     {filteredAssignments.map((assignment, idx) => {
-                      const subject = getSubjectById(assignment.subjectId);
-                      const group = getGroupById(assignment.groupId);
+                      const subjectName = assignment.subject?.name || 'Materia desconocida';
+                      const groupName = assignment.group?.name || '';
+                      const careerName = assignment.group?.career?.name || '';
                       return (
                         <tr key={assignment.id} className="print:break-inside-avoid">
                           <td className="border border-gray-400 px-3 py-4 text-center">{idx + 1}</td>
                           <td className="border border-gray-400 px-3 py-4 uppercase">
-                            <div className="font-bold">{subject?.name}</div>
-                            <div className="text-xs text-gray-600 mt-1">{group?.carrera} - {group?.name}</div>
+                            <div className="font-bold">{subjectName}</div>
+                            <div className="text-xs text-gray-600 mt-1">{careerName} - {groupName}</div>
                           </td>
                           <td className="border border-gray-400 px-3 py-4 text-center text-gray-800 uppercase">
-                            {DAYS_OF_WEEK[assignment.scheduleDay]}<br/>
-                            {assignment.startTime} a {assignment.endTime} hrs.
+                            {assignment.scheduleDay != null ? DAYS_OF_WEEK[assignment.scheduleDay] : '---'}<br/>
+                            {assignment.startTime && assignment.endTime ? `${assignment.startTime} a ${assignment.endTime} hrs.` : '---'}
                           </td>
                           <td className="border border-gray-400 px-3 py-4 text-center">
                              <div className="w-6 h-6 border-2 border-gray-400 mx-auto rounded-sm print:border-black"></div>
@@ -258,7 +270,7 @@ export default function AsistenciaPage() {
         )}
 
         {/* Mensaje cuando no hay nada seleccionado */}
-        {!selectedModulo && (
+        {(!selectedModulo || filteredAssignments.length === 0) && (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200 border-dashed print:hidden">
             <span className="text-4xl block mb-4">📋</span>
             <h3 className="text-lg font-semibold text-gray-700">No hay maestro o bimestre seleccionado</h3>
