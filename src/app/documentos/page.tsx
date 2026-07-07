@@ -2,6 +2,9 @@ import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
 import { DocumentManagement } from '@/components/documentos/DocumentManagement';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const prisma = new PrismaClient();
 const REQUIRED_DOCS = 10;
 
