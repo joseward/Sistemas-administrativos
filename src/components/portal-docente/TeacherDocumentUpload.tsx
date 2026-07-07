@@ -56,9 +56,9 @@ export function TeacherDocumentUpload({ teacherId }: TeacherDocumentUploadProps)
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Obtener la descripción del input hermano
-    const descInput = document.getElementById(`desc-${docInfo.type}`) as HTMLInputElement;
-    const description = descInput?.value || '';
+    // Generar descripción automática con la fecha actual
+    const today = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const description = `${docInfo.label} - ${today}`;
 
     setUploadingType(docInfo.type);
     setErrorMsg('');
@@ -80,7 +80,6 @@ export function TeacherDocumentUpload({ teacherId }: TeacherDocumentUploadProps)
       if (data.success) {
         setSuccessMsg(`Documento ${docInfo.label} subido correctamente.`);
         loadDocuments();
-        if (descInput) descInput.value = '';
         setTimeout(() => setSuccessMsg(''), 4000);
       } else {
         setErrorMsg(`Error: ${data.error}`);
@@ -147,13 +146,6 @@ export function TeacherDocumentUpload({ teacherId }: TeacherDocumentUploadProps)
               </div>
 
               <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
-                <Input 
-                  id={`desc-${docInfo.type}`}
-                  placeholder={docInfo.descriptionHint} 
-                  className="w-full md:w-48 text-sm h-9"
-                  disabled={uploadingType === docInfo.type}
-                />
-                
                 <div className="relative overflow-hidden inline-block shrink-0">
                   <Button 
                     variant={uploadedDoc ? 'secondary' : 'primary'}
