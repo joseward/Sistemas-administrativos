@@ -139,15 +139,8 @@ export default function GruposPage() {
       });
     });
     
-    // Convertir a array y ordenar
+    // Convertir a array (el orden ya está dado por la plantilla)
     const result = Array.from(grouped.values());
-    result.forEach(g => {
-      g.assignments.sort((a: any, b: any) => {
-        // Poner los asignados primero, ordenados por día
-        if (a.scheduleDay !== b.scheduleDay) return (a.scheduleDay || -1) - (b.scheduleDay || -1);
-        return (a.startTime || '').localeCompare(b.startTime || '');
-      });
-    });
     
     return result;
   }, [templates, assignments, filters, groups, careers]);
@@ -306,15 +299,22 @@ export default function GruposPage() {
 
   const handleSaveAssignment = async (updatedAssignment: any) => {
     try {
-      await fetch('/api/assignments/single', {
+      const res = await fetch('/api/assignments/single', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedAssignment)
       });
+      
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert('Error al guardar la asignación: ' + (data.error || 'Desconocido'));
+        return;
+      }
+      
       refreshData();
     } catch (err) {
       console.error('Error saving assignment:', err);
-      alert('Error al guardar la asignación');
+      alert('Error de conexión al guardar la asignación');
     }
     setEditingAssignment(null);
   };
