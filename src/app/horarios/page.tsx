@@ -765,11 +765,17 @@ function HorariosContent() {
                                             onChange={(e) => {
                                               const val = e.target.value;
                                               if (val !== "") {
+                                                let defaultStartTime = av.startTime;
+                                                if (blockAssignments.length > 0) {
+                                                  const latestEnd = [...blockAssignments].sort((a, b) => b.endTime.localeCompare(a.endTime))[0].endTime;
+                                                  defaultStartTime = latestEnd;
+                                                }
+
                                                 setFormData({
                                                   teacherId: teacher.id,
                                                   templateSlotId: val,
                                                   scheduleDay: av.dayOfWeek.toString(),
-                                                  startTime: av.startTime,
+                                                  startTime: defaultStartTime,
                                                   endTime: ''
                                                 });
                                                 setIsFormOpen(true);
