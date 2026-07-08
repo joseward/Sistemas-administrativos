@@ -100,38 +100,7 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Info Section */}
-        <div className="mt-12 bg-blue-50 rounded-lg p-8 border border-blue-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            ✨ Características principales
-          </h3>
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-            <li className="flex items-center">
-              <span className="text-blue-500 mr-3">✓</span>
-              Gestión centralizada de maestros y disponibilidad
-            </li>
-            <li className="flex items-center">
-              <span className="text-blue-500 mr-3">✓</span>
-              Asignación flexible de horarios y grupos
-            </li>
-            <li className="flex items-center">
-              <span className="text-blue-500 mr-3">✓</span>
-              Generación de contratos en PDF
-            </li>
-            <li className="flex items-center">
-              <span className="text-blue-500 mr-3">✓</span>
-              Listas de asistencia optimizadas para impresión
-            </li>
-            <li className="flex items-center">
-              <span className="text-blue-500 mr-3">✓</span>
-              Administración de usuarios y roles del sistema
-            </li>
-            <li className="flex items-center">
-              <span className="text-blue-500 mr-3">✓</span>
-              Autenticación segura de usuarios
-            </li>
-          </ul>
-        </div>
+
       </div>
     </main>
   );

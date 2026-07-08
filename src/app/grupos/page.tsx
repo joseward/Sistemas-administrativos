@@ -150,23 +150,35 @@ export default function GruposPage() {
     return result;
   }, [templates, assignments, filters, groups, careers]);
 
-  // Aplicar filtro de búsqueda de docente
+  // Aplicar filtro de búsqueda general
   const filteredGroups = useMemo(() => {
     if (!searchTerm) return groupedAssignments;
     const search = searchTerm.toLowerCase();
     
     return groupedAssignments.map(g => {
+      const groupMatch = g.group?.name?.toLowerCase().includes(search) || g.label?.toLowerCase().includes(search);
+      
+      if (groupMatch) {
+        return g; // Mostrar toda la plantilla si coincide el grupo/carrera
+      }
+
       const filteredAsgs = g.assignments.filter((a: any) => {
         const teacher = teachers.find(t => t.id === a.teacherId);
-        if (!teacher) return false;
-        return (
+        const subject = subjects.find(s => s.id === a.subjectId);
+        
+        const teacherMatch = teacher ? (
           (teacher.firstName || '').toLowerCase().includes(search) ||
           (teacher.lastName || '').toLowerCase().includes(search)
-        );
+        ) : false;
+        
+        const subjectMatch = subject ? subject.name.toLowerCase().includes(search) : false;
+
+        return teacherMatch || subjectMatch;
       });
+      
       return { ...g, assignments: filteredAsgs };
     }).filter(g => g.assignments.length > 0);
-  }, [groupedAssignments, teachers, searchTerm]);
+  }, [groupedAssignments, teachers, subjects, searchTerm]);
 
   const handlePromoteClick = (group: any, template: MockGroupTemplate) => {
     const currentCuatri = group.cuatrimestre;
@@ -272,14 +284,17 @@ export default function GruposPage() {
       .catch(err => console.error('Error al eliminar plantilla:', err));
   };
 
-  const handleSaveAssignment = (updatedAssignment: any) => {
-    const index = MOCK_ASSIGNMENTS.findIndex(a => a.id === updatedAssignment.id);
-    if (index !== -1) {
-      MOCK_ASSIGNMENTS[index] = updatedAssignment;
-      setAssignments([...MOCK_ASSIGNMENTS]);
-    } else {
-        MOCK_ASSIGNMENTS.push(updatedAssignment);
-        setAssignments([...MOCK_ASSIGNMENTS]);
+  const handleSaveAssignment = async (updatedAssignment: any) => {
+    try {
+      await fetch('/api/assignments/single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedAssignment)
+      });
+      refreshData();
+    } catch (err) {
+      console.error('Error saving assignment:', err);
+      alert('Error al guardar la asignación');
     }
     setEditingAssignment(null);
   };
@@ -287,7 +302,7 @@ export default function GruposPage() {
   const handleRemoveAssignment = async (assignmentId: string, templateId: string, subjectId: string) => {
     try {
       // Delete the assignment from the API if it exists
-      if (assignmentId && !assignmentId.startsWith('pending-')) {
+      if (assignmentId && !assignmentId.startsWith('pending-') && !assignmentId.startsWith('unassigned-')) {
         await fetch(`/api/assignments?id=${assignmentId}`, { method: 'DELETE' });
       }
       // Remove subject from template via API
@@ -376,31 +391,33 @@ export default function GruposPage() {
               ]}
             />
             <Select
-              className="w-[180px]"
+              label="Nivel Académico"
+              className="w-full"
               value={filters.nivelAcademico}
               onChange={(e) => {
                 setFilters({...filters, nivelAcademico: e.target.value, careerId: ''});
               }}
               options={[
-                { value: '', label: 'Nivel: Seleccionar...' },
+                { value: '', label: 'Seleccionar...' },
                 ...academicLevels.map((al: any) => ({ value: al.id, label: al.name }))
               ]}
             />
             <Select
-              className="w-[180px]"
+              label="Carrera / Programa"
+              className="w-full"
               value={filters.careerId}
               onChange={(e) => setFilters({...filters, careerId: e.target.value})}
               disabled={!filters.nivelAcademico}
               options={[
-                { value: '', label: 'Carrera: Seleccionar...' },
+                { value: '', label: 'Seleccionar...' },
                 ...careers.filter((c: any) => c.academicLevelId === filters.nivelAcademico).map((c: any) => ({ value: c.id, label: c.name }))
               ]}
             />
           </div>
           
-          <div className="mt-4 pt-4 border-t flex gap-4">
+          <div className="mt-6 pt-4 border-t border-gray-100 flex gap-4">
             <Input
-              placeholder="Buscar docente por nombre..."
+              placeholder="Buscar por grupo, asignatura o docente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:w-1/2"

@@ -17,11 +17,9 @@ const DAYS_OF_WEEK: Record<number, string> = {
 export default function AsistenciaPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
-  const [selectedModulo, setSelectedModulo] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   const [assignments, setAssignments] = useState<any[]>([]);
-  const [bimestres, setBimestres] = useState<any[]>([]);
 
   useEffect(() => {
     fetch('/api/teachers')
@@ -41,14 +39,6 @@ export default function AsistenciaPage() {
         }
       })
       .catch(err => console.error("Error fetching assignments", err));
-
-    fetch('/api/bimestres')
-      .then(res => res.json())
-      .then(data => {
-        const arr = Array.isArray(data) ? data : (data.data || []);
-        setBimestres(arr);
-      })
-      .catch(err => console.error("Error fetching bimestres", err));
   }, []);
 
   // Obtener docentes que tienen clases asignadas
@@ -63,33 +53,11 @@ export default function AsistenciaPage() {
     return assignments.filter(a => a.teacherId === selectedTeacherId && !a.isAvailable);
   }, [selectedTeacherId, assignments]);
 
-  // Módulos disponibles para el maestro seleccionado
-  const availableModulos = useMemo(() => {
-    const moduloSet = new Set(teacherAssignments.map(a => a.modulo).filter(Boolean));
-    return Array.from(moduloSet).sort((a, b) => a - b);
-  }, [teacherAssignments]);
-
-  const filteredAssignments = useMemo(() => {
-    if (!selectedModulo) return [];
-    return teacherAssignments.filter(a => a.modulo === Number(selectedModulo));
-  }, [teacherAssignments, selectedModulo]);
-
-  // Si cambia el maestro, reiniciar el módulo
-  useEffect(() => {
-    setSelectedModulo('');
-  }, [selectedTeacherId]);
-
   const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
 
   // Función para imprimir
   const handlePrint = () => {
     window.print();
-  };
-
-  // Obtener el label del bimestre
-  const getBimestreLabel = (moduloValue: string | number) => {
-    const bim = bimestres.find(b => b.value === Number(moduloValue) || b.value?.toString() === moduloValue?.toString());
-    return bim?.label || `Módulo ${moduloValue}`;
   };
 
   return (
@@ -134,23 +102,8 @@ export default function AsistenciaPage() {
                 </select>
               </div>
 
-              {/* Selector de Bimestre/Módulo */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">2. Bimestre (Módulo)</label>
-                <select
-                  value={selectedModulo}
-                  onChange={(e) => setSelectedModulo(e.target.value)}
-                  disabled={!selectedTeacherId || teacherAssignments.length === 0}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400"
-                >
-                  <option value="">-- Elija un bimestre --</option>
-                  {availableModulos.map((mod) => (
-                    <option key={mod} value={mod}>
-                      {getBimestreLabel(mod)}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Espacio en blanco para centrar el formulario si antes había 3 columnas */}
+              <div className="hidden md:block"></div>
 
               {/* Selector de Fecha y Botón Imprimir */}
               <div className="flex flex-col">
@@ -164,7 +117,7 @@ export default function AsistenciaPage() {
                   />
                   <Button
                     onClick={handlePrint}
-                    disabled={!selectedModulo || filteredAssignments.length === 0}
+                    disabled={teacherAssignments.length === 0}
                     className="flex items-center gap-2"
                   >
                     🖨️ Imprimir
@@ -178,7 +131,7 @@ export default function AsistenciaPage() {
         {/* ============================================================== */}
         {/* DOCUMENTO IMPRIMIBLE (ASISTENCIA DOCENTE) */}
         {/* ============================================================== */}
-        {selectedTeacher && selectedModulo && filteredAssignments.length > 0 && (
+        {selectedTeacher && teacherAssignments.length > 0 && (
           <div className="print:block">
             <div className="bg-white rounded-lg shadow-lg p-8 print:shadow-none print:p-0 mb-8">
               
@@ -190,7 +143,6 @@ export default function AsistenciaPage() {
                 </div>
                 <div className="text-right text-sm">
                   <p><span className="font-bold">Fecha:</span> {new Date(selectedDate).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                  <p><span className="font-bold">Bimestre:</span> {getBimestreLabel(selectedModulo)}</p>
                 </div>
               </div>
 
@@ -219,7 +171,7 @@ export default function AsistenciaPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAssignments.map((assignment, idx) => {
+                    {teacherAssignments.map((assignment, idx) => {
                       const subjectName = assignment.subject?.name || 'Materia desconocida';
                       const groupName = assignment.group?.name || '';
                       const careerName = assignment.group?.career?.name || '';
@@ -270,12 +222,12 @@ export default function AsistenciaPage() {
         )}
 
         {/* Mensaje cuando no hay nada seleccionado */}
-        {(!selectedModulo || filteredAssignments.length === 0) && (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200 border-dashed print:hidden">
-            <span className="text-4xl block mb-4">📋</span>
-            <h3 className="text-lg font-semibold text-gray-700">No hay maestro o bimestre seleccionado</h3>
-            <p className="text-gray-500 mt-2">
-              Selecciona un maestro y el bimestre en la parte superior para generar su reporte de asistencia.
+        {!selectedTeacher && (
+          <div className="bg-white rounded-lg shadow-md p-16 text-center border-2 border-dashed border-gray-200 mt-8 print:hidden">
+            <div className="text-5xl mb-4">📋</div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">No hay maestro seleccionado</h3>
+            <p className="text-gray-500">
+              Selecciona un maestro en la parte superior para generar su reporte de asistencia.
             </p>
           </div>
         )}

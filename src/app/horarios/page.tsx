@@ -405,8 +405,16 @@ function HorariosContent() {
   const suggestedTeachers = getSuggestedTeachers();
 
   const handleDelete = (id: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar esta asignación?')) {
-      setAssignments(assignments.filter((a) => a.id !== id));
+    const newAsg = assignments.filter(a => a.id !== id);
+    setAssignments(newAsg);
+    
+    // Save to server if we have teacherId
+    const asg = assignments.find(a => a.id === id);
+    if (asg) {
+      fetch(`/api/assignments/${asg.teacherId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ assignmentId: id })
+      }).catch(console.error);
     }
   };
 
@@ -660,8 +668,17 @@ function HorariosContent() {
         {viewMode === 'table' && (
           <div className="bg-transparent space-y-8">
             {(() => {
-              const teachersInView = Array.from(new Set(filteredAssignments.map(a => a.teacherId)));
-              
+              const allTeacherIds = new Set([
+                ...filteredAssignments.map(a => a.teacherId),
+                ...teacherAvailability.map(av => av.teacherId)
+              ]);
+              const teachersInView = Array.from(allTeacherIds).filter(tid => {
+                if (filterTeacher && tid !== filterTeacher) return false;
+                if (filterGroup) {
+                  return filteredAssignments.some(a => a.teacherId === tid && a.groupId === filterGroup);
+                }
+                return true;
+              });
               if (teachersInView.length === 0) {
                 return (
                   <div className="bg-white rounded-xl shadow-md p-16 text-center border border-gray-100">
@@ -811,15 +828,13 @@ function HorariosContent() {
                                                 </div>
                                                 <button 
                                                   onClick={() => {
-                                                    if(confirm("¿Seguro que deseas eliminar esta asignación?")) {
-                                                      const newAsg = assignments.filter(x => x.id !== a.id);
-                                                      setAssignments(newAsg);
-                                                      fetch('/api/assignments', {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
-                                                      }).catch(console.error);
-                                                    }
+                                                    const newAsg = assignments.filter(x => x.id !== a.id);
+                                                    setAssignments(newAsg);
+                                                    fetch('/api/assignments', {
+                                                      method: 'POST',
+                                                      headers: { 'Content-Type': 'application/json' },
+                                                      body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
+                                                    }).catch(console.error);
                                                   }}
                                                   className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-bold border border-transparent hover:border-red-200 transition-colors"
                                                   title="Eliminar Asignación"
@@ -856,15 +871,13 @@ function HorariosContent() {
                                           </div>
                                           <button 
                                             onClick={() => {
-                                              if(confirm("¿Seguro que deseas eliminar esta asignación?")) {
-                                                const newAsg = assignments.filter(x => x.id !== a.id);
-                                                setAssignments(newAsg);
-                                                fetch('/api/assignments', {
-                                                  method: 'POST',
-                                                  headers: { 'Content-Type': 'application/json' },
-                                                  body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
-                                                }).catch(console.error);
-                                              }
+                                              const newAsg = assignments.filter(x => x.id !== a.id);
+                                              setAssignments(newAsg);
+                                              fetch('/api/assignments', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
+                                              }).catch(console.error);
                                             }}
                                             className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-bold border border-transparent hover:border-red-200 transition-colors"
                                             title="Eliminar Asignación"

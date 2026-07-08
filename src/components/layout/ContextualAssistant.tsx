@@ -111,12 +111,18 @@ export function ContextualAssistant() {
       {/* Botón Flotante */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-[#061266] hover:bg-blue-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center border-2 border-white group"
+        className="w-16 h-16 bg-[#061266] hover:bg-blue-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center border-2 border-white group relative overflow-hidden"
         aria-label="Abrir asistente de ayuda"
       >
-        <span className="text-2xl group-hover:scale-110 transition-transform">
-          {isOpen ? '×' : '💡'}
-        </span>
+        {isOpen ? (
+          <span className="text-3xl group-hover:scale-110 transition-transform">×</span>
+        ) : (
+          <img 
+            src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f408/512.gif" 
+            alt="Asistente" 
+            className="w-[85%] h-[85%] object-contain group-hover:scale-110 transition-transform" 
+          />
+        )}
       </button>
     </div>
   );
