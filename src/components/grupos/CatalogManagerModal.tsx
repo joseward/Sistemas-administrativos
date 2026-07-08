@@ -13,7 +13,7 @@ interface CatalogManagerModalProps {
 }
 
 export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManagerModalProps) {
-  const [activeTab, setActiveTab] = useState<'carreras' | 'materias' | 'cuatrimestres' | 'bimestres' | 'años' | 'grupos'>('carreras');
+  const [activeTab, setActiveTab] = useState<'carreras' | 'materias' | 'cuatrimestres' | 'bimestres' | 'años' | 'grupos' | 'aulas'>('carreras');
   
   const [selectedCarreraId, setSelectedCarreraId] = useState('');
   const [selectedCuatri, setSelectedCuatri] = useState('');
@@ -23,7 +23,7 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
   
-  const { careers = [], subjects = [], groups = [], academicYears = [], bimestres = [], cuatrimestres = [], refreshData = () => {} } = useCurriculum() || {};
+  const { careers = [], subjects = [], groups = [], academicYears = [], bimestres = [], cuatrimestres = [], classrooms = [], refreshData = () => {} } = useCurriculum() || {};
 
   const handleAdd = async () => {
     if (!newValue.trim()) return;
@@ -31,6 +31,12 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     try {
       if (activeTab === 'carreras') {
         await fetch('/api/careers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newValue.trim() })
+        });
+      } else if (activeTab === 'aulas') {
+        await fetch('/api/classrooms', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: newValue.trim() })
@@ -86,6 +92,8 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     
     if (activeTab === 'carreras') {
       url = `/api/careers?id=${careers[originalIndex]?.id}`;
+    } else if (activeTab === 'aulas') {
+      url = `/api/classrooms?id=${classrooms[originalIndex]?.id}`;
     } else if (activeTab === 'años') {
       url = `/api/academic-years?id=${academicYears[originalIndex]?.id}`;
     } else if (activeTab === 'bimestres') {
@@ -114,6 +122,7 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
     let items: { display: string, originalIndex: number }[] = [];
     
     if (activeTab === 'carreras') items = careers.map((c: any, i: number) => ({ display: c.name, originalIndex: i }));
+    if (activeTab === 'aulas') items = classrooms.map((c: any, i: number) => ({ display: c.name, originalIndex: i }));
     if (activeTab === 'años') items = academicYears.map((y: any, i: number) => ({ display: y.value, originalIndex: i }));
     if (activeTab === 'bimestres') items = bimestres.map((b: any, i: number) => ({ display: b.label, originalIndex: i }));
     if (activeTab === 'cuatrimestres') items = cuatrimestres.map((c: any, i: number) => ({ display: c.label, originalIndex: i }));
@@ -168,7 +177,7 @@ export function CatalogManagerModal({ isOpen, onClose, onSuccess }: CatalogManag
 
         {/* Tabs */}
         <div className="flex gap-2 border-b pb-2 overflow-x-auto">
-          {['carreras', 'materias', 'grupos', 'cuatrimestres', 'bimestres', 'años'].map((tab) => (
+          {['carreras', 'materias', 'grupos', 'aulas', 'cuatrimestres', 'bimestres', 'años'].map((tab) => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab as any); setEditingIndex(null); }}

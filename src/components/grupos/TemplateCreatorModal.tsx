@@ -24,7 +24,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
   const [endTime, setEndTime] = useState('');
   const [classroom, setClassroom] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const { academicLevels = [], careers = [], subjects = [], groups = [], bimestres = [], cuatrimestres = [], refreshData = () => {} } = useCurriculum() || {};
+  const { academicLevels = [], careers = [], subjects = [], groups = [], bimestres = [], cuatrimestres = [], classrooms = [], refreshData = () => {} } = useCurriculum() || {};
 
   const TIME_OPTIONS = useMemo(() => {
     const options = [{ value: '', label: 'Seleccionar...' }];
@@ -219,8 +219,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
             onChange={(e) => setClassroom(e.target.value)}
             options={[
               { value: '', label: 'Seleccionar...' },
-              ...['CC1', 'CC2', 'B8', 'C4', 'B12', 'B10', 'B4', 'C11', 'B3', 'B1', 'C8', 'B9', 'B2', 'C7', 'C1', 'B11', 'B6', 'C9', 'C']
-                .map(aula => ({ value: aula, label: aula }))
+              ...classrooms.map(c => ({ value: c.name, label: c.name }))
             ]}
           />
           <div></div>
