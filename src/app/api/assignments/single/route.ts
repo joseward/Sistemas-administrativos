@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const userId = payload.id as string;
 
     const body = await request.json();
-    const { id, teacherId, subjectId, groupId, scheduleDay, startTime, endTime, classroom, modulo, cuatrimestre, isAvailable } = body;
+    const { id, teacherId, subjectId, groupId, scheduleDay, startTime, endTime, classroom, modulo, cuatrimestre, isAvailable, academicYear } = body;
 
     if (!subjectId || !groupId) {
       return NextResponse.json({ success: false, error: 'Faltan datos requeridos (subjectId, groupId)' }, { status: 400 });
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
           classroom: classroom || '',
           modulo,
           cuatrimestre,
+          academicYear: academicYear || '2023-2024',
           isAvailable: isAvailable || false,
           createdById: userId,
         }
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
           classroom: classroom || '',
           modulo,
           cuatrimestre,
-          academicYear: '2023-2024',
+          academicYear: academicYear || '2023-2024',
           isAvailable: isAvailable || false,
           createdById: userId,
         }
