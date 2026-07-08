@@ -6,12 +6,11 @@ import { Button, Badge, Modal, Input } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
-import { MOCK_ASSIGNMENTS } from '@/lib/mockData';
+import { MOCK_ASSIGNMENTS, MockGroupTemplate, DAYS_OF_WEEK } from '@/lib/mockData';
 import { Select } from '@/components/ui/Select';
 import { CatalogManagerModal } from '@/components/grupos/CatalogManagerModal';
 import { AssignmentEditModal } from '@/components/grupos/AssignmentEditModal';
 import { TemplateCreatorModal } from '@/components/grupos/TemplateCreatorModal';
-import { MockGroupTemplate } from '@/lib/mockData';
 import { useCurriculum } from '@/context/CurriculumContext';
 
 export default function GruposPage() {
@@ -131,8 +130,8 @@ export default function GruposPage() {
             modulo: tpl.modulo,
             classroom: tpl.classroom,
             scheduleDay: -1,
-            startTime: '',
-            endTime: ''
+            startTime: tpl.startTime || '',
+            endTime: tpl.endTime || ''
           });
         }
       });
@@ -564,7 +563,9 @@ export default function GruposPage() {
                               )}
                             </td>
                             <td className="px-5 py-3 text-xs uppercase text-gray-600">
-                              {a.scheduleDay !== -1 ? `${['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][a.scheduleDay]} ${a.startTime} - ${a.endTime}` : <span className="text-gray-400">---</span>}
+                              {a.scheduleDay !== -1 && a.scheduleDay != null 
+                                ? `${DAYS_OF_WEEK[a.scheduleDay] || ''} ${a.startTime || '--:--'} - ${a.endTime || '--:--'}` 
+                                : (a.startTime && a.endTime ? `Sin día | ${a.startTime} - ${a.endTime}` : <span className="text-gray-400">---</span>)}
                             </td>
                             <td className="px-5 py-3 text-xs uppercase text-gray-600">
                               {a.classroom || <span className="text-gray-400">---</span>}
