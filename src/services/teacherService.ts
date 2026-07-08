@@ -197,23 +197,20 @@ export const setTeacherAvailability = async (
     throw new Error('La hora de inicio debe ser anterior a la hora de fin');
   }
 
-  // Buscar si ya existe disponibilidad para ese día
-  const existing = await prisma.teacherAvailability.findFirst({
+  // Buscar si ya existe disponibilidad para ese día que se traslape
+  const overlapping = await prisma.teacherAvailability.findFirst({
     where: {
       teacherId,
       dayOfWeek,
+      AND: [
+        { startTime: { lt: endTime } },
+        { endTime: { gt: startTime } }
+      ]
     },
   });
 
-  if (existing) {
-    return await prisma.teacherAvailability.update({
-      where: { id: existing.id },
-      data: {
-        startTime,
-        endTime,
-        isAvailable: true,
-      },
-    });
+  if (overlapping) {
+    throw new Error('El horario se traslapa con otra disponibilidad en este día');
   }
 
   return await prisma.teacherAvailability.create({

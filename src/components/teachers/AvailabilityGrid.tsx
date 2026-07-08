@@ -129,8 +129,8 @@ export function AvailabilityGrid({ teacherId, isReadOnly = false }: Availability
     }
   };
 
-  const getAvailabilityForDay = (dayOfWeek: number) => {
-    return availability.find((a) => a.dayOfWeek === dayOfWeek && a.isAvailable);
+  const getAvailabilitySlotsForDay = (dayOfWeek: number) => {
+    return availability.filter((a) => a.dayOfWeek === dayOfWeek && a.isAvailable);
   };
 
   if (loading) {
@@ -148,7 +148,7 @@ export function AvailabilityGrid({ teacherId, isReadOnly = false }: Availability
       {/* Grid de Disponibilidad */}
       <div className="space-y-3">
         {DAYS_SPANISH.map((day, dayIndex) => {
-          const dayAvailability = getAvailabilityForDay(dayIndex);
+          const daySlots = getAvailabilitySlotsForDay(dayIndex);
           const isEditing = editingDay === dayIndex;
 
           return (
@@ -158,18 +158,34 @@ export function AvailabilityGrid({ teacherId, isReadOnly = false }: Availability
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-gray-900">{day}</h3>
-                {dayAvailability && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">
-                      {dayAvailability.startTime} - {dayAvailability.endTime}
-                    </span>
-                    <span className="inline-block w-3 h-3 bg-green-500 rounded-full"></span>
-                  </div>
-                )}
               </div>
 
+              {daySlots.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {daySlots.map(slot => (
+                    <div key={slot.id} className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block w-3 h-3 bg-green-500 rounded-full"></span>
+                        <span className="text-sm text-gray-700 font-medium">
+                          {slot.startTime} - {slot.endTime}
+                        </span>
+                      </div>
+                      {!isReadOnly && (
+                        <button
+                          onClick={() => handleDeleteAvailability(slot.id)}
+                          className="text-red-500 hover:text-red-700 text-xs font-semibold px-2"
+                          disabled={saving}
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {isEditing ? (
-                <div className="space-y-3 p-3 bg-blue-50 rounded-lg">
+                <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -213,32 +229,19 @@ export function AvailabilityGrid({ teacherId, isReadOnly = false }: Availability
               ) : (
                 <div className="flex gap-2">
                   {!isReadOnly && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingDay(dayIndex);
-                          if (dayAvailability) {
-                            setStartTime(dayAvailability.startTime);
-                            setEndTime(dayAvailability.endTime);
-                          }
-                        }}
-                      >
-                        {dayAvailability ? 'Editar' : 'Agregar Disponibilidad'}
-                      </Button>
-                      {dayAvailability && (
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => handleDeleteAvailability(dayAvailability.id)}
-                        >
-                          Eliminar
-                        </Button>
-                      )}
-                    </>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingDay(dayIndex);
+                        setStartTime('08:00');
+                        setEndTime('10:00');
+                      }}
+                    >
+                      Agregar Disponibilidad
+                    </Button>
                   )}
-                  {isReadOnly && !dayAvailability && (
+                  {isReadOnly && daySlots.length === 0 && (
                     <span className="text-sm text-gray-500">No disponible</span>
                   )}
                 </div>
