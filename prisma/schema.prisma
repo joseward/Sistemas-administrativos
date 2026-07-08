@@ -193,6 +193,8 @@ model GroupTemplate {
   modulo    Int
   turno     String
   classroom String
+  startTime String?
+  endTime   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   createdById String?
