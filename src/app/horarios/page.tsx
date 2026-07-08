@@ -365,7 +365,30 @@ function HorariosContent() {
 
   const confirmAssignment = () => {
     if (!assignPreview) return;
-    setAssignments([...assignments, assignPreview as any]);
+    
+    const newAsg = [...assignments, assignPreview as any];
+    setAssignments(newAsg);
+    
+    // Guardar en la base de datos
+    fetch('/api/assignments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        teacherId: assignPreview.teacherId, 
+        assignments: newAsg.filter(a => a.teacherId === assignPreview.teacherId && !a.isAvailable) 
+      })
+    })
+    .then(async (res) => {
+      if (!res.ok) {
+        const errorData = await res.json();
+        alert(`Error al guardar: ${errorData.error || 'Error desconocido'}`);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Error de conexión al guardar el horario.');
+    });
+
     setIsFormOpen(false);
     setAssignPreview(null);
     setFormData({
@@ -765,11 +788,17 @@ function HorariosContent() {
                                             onChange={(e) => {
                                               const val = e.target.value;
                                               if (val !== "") {
+                                                let defaultStartTime = av.startTime;
+                                                if (blockAssignments.length > 0) {
+                                                  const latestEnd = [...blockAssignments].sort((a, b) => b.endTime.localeCompare(a.endTime))[0].endTime;
+                                                  defaultStartTime = latestEnd;
+                                                }
+
                                                 setFormData({
                                                   teacherId: teacher.id,
                                                   templateSlotId: val,
                                                   scheduleDay: av.dayOfWeek.toString(),
-                                                  startTime: av.startTime,
+                                                  startTime: defaultStartTime,
                                                   endTime: ''
                                                 });
                                                 setIsFormOpen(true);
