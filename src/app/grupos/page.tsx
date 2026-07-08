@@ -574,16 +574,7 @@ export default function GruposPage() {
                             </td>
                             <td className="px-5 py-3 text-xs uppercase text-center">
                               <div className="flex items-center justify-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    setEditingAssignment(a);
-                                    setAssignmentSubjectName(subject?.name || '');
-                                  }}
-                                  className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
-                                  title="Editar línea"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                </button>
+
                                 <button
                                   onClick={() => handleRemoveAssignment(a.id, g.template.id, a.subjectId)}
                                   className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
