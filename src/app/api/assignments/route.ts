@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { jwtVerify } from 'jose';
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
             career: true
           }
         },
+        createdBy: true
       },
     });
 
@@ -42,6 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+    const userId = payload.id as string;
     
     const body = await request.json();
     const { teacherId, assignments } = body; // assignments es un array
@@ -115,7 +118,8 @@ export async function POST(request: NextRequest) {
             academicYear: a.academicYear || '2026-2027',
             modulo: a.modulo,
             cuatrimestre: a.cuatrimestre,
-            isAvailable: a.isAvailable
+            isAvailable: a.isAvailable,
+            createdById: userId
           }))
         });
       }

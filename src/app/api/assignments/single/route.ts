@@ -12,8 +12,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'No autorizado' }, { status: 401 });
     }
     
-    // verify jwt
-    await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+    const userId = payload.id as string;
 
     const body = await request.json();
     const { id, teacherId, subjectId, groupId, scheduleDay, startTime, endTime, classroom, modulo, cuatrimestre, isAvailable } = body;
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
           modulo,
           cuatrimestre,
           isAvailable: isAvailable || false,
+          createdById: userId,
         }
       });
     } else {
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
           cuatrimestre,
           academicYear: '2023-2024',
           isAvailable: isAvailable || false,
+          createdById: userId,
         }
       });
     }

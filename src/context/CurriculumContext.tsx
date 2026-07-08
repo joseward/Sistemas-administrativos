@@ -37,14 +37,14 @@ export const CurriculumProvider = ({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/academic-levels').then(res => res.json()),
-      fetch('/api/careers').then(res => res.json()),
-      fetch('/api/subjects').then(res => res.json()),
-      fetch('/api/groups').then(res => res.json()),
-      fetch('/api/templates').then(res => res.json()),
-      fetch('/api/academic-years').then(res => res.json()),
-      fetch('/api/bimestres').then(res => res.json()),
-      fetch('/api/cuatrimestres').then(res => res.json())
+      fetch(`/api/academic-levels?t=${refreshTick}`).then(res => res.json()),
+      fetch(`/api/careers?t=${refreshTick}`).then(res => res.json()),
+      fetch(`/api/subjects?t=${refreshTick}`).then(res => res.json()),
+      fetch(`/api/groups?t=${refreshTick}`).then(res => res.json()),
+      fetch(`/api/templates?t=${refreshTick}`).then(res => res.json()),
+      fetch(`/api/academic-years?t=${refreshTick}`).then(res => res.json()),
+      fetch(`/api/bimestres?t=${refreshTick}`).then(res => res.json()),
+      fetch(`/api/cuatrimestres?t=${refreshTick}`).then(res => res.json())
     ]).then(([alData, cData, sData, gData, tData, yData, bData, cuData]) => {
       setAcademicLevels(Array.isArray(alData) ? alData : []);
       setCareers(Array.isArray(cData) ? cData : []);

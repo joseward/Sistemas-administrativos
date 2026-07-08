@@ -823,8 +823,13 @@ function HorariosContent() {
                                             </td>
                                             <td className="px-6 py-2">
                                               <div className="flex items-center gap-2">
-                                                <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-blue-300 text-blue-900 shadow-sm truncate">
-                                                  🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})
+                                                <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-blue-300 text-blue-900 shadow-sm truncate flex justify-between items-center">
+                                                  <span>🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})</span>
+                                                  {a.createdBy && (
+                                                    <span className="text-xs text-blue-600 font-normal italic print:hidden pl-2 border-l border-blue-200">
+                                                      Asignado por: {a.createdBy.firstName || a.createdBy.email.split('@')[0]}
+                                                    </span>
+                                                  )}
                                                 </div>
                                                 <button 
                                                   onClick={() => {
@@ -866,8 +871,13 @@ function HorariosContent() {
                                       </td>
                                       <td className="px-6 py-2">
                                         <div className="flex items-center gap-2">
-                                          <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-red-300 text-red-900 shadow-sm truncate">
-                                            🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})
+                                          <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-red-300 text-red-900 shadow-sm truncate flex justify-between items-center">
+                                            <span>🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})</span>
+                                            {a.createdBy && (
+                                              <span className="text-xs text-red-600 font-normal italic print:hidden pl-2 border-l border-red-200">
+                                                Asignado por: {a.createdBy.firstName || a.createdBy.email.split('@')[0]}
+                                              </span>
+                                            )}
                                           </div>
                                           <button 
                                             onClick={() => {

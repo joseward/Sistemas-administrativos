@@ -158,27 +158,30 @@ export default function GruposPage() {
     return groupedAssignments.map(g => {
       const groupMatch = g.group?.name?.toLowerCase().includes(search) || g.label?.toLowerCase().includes(search);
       
-      if (groupMatch) {
-        return g; // Mostrar toda la plantilla si coincide el grupo/carrera
-      }
-
-      const filteredAsgs = g.assignments.filter((a: any) => {
-        const teacher = teachers.find(t => t.id === a.teacherId);
+      const matchingAssignments = g.assignments.filter((a: any) => {
         const subject = subjects.find(s => s.id === a.subjectId);
+        const teacher = teachers.find(t => t.id === a.teacherId);
         
-        const teacherMatch = teacher ? (
-          (teacher.firstName || '').toLowerCase().includes(search) ||
-          (teacher.lastName || '').toLowerCase().includes(search)
-        ) : false;
-        
-        const subjectMatch = subject ? subject.name.toLowerCase().includes(search) : false;
-
-        return teacherMatch || subjectMatch;
+        return subject?.name?.toLowerCase().includes(search) || 
+               teacher?.firstName?.toLowerCase().includes(search) ||
+               teacher?.lastName?.toLowerCase().includes(search);
       });
       
-      return { ...g, assignments: filteredAsgs };
-    }).filter(g => g.assignments.length > 0);
-  }, [groupedAssignments, teachers, subjects, searchTerm]);
+      if (groupMatch) return g;
+      if (matchingAssignments.length > 0) return { ...g, assignments: matchingAssignments };
+      return null;
+    }).filter(Boolean) as typeof groupedAssignments;
+  }, [groupedAssignments, searchTerm, subjects, teachers]);
+
+  const groupsByCareer = useMemo(() => {
+    const byCareer = new Map<string, typeof filteredGroups>();
+    filteredGroups.forEach(g => {
+      const carreraName = g.group?.career?.name || 'Grupos sin Carrera';
+      if (!byCareer.has(carreraName)) byCareer.set(carreraName, []);
+      byCareer.get(carreraName)!.push(g);
+    });
+    return Array.from(byCareer.entries());
+  }, [filteredGroups]);
 
   const handlePromoteClick = (group: any, template: MockGroupTemplate) => {
     const currentCuatri = group.cuatrimestre;
@@ -223,7 +226,7 @@ export default function GruposPage() {
     });
   };
 
-  const confirmPromote = () => {
+  const confirmPromote = async () => {
     if (!promotePreview) return;
     const { group, template, nextCuatri, nextModulo, nextSubjects, isNextCuatri } = promotePreview;
 
@@ -235,40 +238,55 @@ export default function GruposPage() {
 
     let newGroupId = group.id;
 
-    if (isNextCuatri) {
-      // Crear o usar el grupo
-      newGroupId = `mock-g-${Date.now()}`;
-      const newGroup = {
-        ...group,
-        id: newGroupId,
-        cuatrimestre: nextCuatri
+    try {
+      if (isNextCuatri) {
+        // Crear el nuevo grupo para el próximo cuatrimestre en la BD
+        const res = await fetch('/api/groups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: group.name,
+            careerId: group.careerId,
+            cuatrimestre: nextCuatri,
+            academicYear: group.academicYear,
+            schoolId: group.schoolId,
+            modality: group.modality
+          })
+        });
+        const createdGroup = await res.json();
+        if (createdGroup.error) {
+          alert('Error creando el grupo para el nuevo cuatrimestre: ' + createdGroup.error);
+          return;
+        }
+        newGroupId = createdGroup.id;
+      }
+
+      const newTemplate = {
+        groupId: newGroupId,
+        modulo: nextModulo,
+        turno: template.turno,
+        classroom: template.classroom,
+        subjectIds: nextSubjects.map(s => s.id),
       };
-    }
 
-    const newTemplate: MockGroupTemplate = {
-      id: `tpl-${Date.now()}`,
-      groupId: newGroupId,
-      modulo: nextModulo,
-      subjectIds: nextSubjects.map(s => s.id),
-      classroom: template.classroom, // Conservar aula
-      createdAt: new Date().toISOString()
-    };
-
-    fetch('/api/templates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        groupId: newTemplate.groupId,
-        modulo: newTemplate.modulo,
-        turno: newTemplate.turno,
-        classroom: newTemplate.classroom,
-        subjectIds: newTemplate.subjectIds,
-      })
-    }).then(res => res.json())
-      .then(data => {
-        setPromotePreview(null);
-        refreshData();
+      const resTpl = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTemplate)
       });
+      const createdTpl = await resTpl.json();
+      
+      if (createdTpl.error) {
+        alert('Error creando la plantilla: ' + createdTpl.error);
+        return;
+      }
+
+      setPromotePreview(null);
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      alert('Hubo un error al promover el ciclo.');
+    }
   };
 
   const handleEditTemplate = (template: MockGroupTemplate) => {
@@ -301,6 +319,11 @@ export default function GruposPage() {
 
   const handleRemoveAssignment = async (assignmentId: string, templateId: string, subjectId: string) => {
     try {
+      // Update local assignments state if it was a real assignment
+      if (assignmentId && !assignmentId.startsWith('unassigned-')) {
+        setAssignments(prev => prev.filter(a => a.id !== assignmentId));
+      }
+      
       // Delete the assignment from the API if it exists
       if (assignmentId && !assignmentId.startsWith('pending-') && !assignmentId.startsWith('unassigned-')) {
         await fetch(`/api/assignments?id=${assignmentId}`, { method: 'DELETE' });
@@ -455,15 +478,29 @@ export default function GruposPage() {
               </Button>
             </div>
           ) : (
-            filteredGroups.map((g, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
-                {/* Header (Módulo y Promover) */}
+            groupsByCareer.map(([careerName, careerGroups]) => (
+              <div key={careerName} className="mb-10">
+                <div className="flex items-center gap-4 mb-6 mt-2">
+                  <h2 className="text-xl font-black text-[#061266] uppercase tracking-wide">{careerName}</h2>
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                  <span className="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+                    {careerGroups.length} Plantilla{careerGroups.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                {careerGroups.map((g, index) => (
+                  <div key={g.template.id} className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
+                    {/* Header (Módulo y Promover) */}
                 <div className="bg-gray-50 border-b border-gray-200 px-5 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div className="flex flex-col">
                     <h3 className="font-bold text-gray-800 uppercase tracking-wide text-sm">{g.label}</h3>
-                    <span className="text-xs text-gray-500 font-medium mt-1">
-                      {g.moduloLabel}{g.template.turno ? ` • ${g.template.turno}` : ''}
-                    </span>
+                    <div className="text-xs text-gray-500 font-medium mt-1 flex items-center flex-wrap gap-2">
+                      <span>{g.moduloLabel}{g.template.turno ? ` • ${g.template.turno}` : ''}</span>
+                      {g.template.createdBy && (
+                        <span className="text-blue-600 print:hidden italic border-l border-gray-300 pl-2">
+                          Plantilla creada/editada por: {g.template.createdBy.firstName || g.template.createdBy.email.split('@')[0]}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2">
                     <button 
@@ -558,6 +595,8 @@ export default function GruposPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+                ))}
               </div>
             ))
           )}

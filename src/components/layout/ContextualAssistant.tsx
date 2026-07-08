@@ -117,11 +117,37 @@ export function ContextualAssistant() {
         {isOpen ? (
           <span className="text-3xl group-hover:scale-110 transition-transform">×</span>
         ) : (
-          <img 
-            src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f408/512.gif" 
-            alt="Asistente" 
-            className="w-[85%] h-[85%] object-contain group-hover:scale-110 transition-transform" 
-          />
+          <div className="relative w-full h-full flex items-center justify-center">
+            <style>{`
+              @keyframes catPlay {
+                0%, 20% { transform: translateX(-5px); }
+                10%, 30% { transform: translateX(5px); }
+                40% { transform: translateX(-5px) rotate(0deg); }
+                50%, 90% { transform: translateX(-5px) translateY(5px) rotate(-90deg); }
+                100% { transform: translateX(-5px) rotate(0deg); }
+              }
+              @keyframes yarnRoll {
+                0%, 20% { transform: translateX(0px) rotate(0deg); }
+                10%, 30% { transform: translateX(10px) rotate(90deg); }
+                40%, 90% { transform: translateX(15px) rotate(180deg); opacity: 1; }
+                95% { opacity: 0; }
+                100% { transform: translateX(0px) rotate(0deg); opacity: 1; }
+              }
+              @keyframes zzz {
+                0%, 45% { opacity: 0; transform: translateY(0) scale(0.5); }
+                55% { opacity: 1; transform: translateY(-10px) scale(1); }
+                70% { opacity: 0; transform: translateY(-20px) scale(1.2); }
+                80% { opacity: 1; transform: translateY(-10px) scale(1); }
+                95% { opacity: 0; transform: translateY(-20px) scale(1.2); }
+                100% { opacity: 0; }
+              }
+            `}</style>
+            <div className="absolute flex items-center justify-center w-full h-full">
+              <span style={{ animation: 'catPlay 6s infinite' }} className="text-3xl origin-center z-10">🐈</span>
+              <span style={{ animation: 'yarnRoll 6s infinite' }} className="text-xl absolute right-1 bottom-3">🧶</span>
+              <span style={{ animation: 'zzz 6s infinite' }} className="text-sm absolute left-1 top-1 opacity-0">💤</span>
+            </div>
+          </div>
         )}
       </button>
     </div>
