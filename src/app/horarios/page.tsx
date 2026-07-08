@@ -103,7 +103,7 @@ function HorariosContent() {
           a.groupId === tpl.groupId &&
           a.modulo === tpl.modulo &&
           a.subjectId === subjectId &&
-          a.teacherId && a.teacherId !== 'mock-t-unassigned'
+          a.teacherId !== null
         );
 
         if (!isAssigned) {

@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { id, teacherId, subjectId, groupId, scheduleDay, startTime, endTime, classroom, modulo, cuatrimestre, isAvailable } = body;
 
-    if (!teacherId || !subjectId || !groupId) {
-      return NextResponse.json({ success: false, error: 'Faltan datos requeridos (teacherId, subjectId, groupId)' }, { status: 400 });
+    if (!subjectId || !groupId) {
+      return NextResponse.json({ success: false, error: 'Faltan datos requeridos (subjectId, groupId)' }, { status: 400 });
     }
 
     if (id && !id.startsWith('unassigned-') && !id.startsWith('mock-') && !id.startsWith('pending-')) {
