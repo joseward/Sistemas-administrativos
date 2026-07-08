@@ -97,11 +97,12 @@ export default function GruposPage() {
 
       const cuatriLabel = cuatrimestres.find((c: any) => c.value === group.cuatrimestre)?.label || `${group.cuatrimestre}er Cuatrimestre`;
       const carreraName = group.career?.name || 'Carrera';
-      const groupKey = `${carreraName} - ${cuatriLabel} - Grupo ${group.name}`;
+      const groupKey = tpl.id; // Evitar que plantillas duplicadas se fusionen
+      const label = `${carreraName} - ${cuatriLabel} - Grupo ${group.name}`;
       
       if (!grouped.has(groupKey)) {
         grouped.set(groupKey, {
-          label: groupKey,
+          label: label,
           moduloLabel: `Módulo ${tpl.modulo}`,
           template: tpl,
           group: group,
