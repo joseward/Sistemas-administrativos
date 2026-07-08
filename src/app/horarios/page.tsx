@@ -697,7 +697,7 @@ function HorariosContent() {
                 const teacher = getTeacherById(tid);
                 const tAssignments = filteredAssignments
                   .filter(a => a.teacherId === tid)
-                  .sort((a, b) => a.scheduleDay - b.scheduleDay || a.startTime.localeCompare(b.startTime));
+                  .sort((a, b) => (a.scheduleDay || -1) - (b.scheduleDay || -1) || (a.startTime || '').localeCompare(b.startTime || ''));
 
                 return (
                   <div key={tid} className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
