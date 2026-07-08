@@ -675,6 +675,7 @@ function HorariosContent() {
                 ...teacherAvailability.map(av => av.teacherId)
               ]);
               const teachersInView = Array.from(allTeacherIds).filter(tid => {
+                if (!tid) return false;
                 if (filterTeacher && tid !== filterTeacher) return false;
                 if (filterGroup) {
                   return filteredAssignments.some(a => a.teacherId === tid && a.groupId === filterGroup);
