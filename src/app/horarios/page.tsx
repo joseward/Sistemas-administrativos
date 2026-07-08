@@ -21,8 +21,6 @@ import {
   MOCK_BIMESTRES,
   MOCK_YEARS,
   TIME_SLOTS,
-  getSubjectById,
-  getGroupById,
   MOCK_GROUP_TEMPLATES,
   type MockScheduleAssignment,
 } from '@/lib/mockData';
@@ -44,6 +42,7 @@ function HorariosContent() {
 
   const [teachers, setTeachers] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [loadingTeachers, setLoadingTeachers] = useState(true);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [dbTemplates, setDbTemplates] = useState<any[]>([]);
@@ -61,28 +60,28 @@ function HorariosContent() {
 
   // Datos agrupados para los selects en línea
   const groupedSubjects = useMemo(() => {
-    const map = new Map<string, typeof MOCK_SUBJECTS>();
-    MOCK_SUBJECTS.forEach(s => {
-      const career = MOCK_CAREERS.find(c => c.id === s.careerId);
-      const level = career ? MOCK_ACADEMIC_LEVELS.find(l => l.id === career.academicLevelId) : null;
-      const key = career ? `${level?.name} - ${career.name}` : 'Materias Generales';
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(s);
+    const map = new Map<string, typeof subjects>();
+    subjects.forEach(s => {
+      const careerName = s.career?.name || 'Materias Generales';
+      if (!map.has(careerName)) map.set(careerName, []);
+      map.get(careerName)!.push(s);
     });
     return Array.from(map.entries());
-  }, []);
+  }, [subjects]);
+
+  const getSubjectById = (id: string) => subjects.find(s => s.id === id);
 
   const groupedGroups = useMemo(() => {
-    const map = new Map<string, typeof MOCK_GROUPS>();
-    MOCK_GROUPS.forEach(g => {
-      const career = MOCK_CAREERS.find(c => c.id === g.carreraId);
-      const level = career ? MOCK_ACADEMIC_LEVELS.find(l => l.id === career.academicLevelId) : null;
-      const key = career ? `${level?.name} - ${career.name}` : 'Grupos Generales';
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(g);
+    const map = new Map<string, typeof groups>();
+    groups.forEach(g => {
+      const careerName = g.career?.name || 'Grupos sin Carrera';
+      if (!map.has(careerName)) map.set(careerName, []);
+      map.get(careerName)!.push(g);
     });
     return Array.from(map.entries());
-  }, []);
+  }, [groups]);
+
+  const getGroupById = (id: string) => groups.find((g) => g.id === id);
 
   // Calcular las opciones de plantillas pendientes
   const availableTemplateSlots = useMemo(() => {
@@ -94,9 +93,8 @@ function HorariosContent() {
       const group = getGroupById(tpl.groupId);
       if (!group) return;
 
-      const career = MOCK_CAREERS.find(c => c.id === group.carreraId);
-      const level = career ? MOCK_ACADEMIC_LEVELS.find(l => l.id === career.academicLevelId) : null;
-      const groupName = career ? `${level?.name} - ${career.name}` : 'Generales';
+      const careerName = group.career?.name;
+      const groupName = careerName ? `${careerName}` : 'Generales';
 
       tpl.subjectIds.forEach((subjectId: string) => {
         // Verificar si esta materia de esta plantilla ya está asignada en assignments
@@ -128,7 +126,7 @@ function HorariosContent() {
     });
 
     return Array.from(grouped.entries());
-  }, [assignments]);
+  }, [assignments, groups, dbTemplates, subjects]);
 
   useEffect(() => {
     fetch('/api/teachers')
@@ -145,11 +143,13 @@ function HorariosContent() {
       fetch('/api/assignments').then(res => res.json()),
       fetch('/api/availability').then(res => res.json()),
       fetch('/api/subjects').then(res => res.json()),
-      fetch('/api/templates').then(res => res.json())
+      fetch('/api/templates').then(res => res.json()),
+      fetch('/api/groups').then(res => res.json())
     ])
-    .then(([assignmentsRes, availabilityRes, subjectsData, templatesRes]) => {
+    .then(([assignmentsRes, availabilityRes, subjectsData, templatesRes, groupsData]) => {
       if (Array.isArray(subjectsData)) setSubjects(subjectsData);
       if (templatesRes && !templatesRes.error) setDbTemplates(templatesRes);
+      if (Array.isArray(groupsData)) setGroups(groupsData);
       
       let loaded: any[] = [];
       if (assignmentsRes.success) {
