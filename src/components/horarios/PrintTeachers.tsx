@@ -10,7 +10,7 @@ export function PrintTeachers({ assignments, teachers, subjects, isCapturing }: 
   return (
     <div 
       id="print-container-teachers" 
-      className={`text-black bg-white ${isCapturing ? 'block absolute top-0 left-0 z-[-1] w-[700px]' : 'hidden print:block w-full'}`}
+      className={`text-black bg-white ${isCapturing ? 'block absolute top-0 left-[-9999px] w-[800px] z-50 opacity-100' : 'hidden print:block w-full'}`}
     >
       {activeTeacherIds.map((teacherId) => {
         const teacher = teachers.find(t => t.id === teacherId);
