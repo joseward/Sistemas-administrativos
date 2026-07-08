@@ -333,7 +333,8 @@ function HorariosContent() {
     }
 
     const [tplId, subjectId] = formData.templateSlotId.split('_');
-    const tpl = MOCK_GROUP_TEMPLATES.find(t => t.id === tplId);
+    const sourceTemplates = dbTemplates.length > 0 ? dbTemplates : MOCK_GROUP_TEMPLATES;
+    const tpl = sourceTemplates.find(t => t.id === tplId);
     
     if (!tpl) {
       setFormError('Plantilla inválida');
@@ -768,20 +769,14 @@ function HorariosContent() {
                                                 const tpl = sourceTemplates.find(t => t.id === tplId);
                                                 
                                                 if (tpl) {
-                                                  if (!tpl.startTime || !tpl.endTime) {
-                                                    alert("La plantilla seleccionada no tiene un horario de inicio/fin definido. Por favor, edítela en Grupos Académicos para asignarle un horario.");
-                                                    e.target.value = "";
-                                                    return;
-                                                  }
-
                                                   const newAssignment = {
                                                     id: `mock-a-${Date.now()}-${Math.random()}`,
                                                     teacherId: teacher.id,
                                                     subjectId: subjId,
                                                     groupId: tpl.groupId,
                                                     scheduleDay: av.dayOfWeek,
-                                                    startTime: tpl.startTime,
-                                                    endTime: tpl.endTime,
+                                                    startTime: av.startTime,
+                                                    endTime: av.endTime,
                                                     classroom: tpl.classroom,
                                                     modulo: tpl.modulo,
                                                     academicYear: '2023-2024',
