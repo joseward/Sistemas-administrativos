@@ -333,7 +333,8 @@ function HorariosContent() {
     }
 
     const [tplId, subjectId] = formData.templateSlotId.split('_');
-    const tpl = MOCK_GROUP_TEMPLATES.find(t => t.id === tplId);
+    const sourceTemplates = dbTemplates.length > 0 ? dbTemplates : MOCK_GROUP_TEMPLATES;
+    const tpl = sourceTemplates.find(t => t.id === tplId);
     
     if (!tpl) {
       setFormError('Plantilla inválida');
@@ -763,47 +764,15 @@ function HorariosContent() {
                                             onChange={(e) => {
                                               const val = e.target.value;
                                               if (val !== "") {
-                                                const [tplId, subjId] = val.split('_');
-                                                const sourceTemplates = dbTemplates.length > 0 ? dbTemplates : MOCK_GROUP_TEMPLATES;
-                                                const tpl = sourceTemplates.find(t => t.id === tplId);
-                                                
-                                                if (tpl) {
-                                                  if (!tpl.startTime || !tpl.endTime) {
-                                                    alert("La plantilla seleccionada no tiene un horario de inicio/fin definido. Por favor, edítela en Grupos Académicos para asignarle un horario.");
-                                                    e.target.value = "";
-                                                    return;
-                                                  }
-
-                                                  const newAssignment = {
-                                                    id: `mock-a-${Date.now()}-${Math.random()}`,
-                                                    teacherId: teacher.id,
-                                                    subjectId: subjId,
-                                                    groupId: tpl.groupId,
-                                                    scheduleDay: av.dayOfWeek,
-                                                    startTime: tpl.startTime,
-                                                    endTime: tpl.endTime,
-                                                    classroom: tpl.classroom,
-                                                    modulo: tpl.modulo,
-                                                    academicYear: '2023-2024',
-                                                    isAvailable: false
-                                                  };
-                                                  
-                                                  const conflict = checkConflict(newAssignment, assignments);
-                                                  if (conflict) {
-                                                    alert(conflict);
-                                                    e.target.value = "";
-                                                    return;
-                                                  }
-
-                                                  const newAsg = [...assignments, newAssignment];
-                                                  setAssignments(newAsg);
-                                                  
-                                                  fetch('/api/assignments', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(a => a.teacherId === teacher.id) })
-                                                  }).catch(console.error);
-                                                }
+                                                setFormData({
+                                                  teacherId: teacher.id,
+                                                  templateSlotId: val,
+                                                  scheduleDay: av.dayOfWeek.toString(),
+                                                  startTime: av.startTime,
+                                                  endTime: ''
+                                                });
+                                                setIsFormOpen(true);
+                                                e.target.value = "";
                                               }
                                             }}
                                           >
