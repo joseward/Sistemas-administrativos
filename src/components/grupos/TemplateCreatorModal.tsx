@@ -271,7 +271,10 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
 
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!groupId || !modulo || !classroom || !turno || selectedSubjects.length === 0}>
+          <Button 
+            onClick={handleSave} 
+            disabled={!carreraId || !cuatrimestre || !groupId || !modulo || !classroom || !turno || !startTime || !endTime || selectedSubjects.length === 0}
+          >
             {initialData ? "Guardar Cambios" : "Crear Plantilla"}
           </Button>
         </div>
