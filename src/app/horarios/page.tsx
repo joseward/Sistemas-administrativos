@@ -764,41 +764,15 @@ function HorariosContent() {
                                             onChange={(e) => {
                                               const val = e.target.value;
                                               if (val !== "") {
-                                                const [tplId, subjId] = val.split('_');
-                                                const sourceTemplates = dbTemplates.length > 0 ? dbTemplates : MOCK_GROUP_TEMPLATES;
-                                                const tpl = sourceTemplates.find(t => t.id === tplId);
-                                                
-                                                if (tpl) {
-                                                  const newAssignment = {
-                                                    id: `mock-a-${Date.now()}-${Math.random()}`,
-                                                    teacherId: teacher.id,
-                                                    subjectId: subjId,
-                                                    groupId: tpl.groupId,
-                                                    scheduleDay: av.dayOfWeek,
-                                                    startTime: av.startTime,
-                                                    endTime: av.endTime,
-                                                    classroom: tpl.classroom,
-                                                    modulo: tpl.modulo,
-                                                    academicYear: '2023-2024',
-                                                    isAvailable: false
-                                                  };
-                                                  
-                                                  const conflict = checkConflict(newAssignment, assignments);
-                                                  if (conflict) {
-                                                    alert(conflict);
-                                                    e.target.value = "";
-                                                    return;
-                                                  }
-
-                                                  const newAsg = [...assignments, newAssignment];
-                                                  setAssignments(newAsg);
-                                                  
-                                                  fetch('/api/assignments', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(a => a.teacherId === teacher.id) })
-                                                  }).catch(console.error);
-                                                }
+                                                setFormData({
+                                                  teacherId: teacher.id,
+                                                  templateSlotId: val,
+                                                  scheduleDay: av.dayOfWeek.toString(),
+                                                  startTime: av.startTime,
+                                                  endTime: ''
+                                                });
+                                                setIsFormOpen(true);
+                                                e.target.value = "";
                                               }
                                             }}
                                           >
