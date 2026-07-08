@@ -272,14 +272,17 @@ export default function GruposPage() {
       .catch(err => console.error('Error al eliminar plantilla:', err));
   };
 
-  const handleSaveAssignment = (updatedAssignment: any) => {
-    const index = MOCK_ASSIGNMENTS.findIndex(a => a.id === updatedAssignment.id);
-    if (index !== -1) {
-      MOCK_ASSIGNMENTS[index] = updatedAssignment;
-      setAssignments([...MOCK_ASSIGNMENTS]);
-    } else {
-        MOCK_ASSIGNMENTS.push(updatedAssignment);
-        setAssignments([...MOCK_ASSIGNMENTS]);
+  const handleSaveAssignment = async (updatedAssignment: any) => {
+    try {
+      await fetch('/api/assignments/single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedAssignment)
+      });
+      refreshData();
+    } catch (err) {
+      console.error('Error saving assignment:', err);
+      alert('Error al guardar la asignación');
     }
     setEditingAssignment(null);
   };
@@ -287,7 +290,7 @@ export default function GruposPage() {
   const handleRemoveAssignment = async (assignmentId: string, templateId: string, subjectId: string) => {
     try {
       // Delete the assignment from the API if it exists
-      if (assignmentId && !assignmentId.startsWith('pending-')) {
+      if (assignmentId && !assignmentId.startsWith('pending-') && !assignmentId.startsWith('unassigned-')) {
         await fetch(`/api/assignments?id=${assignmentId}`, { method: 'DELETE' });
       }
       // Remove subject from template via API
