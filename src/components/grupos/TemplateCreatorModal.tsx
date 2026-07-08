@@ -26,16 +26,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const { academicLevels = [], careers = [], subjects = [], groups = [], bimestres = [], cuatrimestres = [], classrooms = [], refreshData = () => {} } = useCurriculum() || {};
 
-  const TIME_OPTIONS = useMemo(() => {
-    const options = [{ value: '', label: 'Seleccionar...' }];
-    for (let h = 7; h <= 22; h++) {
-      for (const m of ['00', '30']) {
-        const time = `${h.toString().padStart(2, '0')}:${m}`;
-        options.push({ value: time, label: time });
-      }
-    }
-    return options;
-  }, []);
+
 
   React.useEffect(() => {
     if (isOpen && initialData) {
@@ -225,20 +216,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
           <div></div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Select
-            label="Hora de Inicio (General)"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            options={TIME_OPTIONS}
-          />
-          <Select
-            label="Hora de Fin (General)"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            options={TIME_OPTIONS}
-          />
-        </div>
+
 
         {availableSubjects.length > 0 && (
           <div className="mt-4 border-t pt-4">
@@ -273,7 +251,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button 
             onClick={handleSave} 
-            disabled={!carreraId || !cuatrimestre || !groupId || !modulo || !classroom || !turno || !startTime || !endTime || selectedSubjects.length === 0}
+            disabled={!carreraId || !cuatrimestre || !groupId || !modulo || !classroom || !turno || selectedSubjects.length === 0}
           >
             {initialData ? "Guardar Cambios" : "Crear Plantilla"}
           </Button>
