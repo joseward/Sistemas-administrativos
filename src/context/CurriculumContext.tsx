@@ -10,6 +10,7 @@ type CurriculumContextType = {
   academicYears: any[];
   bimestres: any[];
   cuatrimestres: any[];
+  classrooms: any[];
   refreshData: () => void;
 };
 
@@ -31,6 +32,7 @@ export const CurriculumProvider = ({ children }: { children: React.ReactNode }) 
   const [academicYears, setAcademicYears] = useState<any[]>([]);
   const [bimestres, setBimestres] = useState<any[]>([]);
   const [cuatrimestres, setCuatrimestres] = useState<any[]>([]);
+  const [classrooms, setClassrooms] = useState<any[]>([]);
   const [refreshTick, setRefreshTick] = useState(0);
 
   const refreshData = () => setRefreshTick(t => t + 1);
@@ -44,8 +46,9 @@ export const CurriculumProvider = ({ children }: { children: React.ReactNode }) 
       fetch(`/api/templates?t=${refreshTick}`).then(res => res.json()),
       fetch(`/api/academic-years?t=${refreshTick}`).then(res => res.json()),
       fetch(`/api/bimestres?t=${refreshTick}`).then(res => res.json()),
-      fetch(`/api/cuatrimestres?t=${refreshTick}`).then(res => res.json())
-    ]).then(([alData, cData, sData, gData, tData, yData, bData, cuData]) => {
+      fetch(`/api/cuatrimestres?t=${refreshTick}`).then(res => res.json()),
+      fetch(`/api/classrooms?t=${refreshTick}`).then(res => res.json())
+    ]).then(([alData, cData, sData, gData, tData, yData, bData, cuData, clData]) => {
       setAcademicLevels(Array.isArray(alData) ? alData : []);
       setCareers(Array.isArray(cData) ? cData : []);
       setSubjects(Array.isArray(sData) ? sData : []);
@@ -54,11 +57,12 @@ export const CurriculumProvider = ({ children }: { children: React.ReactNode }) 
       setAcademicYears(Array.isArray(yData) ? yData : []);
       setBimestres(Array.isArray(bData) ? bData : []);
       setCuatrimestres(Array.isArray(cuData) ? cuData : []);
+      setClassrooms(Array.isArray(clData) ? clData : []);
     }).catch(console.error);
   }, [refreshTick]);
 
   return (
-    <CurriculumContext.Provider value={{ academicLevels, careers, subjects, groups, templates, academicYears, bimestres, cuatrimestres, refreshData }}>
+    <CurriculumContext.Provider value={{ academicLevels, careers, subjects, groups, templates, academicYears, bimestres, cuatrimestres, classrooms, refreshData }}>
       {children}
     </CurriculumContext.Provider>
   );

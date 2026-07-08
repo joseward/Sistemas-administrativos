@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
+import { useCurriculum } from '@/context/CurriculumContext';
 
 interface AssignmentEditModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export function AssignmentEditModal({ isOpen, onClose, assignment, subjectName, teachers, onSave }: AssignmentEditModalProps) {
+  const { classrooms = [] } = useCurriculum() || {};
   const [teacherId, setTeacherId] = useState('');
   const [scheduleDay, setScheduleDay] = useState('-1');
   const [startTime, setStartTime] = useState('');
@@ -45,7 +47,7 @@ export function AssignmentEditModal({ isOpen, onClose, assignment, subjectName, 
   useEffect(() => {
     if (isOpen && assignment) {
       setTeacherId(assignment.teacherId || '');
-      setScheduleDay(assignment.scheduleDay.toString());
+      setScheduleDay(assignment.scheduleDay?.toString() || '-1');
       setStartTime(assignment.startTime || '');
       setEndTime(assignment.endTime || '');
       setClassroom(assignment.classroom || '');
@@ -64,17 +66,19 @@ export function AssignmentEditModal({ isOpen, onClose, assignment, subjectName, 
     onClose();
   };
 
-  if (!assignment) return null;
+  if (!isOpen) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Editar Asignación" size="md">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Asignatura</label>
-          <Input value={subjectName} disabled className="bg-gray-100" />
+          <Input
+            label="Asignatura"
+            value={subjectName}
+            disabled
+            className="bg-gray-50"
+          />
         </div>
-
-
 
         <div className="grid grid-cols-2 gap-4">
           <Select
@@ -83,11 +87,14 @@ export function AssignmentEditModal({ isOpen, onClose, assignment, subjectName, 
             onChange={(e) => setScheduleDay(e.target.value)}
             options={DAYS_OF_WEEK}
           />
-          <Input
+          <Select
             label="Aula"
             value={classroom}
             onChange={(e) => setClassroom(e.target.value)}
-            placeholder="Ej. C1"
+            options={[
+              { value: '', label: 'Seleccionar...' },
+              ...classrooms.map((c: any) => ({ value: c.name, label: c.name }))
+            ]}
           />
         </div>
 

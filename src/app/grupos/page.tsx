@@ -128,6 +128,8 @@ export default function GruposPage() {
             teacherId: null,
             groupId: tpl.groupId,
             modulo: tpl.modulo,
+            cuatrimestre: group.cuatrimestre,
+            academicYear: group.academicYear || '2023-2024',
             classroom: tpl.classroom,
             scheduleDay: -1,
             startTime: tpl.startTime || '',
