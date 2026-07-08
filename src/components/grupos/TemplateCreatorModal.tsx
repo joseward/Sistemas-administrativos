@@ -20,9 +20,22 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
   const [modulo, setModulo] = useState('');
   const [groupId, setGroupId] = useState('');
   const [turno, setTurno] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [classroom, setClassroom] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const { academicLevels = [], careers = [], subjects = [], groups = [], bimestres = [], cuatrimestres = [], refreshData = () => {} } = useCurriculum() || {};
+
+  const TIME_OPTIONS = useMemo(() => {
+    const options = [{ value: '', label: 'Seleccionar...' }];
+    for (let h = 7; h <= 22; h++) {
+      for (const m of ['00', '30']) {
+        const time = `${h.toString().padStart(2, '0')}:${m}`;
+        options.push({ value: time, label: time });
+      }
+    }
+    return options;
+  }, []);
 
   React.useEffect(() => {
     if (isOpen && initialData) {
@@ -37,6 +50,8 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
         setGroupId(initialData.groupId);
         setModulo(initialData.modulo.toString());
         setTurno(initialData.turno || '');
+        setStartTime(initialData.startTime || '');
+        setEndTime(initialData.endTime || '');
         setClassroom(initialData.classroom);
         setSelectedSubjects(initialData.subjectIds);
       }
@@ -46,6 +61,8 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
       setCuatrimestre('');
       setModulo('');
       setTurno('');
+      setStartTime('');
+      setEndTime('');
       setGroupId('');
       setClassroom('');
       setSelectedSubjects([]);
@@ -83,7 +100,7 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
 
   const handleSave = () => {
     if (!groupId || !modulo || !classroom || !turno || selectedSubjects.length === 0) {
-      alert("Por favor completa todos los campos (incluyendo el Turno y Grupo Existente) y selecciona al menos una materia.");
+      alert("Por favor completa todos los campos requeridos (incluyendo Turno, Grupo, y Aula) y selecciona al menos una materia.");
       return;
     }
     
@@ -91,6 +108,8 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
       groupId,
       modulo: Number(modulo),
       turno,
+      startTime: startTime || null,
+      endTime: endTime || null,
       classroom,
       subjectIds: selectedSubjects
     });
@@ -101,6 +120,8 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
     setCuatrimestre('');
     setModulo('');
     setTurno('');
+    setStartTime('');
+    setEndTime('');
     setGroupId('');
     setClassroom('');
     setSelectedSubjects([]);
@@ -203,6 +224,21 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
             ]}
           />
           <div></div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Select
+            label="Hora de Inicio (General)"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            options={TIME_OPTIONS}
+          />
+          <Select
+            label="Hora de Fin (General)"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            options={TIME_OPTIONS}
+          />
         </div>
 
         {availableSubjects.length > 0 && (

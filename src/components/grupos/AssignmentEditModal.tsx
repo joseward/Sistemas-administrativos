@@ -31,6 +31,17 @@ export function AssignmentEditModal({ isOpen, onClose, assignment, subjectName, 
   const [endTime, setEndTime] = useState('');
   const [classroom, setClassroom] = useState('');
 
+  const TIME_OPTIONS = React.useMemo(() => {
+    const options = [{ value: '', label: 'Seleccionar...' }];
+    for (let h = 7; h <= 22; h++) {
+      for (const m of ['00', '30']) {
+        const time = `${h.toString().padStart(2, '0')}:${m}`;
+        options.push({ value: time, label: time });
+      }
+    }
+    return options;
+  }, []);
+
   useEffect(() => {
     if (isOpen && assignment) {
       setTeacherId(assignment.teacherId || '');
@@ -91,17 +102,17 @@ export function AssignmentEditModal({ isOpen, onClose, assignment, subjectName, 
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Input
+          <Select
             label="Hora de Inicio"
-            type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
+            options={TIME_OPTIONS}
           />
-          <Input
+          <Select
             label="Hora de Fin"
-            type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
+            options={TIME_OPTIONS}
           />
         </div>
 

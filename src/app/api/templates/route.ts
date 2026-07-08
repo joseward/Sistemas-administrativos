@@ -55,6 +55,8 @@ export async function GET(request: Request) {
       modulo: t.modulo,
       turno: t.turno,
       classroom: t.classroom,
+      startTime: t.startTime,
+      endTime: t.endTime,
       subjectIds: t.subjects.map(s => s.subjectId),
       subjects: t.subjects.map(s => s.subject),
       group: t.group,
@@ -79,6 +81,8 @@ export async function POST(request: Request) {
         modulo: body.modulo,
         turno: body.turno,
         classroom: body.classroom,
+        startTime: body.startTime,
+        endTime: body.endTime,
         createdById: userId,
         subjects: {
           create: body.subjectIds.map((id: string) => ({
@@ -114,6 +118,8 @@ export async function PUT(request: Request) {
         modulo: body.modulo,
         turno: body.turno,
         classroom: body.classroom,
+        startTime: body.startTime,
+        endTime: body.endTime,
         createdById: userId, // Dejamos huella de quién fue el último que la modificó/guardó
         subjects: {
           create: body.subjectIds.map((id: string) => ({

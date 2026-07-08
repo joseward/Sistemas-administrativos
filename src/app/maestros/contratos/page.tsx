@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui';
 import {
   DAYS_OF_WEEK,
-  getSubjectById,
-  getGroupById,
   MOCK_BIMESTRES,
   CUATRIMESTRES,
   MOCK_YEARS
@@ -116,21 +114,22 @@ export default function ContratosPage() {
               <tr>
                 <td className="border border-gray-800 p-2 align-top w-1/3">
                   {mod1.length > 0 ? mod1.map((a, i) => {
-                    const subject = getSubjectById(a.subjectId);
-                    return <div key={i} className="uppercase mb-1">{subject?.name}</div>;
+                    const subjectName = a.subject?.name || 'MATERIA DESCONOCIDA';
+                    return <div key={i} className="uppercase mb-1">{subjectName}</div>;
                   }) : <div className="text-transparent">.</div>}
                 </td>
                 <td className="border border-gray-800 p-2 align-top w-1/3">
                   {mod1.length > 0 ? mod1.map((a, i) => (
                     <div key={i} className="uppercase mb-1">
-                      {DAYS_OF_WEEK[a.scheduleDay]} DE {a.startTime} - {a.endTime}
+                      {a.scheduleDay != null ? DAYS_OF_WEEK[a.scheduleDay] : 'SIN DÍA'} DE {a.startTime || '--:--'} - {a.endTime || '--:--'}
                     </div>
                   )) : <div className="text-transparent">.</div>}
                 </td>
                 <td className="border border-gray-800 p-2 align-top w-1/3">
                   {mod1.length > 0 ? mod1.map((a, i) => {
-                    const group = getGroupById(a.groupId);
-                    return <div key={i} className="uppercase mb-1">{group?.carrera} {group?.grade}</div>;
+                    const careerName = a.group?.career?.name || '';
+                    const groupName = a.group?.name || 'GRUPO DESCONOCIDO';
+                    return <div key={i} className="uppercase mb-1">{careerName} {groupName}</div>;
                   }) : <div className="text-transparent">.</div>}
                 </td>
               </tr>
@@ -158,21 +157,22 @@ export default function ContratosPage() {
               <tr>
                 <td className="border border-gray-800 p-2 align-top w-1/3 h-24">
                   {mod2.length > 0 ? mod2.map((a, i) => {
-                    const subject = getSubjectById(a.subjectId);
-                    return <div key={i} className="uppercase mb-1">{subject?.name}</div>;
+                    const subjectName = a.subject?.name || 'MATERIA DESCONOCIDA';
+                    return <div key={i} className="uppercase mb-1">{subjectName}</div>;
                   }) : null}
                 </td>
                 <td className="border border-gray-800 p-2 align-top w-1/3 h-24">
                   {mod2.length > 0 ? mod2.map((a, i) => (
                     <div key={i} className="uppercase mb-1">
-                      {DAYS_OF_WEEK[a.scheduleDay]} DE {a.startTime} - {a.endTime}
+                      {a.scheduleDay != null ? DAYS_OF_WEEK[a.scheduleDay] : 'SIN DÍA'} DE {a.startTime || '--:--'} - {a.endTime || '--:--'}
                     </div>
                   )) : null}
                 </td>
                 <td className="border border-gray-800 p-2 align-top w-1/3 h-24">
                   {mod2.length > 0 ? mod2.map((a, i) => {
-                    const group = getGroupById(a.groupId);
-                    return <div key={i} className="uppercase mb-1">{group?.carrera} {group?.grade}</div>;
+                    const careerName = a.group?.career?.name || '';
+                    const groupName = a.group?.name || 'GRUPO DESCONOCIDO';
+                    return <div key={i} className="uppercase mb-1">{careerName} {groupName}</div>;
                   }) : null}
                 </td>
               </tr>
