@@ -46,6 +46,8 @@ function HorariosContent() {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loadingTeachers, setLoadingTeachers] = useState(true);
   const [assignments, setAssignments] = useState<any[]>([]);
+  const [dbTemplates, setDbTemplates] = useState<any[]>([]);
+  const [teacherAvailability, setTeacherAvailability] = useState<any[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   
@@ -86,7 +88,9 @@ function HorariosContent() {
   const availableTemplateSlots = useMemo(() => {
     const options: any[] = [];
     
-    MOCK_GROUP_TEMPLATES.forEach(tpl => {
+    const sourceTemplates = dbTemplates.length > 0 ? dbTemplates : MOCK_GROUP_TEMPLATES;
+
+    sourceTemplates.forEach(tpl => {
       const group = getGroupById(tpl.groupId);
       if (!group) return;
 
@@ -94,7 +98,7 @@ function HorariosContent() {
       const level = career ? MOCK_ACADEMIC_LEVELS.find(l => l.id === career.academicLevelId) : null;
       const groupName = career ? `${level?.name} - ${career.name}` : 'Generales';
 
-      tpl.subjectIds.forEach(subjectId => {
+      tpl.subjectIds.forEach((subjectId: string) => {
         // Verificar si esta materia de esta plantilla ya está asignada en assignments
         const isAssigned = assignments.some(a => 
           a.groupId === tpl.groupId &&
@@ -107,7 +111,7 @@ function HorariosContent() {
           const subject = getSubjectById(subjectId);
           options.push({
             id: `${tpl.id}_${subjectId}`,
-            label: `Mód ${tpl.modulo} | ${group.name} ${tpl.turno ? `(${tpl.turno})` : ''} - ${subject?.name} (${tpl.classroom})`,
+            label: `Mód ${tpl.modulo} | ${group.name} ${tpl.turno ? `(${tpl.turno})` : ''} - ${subject?.name} (${tpl.classroom})${tpl.startTime && tpl.endTime ? ` [${tpl.startTime}-${tpl.endTime}]` : ''}`,
             groupCategory: groupName,
             tpl,
             subjectId
@@ -140,39 +144,22 @@ function HorariosContent() {
     Promise.all([
       fetch('/api/assignments').then(res => res.json()),
       fetch('/api/availability').then(res => res.json()),
-      fetch('/api/subjects').then(res => res.json())
+      fetch('/api/subjects').then(res => res.json()),
+      fetch('/api/templates').then(res => res.json())
     ])
-    .then(([assignmentsRes, availabilityRes, subjectsData]) => {
+    .then(([assignmentsRes, availabilityRes, subjectsData, templatesRes]) => {
       if (Array.isArray(subjectsData)) setSubjects(subjectsData);
+      if (templatesRes && !templatesRes.error) setDbTemplates(templatesRes);
       
       let loaded: any[] = [];
       if (assignmentsRes.success) {
-        // Asignaciones reales
-        loaded.push(...assignmentsRes.data.map((a: any) => ({ ...a, isAvailable: false })));
-      }
-      if (availabilityRes.success) {
-        const realAssignments = assignmentsRes.success ? assignmentsRes.data : [];
-        const availAsAssigns = availabilityRes.data
-          .filter((av: any) => {
-            return !realAssignments.some((ra: any) => 
-              ra.teacherId === av.teacherId && 
-              ra.scheduleDay === av.dayOfWeek && 
-              ra.startTime === av.startTime
-            );
-          })
-          .map((av: any) => ({
-          id: `avail_${av.id}`,
-          teacherId: av.teacherId,
-          subjectId: 'mock-s1',
-          groupId: 'mock-g1',
-          scheduleDay: av.dayOfWeek,
-          startTime: av.startTime,
-          endTime: av.endTime,
-          isAvailable: true
-        }));
-        loaded.push(...availAsAssigns);
+        loaded.push(...assignmentsRes.data);
       }
       setAssignments(loaded);
+
+      if (availabilityRes.success) {
+        setTeacherAvailability(availabilityRes.data);
+      }
     })
     .catch(err => console.error("Error fetching schedule data", err));
   }, []);
@@ -221,24 +208,22 @@ function HorariosContent() {
   // Verificar conflictos de horario
   const checkConflict = (newAssignment: Omit<MockScheduleAssignment, 'id'>, checkList = assignments): string | null => {
     // 1. Validar que el maestro marcó este horario como disponible
-    const isAvailable = assignments.some(a => 
-      a.teacherId === newAssignment.teacherId &&
-      a.scheduleDay === newAssignment.scheduleDay &&
-      a.startTime <= newAssignment.startTime &&
-      a.endTime >= newAssignment.endTime &&
-      a.isAvailable === true
+    const isAvailable = teacherAvailability.some(av => 
+      av.teacherId === newAssignment.teacherId &&
+      av.dayOfWeek === newAssignment.scheduleDay &&
+      av.startTime <= newAssignment.startTime &&
+      av.endTime >= newAssignment.endTime
     );
 
     if (!isAvailable) {
-      return 'El docente tiene horario en otra universidad o no está disponible en este horario.';
+      return 'El docente no está disponible en este horario completo o no ha marcado disponibilidad.';
     }
 
     for (const existing of checkList) {
-      // Si ya hay otra materia asignada al mismo maestro en esa hora (que no sea un slot de disponibilidad en blanco)
+      // Si ya hay otra materia asignada al mismo maestro en esa hora
       if (
         existing.teacherId === newAssignment.teacherId &&
-        existing.scheduleDay === newAssignment.scheduleDay &&
-        existing.groupId !== 'mock-g1' // Asumiendo que 'mock-g1' es el default de disponibilidad no asignada
+        existing.scheduleDay === newAssignment.scheduleDay
       ) {
         if (newAssignment.startTime < existing.endTime && newAssignment.endTime > existing.startTime) {
           const teacher = getTeacherById(existing.teacherId);
@@ -249,9 +234,7 @@ function HorariosContent() {
       // Verificar conflicto de grupo
       if (
         existing.groupId === newAssignment.groupId &&
-        existing.scheduleDay === newAssignment.scheduleDay &&
-        existing.groupId !== 'mock-g1' &&
-        !existing.isAvailable
+        existing.scheduleDay === newAssignment.scheduleDay
       ) {
         if (newAssignment.startTime < existing.endTime && newAssignment.endTime > existing.startTime) {
           const group = getGroupById(existing.groupId);
@@ -263,8 +246,7 @@ function HorariosContent() {
       if (
         newAssignment.classroom &&
         existing.classroom === newAssignment.classroom &&
-        existing.scheduleDay === newAssignment.scheduleDay &&
-        !existing.isAvailable
+        existing.scheduleDay === newAssignment.scheduleDay
       ) {
         if (newAssignment.startTime < existing.endTime && newAssignment.endTime > existing.startTime) {
           return `Conflicto de Aula: El ${newAssignment.classroom} ya está ocupado de ${existing.startTime} a ${existing.endTime} el ${DAYS_OF_WEEK[existing.scheduleDay]}.`;
@@ -724,88 +706,179 @@ function HorariosContent() {
                           </tr>
                         </thead>
                         <tbody>
-                          {tAssignments.map(a => {
-                            const isAssigned = a.subjectId && a.subjectId !== 'mock-s1';
-                            const assignedSubject = isAssigned ? getSubjectById(a.subjectId) : null;
-                            const assignedGroup = isAssigned ? getGroupById(a.groupId) : null;
-                            
-                            // Visual distinction: Free time = Greenish, Assigned = Blueish/Solid
-                            const rowBg = isAssigned ? 'bg-blue-50/50 hover:bg-blue-100/70 border-l-4 border-l-blue-500' : 'bg-emerald-50/50 hover:bg-emerald-100/70 border-l-4 border-l-emerald-500';
-                            const textColor = isAssigned ? 'text-blue-900' : 'text-emerald-900';
+                          {(() => {
+                            const tAvailabilities = teacherAvailability.filter(av => av.teacherId === teacher.id);
+                            const orphanedAssignments = tAssignments.filter(a => !tAvailabilities.some(av => a.scheduleDay === av.dayOfWeek && a.startTime >= av.startTime && a.endTime <= av.endTime));
 
                             return (
-                              <tr key={a.id} className={`border-b border-gray-100 transition-colors ${rowBg}`}>
-                                <td className={`px-6 py-4 font-black uppercase ${textColor}`}>
-                                  {DAYS_OF_WEEK[a.scheduleDay]}
-                                </td>
-                                <td className={`px-6 py-4 font-mono font-semibold ${textColor}`}>
-                                  {a.startTime} — {a.endTime}
-                                </td>
-                                <td className="px-6 py-3">
-                                  <select
-                                    className={`w-full px-3 py-2 border rounded-lg text-sm font-medium focus:ring-2 outline-none transition-shadow ${isAssigned ? 'bg-white border-blue-300 text-blue-900 focus:ring-blue-500 shadow-sm' : 'bg-white border-emerald-300 text-emerald-800 focus:ring-emerald-500'}`}
-                                    value={isAssigned ? "assigned" : ""}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      const newAsg = [...assignments];
-                                      const index = newAsg.findIndex(asg => asg.id === a.id);
-                                      if(index !== -1) {
-                                        if (val === "") {
-                                          newAsg[index].subjectId = '';
-                                          newAsg[index].groupId = '';
-                                          newAsg[index].classroom = '';
-                                          newAsg[index].modulo = undefined;
-                                          newAsg[index].isAvailable = true;
-                                        } else {
-                                          const [tplId, subjId] = val.split('_');
-                                          const tpl = MOCK_GROUP_TEMPLATES.find(t => t.id === tplId);
-                                          if (tpl) {
-                                            newAsg[index].subjectId = subjId;
-                                            newAsg[index].groupId = tpl.groupId;
-                                            newAsg[index].classroom = tpl.classroom;
-                                            newAsg[index].modulo = tpl.modulo;
-                                            newAsg[index].isAvailable = false;
-                                            if (!newAsg[index].id.startsWith('mock-a')) {
-                                              newAsg[index].id = `mock-a-${Date.now()}-${Math.random()}`;
-                                            }
-                                          }
-                                        }
-                                        setAssignments(newAsg);
-                                        
-                                        const tid = newAsg[index].teacherId;
-                                        const teacherAssignments = newAsg.filter(asg => asg.teacherId === tid && !asg.isAvailable);
-                                        fetch('/api/assignments', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({ teacherId: tid, assignments: teacherAssignments })
-                                        }).catch(console.error);
-                                      }
-                                    }}
-                                  >
-                                    {isAssigned ? (
-                                      <>
-                                        <option value="assigned">
-                                          🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})
-                                        </option>
-                                        <option value="">-- Liberar Horario (Volver a Disponible) --</option>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <option value="">✅ Disponible para asignar clase...</option>
-                                        {availableTemplateSlots.map(([groupName, options]) => (
-                                          <optgroup key={groupName} label={groupName}>
-                                            {options.map((opt: any) => (
-                                              <option key={opt.id} value={opt.id}>{opt.label}</option>
+                              <>
+                                {tAvailabilities.map(av => {
+                                  const blockAssignments = tAssignments.filter(a => 
+                                    a.scheduleDay === av.dayOfWeek &&
+                                    a.startTime >= av.startTime &&
+                                    a.endTime <= av.endTime
+                                  );
+
+                                  return (
+                                    <React.Fragment key={av.id}>
+                                      <tr className="border-b border-emerald-100 bg-emerald-50/30">
+                                        <td className="px-6 py-4 font-black uppercase text-emerald-900">
+                                          {DAYS_OF_WEEK[av.dayOfWeek]}
+                                        </td>
+                                        <td className="px-6 py-4 font-mono font-semibold text-emerald-900">
+                                          {av.startTime} — {av.endTime} <span className="block text-xs text-emerald-600">Bloque Disponible</span>
+                                        </td>
+                                        <td className="px-6 py-3">
+                                          <select
+                                            className="w-full px-3 py-2 border rounded-lg text-sm font-medium focus:ring-2 outline-none transition-shadow bg-white border-emerald-300 text-emerald-800 focus:ring-emerald-500"
+                                            value=""
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              if (val !== "") {
+                                                const [tplId, subjId] = val.split('_');
+                                                const sourceTemplates = dbTemplates.length > 0 ? dbTemplates : MOCK_GROUP_TEMPLATES;
+                                                const tpl = sourceTemplates.find(t => t.id === tplId);
+                                                
+                                                if (tpl) {
+                                                  if (!tpl.startTime || !tpl.endTime) {
+                                                    alert("La plantilla seleccionada no tiene un horario de inicio/fin definido. Por favor, edítela en Grupos Académicos para asignarle un horario.");
+                                                    e.target.value = "";
+                                                    return;
+                                                  }
+
+                                                  const newAssignment = {
+                                                    id: `mock-a-${Date.now()}-${Math.random()}`,
+                                                    teacherId: teacher.id,
+                                                    subjectId: subjId,
+                                                    groupId: tpl.groupId,
+                                                    scheduleDay: av.dayOfWeek,
+                                                    startTime: tpl.startTime,
+                                                    endTime: tpl.endTime,
+                                                    classroom: tpl.classroom,
+                                                    modulo: tpl.modulo,
+                                                    academicYear: '2023-2024',
+                                                    isAvailable: false
+                                                  };
+                                                  
+                                                  const conflict = checkConflict(newAssignment, assignments);
+                                                  if (conflict) {
+                                                    alert(conflict);
+                                                    e.target.value = "";
+                                                    return;
+                                                  }
+
+                                                  const newAsg = [...assignments, newAssignment];
+                                                  setAssignments(newAsg);
+                                                  
+                                                  fetch('/api/assignments', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(a => a.teacherId === teacher.id) })
+                                                  }).catch(console.error);
+                                                }
+                                              }
+                                            }}
+                                          >
+                                            <option value="">➕ Asignar nueva clase en este bloque...</option>
+                                            {availableTemplateSlots.map(([groupName, options]) => (
+                                              <optgroup key={groupName} label={groupName}>
+                                                {options.map((opt: any) => (
+                                                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                                ))}
+                                              </optgroup>
                                             ))}
-                                          </optgroup>
-                                        ))}
-                                      </>
-                                    )}
-                                  </select>
-                                </td>
-                              </tr>
+                                          </select>
+                                        </td>
+                                      </tr>
+                                      
+                                      {blockAssignments.map(a => {
+                                        const isAssigned = a.subjectId && a.subjectId !== 'mock-s1';
+                                        const assignedSubject = isAssigned ? getSubjectById(a.subjectId) : null;
+                                        const assignedGroup = isAssigned ? getGroupById(a.groupId) : null;
+                                        
+                                        return (
+                                          <tr key={a.id} className="border-b border-gray-100 bg-blue-50/50 hover:bg-blue-100/70 border-l-4 border-l-blue-500">
+                                            <td className="px-6 py-3 font-black uppercase text-blue-900 text-right">
+                                              <span className="text-xs text-gray-500 block mr-4">Asignado:</span>
+                                            </td>
+                                            <td className="px-6 py-3 font-mono font-semibold text-blue-900 text-sm">
+                                              ↳ {a.startTime} — {a.endTime}
+                                            </td>
+                                            <td className="px-6 py-2">
+                                              <div className="flex items-center gap-2">
+                                                <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-blue-300 text-blue-900 shadow-sm truncate">
+                                                  🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})
+                                                </div>
+                                                <button 
+                                                  onClick={() => {
+                                                    if(confirm("¿Seguro que deseas eliminar esta asignación?")) {
+                                                      const newAsg = assignments.filter(x => x.id !== a.id);
+                                                      setAssignments(newAsg);
+                                                      fetch('/api/assignments', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
+                                                      }).catch(console.error);
+                                                    }
+                                                  }}
+                                                  className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-bold border border-transparent hover:border-red-200 transition-colors"
+                                                  title="Eliminar Asignación"
+                                                >
+                                                  ✕
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </React.Fragment>
+                                  );
+                                })}
+
+                                {orphanedAssignments.map(a => {
+                                  const isAssigned = a.subjectId && a.subjectId !== 'mock-s1';
+                                  const assignedSubject = isAssigned ? getSubjectById(a.subjectId) : null;
+                                  const assignedGroup = isAssigned ? getGroupById(a.groupId) : null;
+                                  
+                                  return (
+                                    <tr key={a.id} className="border-b border-red-100 bg-red-50/50 hover:bg-red-100/70 border-l-4 border-l-red-500">
+                                      <td className="px-6 py-3 font-black uppercase text-red-900">
+                                        {DAYS_OF_WEEK[a.scheduleDay]}
+                                        <span className="text-[10px] text-red-500 block leading-tight">Fuera de disp.</span>
+                                      </td>
+                                      <td className="px-6 py-3 font-mono font-semibold text-red-900 text-sm">
+                                        {a.startTime} — {a.endTime}
+                                      </td>
+                                      <td className="px-6 py-2">
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-red-300 text-red-900 shadow-sm truncate">
+                                            🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})
+                                          </div>
+                                          <button 
+                                            onClick={() => {
+                                              if(confirm("¿Seguro que deseas eliminar esta asignación?")) {
+                                                const newAsg = assignments.filter(x => x.id !== a.id);
+                                                setAssignments(newAsg);
+                                                fetch('/api/assignments', {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
+                                                }).catch(console.error);
+                                              }
+                                            }}
+                                            className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-bold border border-transparent hover:border-red-200 transition-colors"
+                                            title="Eliminar Asignación"
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </>
                             );
-                          })}
+                          })()}
                         </tbody>
                       </table>
                     </div>
