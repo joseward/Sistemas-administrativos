@@ -187,6 +187,7 @@ function HorariosContent() {
 
   const getTeacherById = (id: string) => teachers.find((t) => t.id === id);
   const getActiveTeachers = () => teachers.filter((t) => t.contractStatus === 'active');
+  const activeTeachers = getActiveTeachers();
 
   // Estado del formulario de nueva asignación
   const [formData, setFormData] = useState({
@@ -429,7 +430,7 @@ function HorariosContent() {
     });
   };
 
-  const activeTeachers = getActiveTeachers();
+
 
   const handlePrint = (mode: 'groups' | 'teachers', targetId: string | null = null) => {
     setPrintMode(mode);
