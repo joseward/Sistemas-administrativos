@@ -277,7 +277,7 @@ model TeacherAvailability {
 // ============================================
 model TeacherSubjectGroup {
   id           String   @id @default(cuid())
-  teacherId    String
+  teacherId    String?
   subjectId    String
   groupId      String
   scheduleDay  Int? // Día de la semana
@@ -293,7 +293,7 @@ model TeacherSubjectGroup {
   createdById  String?
 
   // Relaciones
-  teacher    Teacher               @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher    Teacher?              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   subject    Subject               @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   group      Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
   attendance Attendance[]
