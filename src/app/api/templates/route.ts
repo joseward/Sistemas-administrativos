@@ -1,5 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+
+async function getUserId() {
+  const cookieStore = cookies();
+  const token = cookieStore.get('auth-token')?.value;
+  if (token) {
+    try {
+      const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+      return payload.id as string;
+    } catch (e) {
+      return undefined;
+    }
+  }
+  return undefined;
+}
 
 export async function GET(request: Request) {
   try {
@@ -23,7 +41,8 @@ export async function GET(request: Request) {
           include: {
             career: true
           }
-        }
+        },
+        createdBy: true
       },
       orderBy: [{ modulo: 'asc' }],
     });
@@ -37,7 +56,8 @@ export async function GET(request: Request) {
       classroom: t.classroom,
       subjectIds: t.subjects.map(s => s.subjectId),
       subjects: t.subjects.map(s => s.subject),
-      group: t.group
+      group: t.group,
+      createdBy: t.createdBy
     }));
 
     return NextResponse.json(formatted);
@@ -50,6 +70,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const userId = await getUserId();
     
     const template = await prisma.groupTemplate.create({
       data: {
@@ -57,6 +78,7 @@ export async function POST(request: Request) {
         modulo: body.modulo,
         turno: body.turno,
         classroom: body.classroom,
+        createdById: userId,
         subjects: {
           create: body.subjectIds.map((id: string) => ({
             subject: { connect: { id } }
@@ -75,6 +97,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
+    const userId = await getUserId();
     
     // First, delete existing subjects for this template
     await prisma.templateSubject.deleteMany({
@@ -82,6 +105,7 @@ export async function PUT(request: Request) {
     });
 
     // Then update the template and recreate the subject relationships
+    // Actualizamos el createdById también por si fue editado
     const template = await prisma.groupTemplate.update({
       where: { id: body.id },
       data: {
@@ -89,6 +113,7 @@ export async function PUT(request: Request) {
         modulo: body.modulo,
         turno: body.turno,
         classroom: body.classroom,
+        createdById: userId, // Dejamos huella de quién fue el último que la modificó/guardó
         subjects: {
           create: body.subjectIds.map((id: string) => ({
             subject: { connect: { id } }

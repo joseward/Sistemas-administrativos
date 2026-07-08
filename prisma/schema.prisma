@@ -193,11 +193,13 @@ model GroupTemplate {
   modulo    Int
   turno     String
   classroom String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
 
-  group    Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  subjects TemplateSubject[]
+  group     Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subjects  TemplateSubject[]
+  createdBy User?             @relation("TemplateCreatedBy", fields: [createdById], references: [id])
 
   @@index([groupId])
   @@map("group_templates")
@@ -286,6 +288,7 @@ model TeacherSubjectGroup {
   isAvailable  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  createdById  String?
 
   // Relaciones
   teacher    Teacher               @relation(fields: [teacherId], references: [id], onDelete: Cascade)
@@ -293,6 +296,7 @@ model TeacherSubjectGroup {
   group      Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
   attendance Attendance[]
   signatures AttendanceSignature[]
+  createdBy  User?                 @relation("AssignmentCreatedBy", fields: [createdById], references: [id])
 
   @@unique([teacherId, subjectId, groupId, academicYear, scheduleDay, startTime])
   @@index([teacherId])
@@ -395,7 +399,9 @@ model User {
   blockReason    String?
 
   // Relaciones
-  createdTeachers Teacher[] @relation("TeacherCreator")
+  createdTeachers    Teacher[]             @relation("TeacherCreator")
+  createdTemplates   GroupTemplate[]       @relation("TemplateCreatedBy")
+  createdAssignments TeacherSubjectGroup[] @relation("AssignmentCreatedBy")
 
   @@index([email])
   @@map("users")
