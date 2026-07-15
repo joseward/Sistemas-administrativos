@@ -226,7 +226,7 @@ export default function GruposPage() {
     const { group, template, nextCuatri, nextModulo, nextSubjects, isNextCuatri } = promotePreview;
 
     if (nextSubjects.length === 0) {
-      alert(`No hay materias registradas en el catálogo para este ciclo.`);
+      alert(`No se puede promover: No hay materias registradas en el catálogo para el Cuatrimestre ${nextCuatri}.`);
       setPromotePreview(null);
       return;
     }
@@ -235,12 +235,23 @@ export default function GruposPage() {
 
     try {
       if (isNextCuatri) {
+        const newGroupName = window.prompt(
+          `¡Promoción a nuevo cuatrimestre!\n\nPor favor, ingresa el nombre para el NUEVO grupo del Cuatrimestre ${nextCuatri}:`, 
+          group.name
+        );
+        
+        if (!newGroupName) {
+          // El usuario canceló el prompt
+          setPromotePreview(null);
+          return; 
+        }
+
         // Crear el nuevo grupo para el próximo cuatrimestre en la BD
         const res = await fetch('/api/groups', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: group.name,
+            name: newGroupName,
             careerId: group.careerId,
             cuatrimestre: nextCuatri,
             academicYear: group.academicYear,
@@ -666,7 +677,7 @@ export default function GruposPage() {
             <div className="grid grid-cols-2 gap-6 mb-6">
               <div className="bg-gray-50 p-4 rounded-lg border">
                 <p className="text-xs text-gray-500 uppercase font-bold mb-1">De (Actual)</p>
-                <p className="font-semibold text-gray-900">{promotePreview.group.carrera}</p>
+                <p className="font-semibold text-gray-900">{promotePreview.group.career?.name || promotePreview.group.name}</p>
                 <p className="text-blue-600">Cuatrimestre {promotePreview.group.cuatrimestre} - Módulo {promotePreview.template.modulo}</p>
               </div>
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm relative">
@@ -674,7 +685,7 @@ export default function GruposPage() {
                   →
                 </div>
                 <p className="text-xs text-blue-600 uppercase font-bold mb-1">{promotePreview.isNextCuatri ? 'A Sig. Cuatrimestre' : 'A Sig. Bimestre'}</p>
-                <p className="font-semibold text-gray-900">{promotePreview.group.carrera}</p>
+                <p className="font-semibold text-gray-900">{promotePreview.group.career?.name || promotePreview.group.name}</p>
                 <p className="text-emerald-600 font-bold">Cuatrimestre {promotePreview.nextCuatri} - Módulo {promotePreview.nextModulo}</p>
               </div>
             </div>
