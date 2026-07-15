@@ -299,6 +299,7 @@ model TeacherSubjectGroup {
   academicYear String
   modulo       Int? // Ej. 1 o 2
   cuatrimestre Int? // Ej. 1
+  fusionGroupId String? // Agrupa materias fusionadas compartiendo maestro, horario y aula
   isAvailable  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
