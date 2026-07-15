@@ -17,7 +17,7 @@ export default function GruposPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [filters, setFilters] = useState({
     academicYear: 'Todos los años',
-    modulo: '1',
+    modulo: '',
     cuatrimestre: '',
     nivelAcademico: '',
     careerId: '',
