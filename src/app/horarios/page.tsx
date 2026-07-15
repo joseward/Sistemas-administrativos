@@ -366,29 +366,25 @@ function HorariosContent() {
   const confirmAssignment = () => {
     if (!assignPreview) return;
     
-    const newAsg = [...assignments, assignPreview as any];
-    setAssignments(newAsg);
+    const preview = assignPreview as any;
+    let newAsg = [...assignments];
     
-    // Guardar en la base de datos
-    fetch('/api/assignments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        teacherId: assignPreview.teacherId, 
-        assignments: newAsg.filter(a => a.teacherId === assignPreview.teacherId && !a.isAvailable) 
-      })
-    })
-    .then(async (res) => {
-      if (!res.ok) {
-        const errorData = await res.json();
-        alert(`Error al guardar: ${errorData.error || 'Error desconocido'}`);
+    if (preview.fusionGroupId) {
+      // Actualizar todos los que compartan el fusionGroupId
+      newAsg = newAsg.map(a => 
+        a.fusionGroupId === preview.fusionGroupId 
+          ? { ...a, teacherId: preview.teacherId, scheduleDay: preview.scheduleDay, startTime: preview.startTime, endTime: preview.endTime, classroom: preview.classroom }
+          : a
+      );
+      if (!newAsg.find(a => a.id === preview.id)) {
+        newAsg.push(preview);
       }
-    })
-    .catch(err => {
-      console.error(err);
-      alert('Error de conexión al guardar el horario.');
-    });
-
+    } else {
+      newAsg = newAsg.filter(a => a.id !== preview.id);
+      newAsg.push(preview);
+    }
+    
+    setAssignments(newAsg);
     setIsFormOpen(false);
     setAssignPreview(null);
     setFormData({
@@ -398,6 +394,15 @@ function HorariosContent() {
       startTime: '',
       endTime: '',
     });
+
+    // Guardar en la base de datos (usamos la ruta de single update para preservar fusiones correctamente en backend)
+    fetch('/api/assignments/single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(preview)
+    })
+    .catch(console.error)
+    .finally(() => refreshData());
   };
 
   const getSuggestedTeachers = () => {
@@ -834,7 +839,7 @@ function HorariosContent() {
                                             <td className="px-6 py-2">
                                               <div className="flex items-center gap-2">
                                                 <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-blue-300 text-blue-900 shadow-sm truncate flex justify-between items-center">
-                                                  <span>🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})</span>
+                                      <span>🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom}) {a.fusionGroupId && <span className="ml-2 text-orange-500" title="Clase Fusionada">🔗</span>}</span>
                                                   {a.createdBy && (
                                                     <span className="text-xs text-blue-600 font-normal italic print:hidden pl-2 border-l border-blue-200">
                                                       Asignado por: {a.createdBy.firstName || a.createdBy.email.split('@')[0]}
@@ -843,13 +848,24 @@ function HorariosContent() {
                                                 </div>
                                                 <button 
                                                   onClick={() => {
-                                                    const newAsg = assignments.filter(x => x.id !== a.id);
-                                                    setAssignments(newAsg);
-                                                    fetch('/api/assignments', {
-                                                      method: 'POST',
-                                                      headers: { 'Content-Type': 'application/json' },
-                                                      body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
-                                                    }).catch(console.error);
+                                                    if (a.fusionGroupId) {
+                                                      const preview = { ...a, teacherId: null };
+                                                      const newAsg = assignments.map(x => x.fusionGroupId === a.fusionGroupId ? { ...x, teacherId: null } : x);
+                                                      setAssignments(newAsg);
+                                                      fetch('/api/assignments/single', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify(preview)
+                                                      }).catch(console.error).finally(() => refreshData());
+                                                    } else {
+                                                      const newAsg = assignments.filter(x => x.id !== a.id);
+                                                      setAssignments(newAsg);
+                                                      fetch('/api/assignments', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
+                                                      }).catch(console.error);
+                                                    }
                                                   }}
                                                   className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-bold border border-transparent hover:border-red-200 transition-colors"
                                                   title="Eliminar Asignación"
@@ -882,7 +898,7 @@ function HorariosContent() {
                                       <td className="px-6 py-2">
                                         <div className="flex items-center gap-2">
                                           <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-red-300 text-red-900 shadow-sm truncate flex justify-between items-center">
-                                            <span>🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom})</span>
+                                            <span>🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom}) {a.fusionGroupId && <span className="ml-2 text-orange-500" title="Clase Fusionada">🔗</span>}</span>
                                             {a.createdBy && (
                                               <span className="text-xs text-red-600 font-normal italic print:hidden pl-2 border-l border-red-200">
                                                 Asignado por: {a.createdBy.firstName || a.createdBy.email.split('@')[0]}
@@ -891,13 +907,24 @@ function HorariosContent() {
                                           </div>
                                           <button 
                                             onClick={() => {
-                                              const newAsg = assignments.filter(x => x.id !== a.id);
-                                              setAssignments(newAsg);
-                                              fetch('/api/assignments', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
-                                              }).catch(console.error);
+                                              if (a.fusionGroupId) {
+                                                const preview = { ...a, teacherId: null };
+                                                const newAsg = assignments.map(x => x.fusionGroupId === a.fusionGroupId ? { ...x, teacherId: null } : x);
+                                                setAssignments(newAsg);
+                                                fetch('/api/assignments/single', {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify(preview)
+                                                }).catch(console.error).finally(() => refreshData());
+                                              } else {
+                                                const newAsg = assignments.filter(x => x.id !== a.id);
+                                                setAssignments(newAsg);
+                                                fetch('/api/assignments', {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify({ teacherId: teacher.id, assignments: newAsg.filter(x => x.teacherId === teacher.id) })
+                                                }).catch(console.error);
+                                              }
                                             }}
                                             className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-bold border border-transparent hover:border-red-200 transition-colors"
                                             title="Eliminar Asignación"

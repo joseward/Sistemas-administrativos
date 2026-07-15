@@ -55,6 +55,17 @@ export default function Home() {
             </p>
           </Link>
 
+          {/* Fusionar Grupos */}
+          <Link
+            href="/fusion-grupos"
+            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border-t-4 border-[#f97316] p-6 group"
+          >
+            <h2 className="text-2xl font-bold text-[#061266] mb-2 group-hover:text-[#1877f2] transition-colors">🔗 Fusión</h2>
+            <p className="text-gray-600">
+              Unir materias compartidas entre carreras
+            </p>
+          </Link>
+
           {/* Contratos */}
           <Link
             href="/maestros/contratos"

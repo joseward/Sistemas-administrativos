@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
             academicYear: a.academicYear || '2026-2027',
             modulo: a.modulo,
             cuatrimestre: a.cuatrimestre,
+            fusionGroupId: a.fusionGroupId || null,
             isAvailable: a.isAvailable,
             createdById: userId
           }))
