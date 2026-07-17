@@ -120,20 +120,20 @@ export default async function PortalDocentePage({
                 </div>
               </Link>
 
-              {/* Tarjeta 3: Horarios (Próximamente) */}
-              <div className="bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 p-8 h-full relative overflow-hidden flex flex-col opacity-80 cursor-not-allowed">
-                <div className="absolute top-4 right-4 bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                  <Construction className="w-3 h-3" /> Próximamente
+              {/* Tarjeta 3: Horarios Asignados */}
+              <Link href="/portal-docente/horarios" className="group">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative overflow-hidden flex flex-col">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                  <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <Calendar className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Horario Asignado</h3>
+                  <p className="text-gray-500 mb-8 flex-1">Visualiza las materias, grupos y horarios específicos que coordinación te ha asignado para el ciclo escolar.</p>
+                  <div className="flex items-center text-purple-600 font-semibold text-sm group-hover:gap-2 transition-all gap-1">
+                    Ingresar <ArrowRight className="w-4 h-4" />
+                  </div>
                 </div>
-                <div className="w-14 h-14 bg-gray-200 text-gray-400 rounded-xl flex items-center justify-center mb-6">
-                  <Calendar className="w-7 h-7" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-600 mb-3">Horario Asignado</h3>
-                <p className="text-gray-400 mb-8 flex-1">Aquí podrás visualizar las materias, grupos y horarios específicos que coordinación te asigne para el ciclo escolar.</p>
-                <div className="flex items-center text-gray-400 font-semibold text-sm gap-1">
-                  Módulo en construcción
-                </div>
-              </div>
+              </Link>
 
             </div>
           </div>

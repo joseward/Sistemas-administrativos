@@ -460,6 +460,77 @@ function HorariosContent() {
 
 
 
+  const handlePublishSchedules = async () => {
+    // 1. Determinar qué maestro(s) se van a publicar
+    let teachersToPublish = [];
+    if (filterTeacher) {
+      const t = teachers.find(t => t.id === filterTeacher);
+      if (t) teachersToPublish.push(t);
+    } else {
+      teachersToPublish = activeTeachers;
+    }
+
+    if (teachersToPublish.length === 0) return;
+
+    // 2. Verificar horas libres no asignadas
+    // Un maestro tiene horas libres si tiene bloques de availability que NO están cubiertos por assignments
+    let hasUnassignedHours = false;
+    for (const t of teachersToPublish) {
+      const availabilities = teacherAvailability.filter(av => av.teacherId === t.id);
+      const teacherAssignments = assignments.filter(a => a.teacherId === t.id && !a.isAvailable);
+
+      // Una heurística simple: sumar minutos de disponibilidad vs minutos asignados
+      const timeToMinutes = (timeStr: string) => {
+        if (!timeStr) return 0;
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      let totalAvailMinutes = 0;
+      availabilities.forEach(av => {
+        totalAvailMinutes += timeToMinutes(av.endTime) - timeToMinutes(av.startTime);
+      });
+
+      let totalAssignedMinutes = 0;
+      teacherAssignments.forEach(a => {
+        totalAssignedMinutes += timeToMinutes(a.endTime) - timeToMinutes(a.startTime);
+      });
+
+      // Permitimos un margen de error (ej. 30 minutos) por tiempos de receso
+      if (totalAvailMinutes - totalAssignedMinutes > 30) {
+        hasUnassignedHours = true;
+        break;
+      }
+    }
+
+    if (hasUnassignedHours) {
+      if (!confirm('A uno o más maestros seleccionados aún les quedan horas disponibles sin asignar. ¿Estás seguro de que deseas enviarles su horario en este estado?')) {
+        return;
+      }
+    } else {
+      if (!confirm(`¿Estás seguro de enviar los horarios a ${filterTeacher ? 'este maestro' : 'todos los maestros'}?`)) {
+        return;
+      }
+    }
+
+    try {
+      const res = await fetch('/api/teachers/publish-schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherId: filterTeacher || null })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('¡Horarios enviados y publicados correctamente!');
+      } else {
+        alert('Error al publicar: ' + data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error inesperado al enviar horarios.');
+    }
+  };
+
   const handlePrint = (mode: 'groups' | 'teachers', targetId: string | null = null) => {
     setPrintMode(mode);
     setPrintTargetId(targetId);
@@ -608,6 +679,43 @@ function HorariosContent() {
             <span className="text-sm text-gray-500 ml-auto">
               {filteredAssignments.length} asignación{filteredAssignments.length !== 1 ? 'es' : ''}
             </span>
+          </div>
+
+          {/* Resumen de estadísticas y botón de publicar */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+            <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-500 flex flex-col justify-center">
+              <p className="text-sm font-medium text-gray-500">Total de Maestros</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{teachers.length}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-emerald-500 flex flex-col justify-center">
+              <p className="text-sm font-medium text-gray-500">Maestros con Horarios</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {new Set(assignments.filter(a => a.isAvailable).map(a => a.teacherId)).size}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-purple-500 flex flex-col justify-center">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Aulas Asignadas</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {new Set(assignments.filter(a => a.classroom).map(a => a.classroom)).size} <span className="text-xl text-gray-400">/ 10</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-400 font-medium">AULAS</p>
+                  <p className="text-xs text-amber-600 mt-0.5">Pendiente BD</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col justify-center gap-2">
+              <Button 
+                onClick={() => handlePublishSchedules()} 
+                className="w-full h-full text-sm flex-col py-3 bg-[#061266] hover:bg-blue-900"
+              >
+                <span className="text-xl mb-1">📬</span>
+                {filterTeacher ? 'Enviar Horario a Docente' : 'Enviar Horarios a Todos'}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -948,34 +1056,6 @@ function HorariosContent() {
             })()}
           </div>
         )}
-
-        {/* Resumen de estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="bg-white rounded-lg shadow-md p-5 border-l-4 border-blue-500">
-            <p className="text-sm font-medium text-gray-500">Total de Maestros</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{teachers.length}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-5 border-l-4 border-emerald-500">
-            <p className="text-sm font-medium text-gray-500">Maestros con Horarios</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">
-              {new Set(assignments.filter(a => a.isAvailable).map(a => a.teacherId)).size}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-5 border-l-4 border-purple-500">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Aulas Asignadas</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">
-                  {new Set(assignments.filter(a => a.classroom).map(a => a.classroom)).size} <span className="text-xl text-gray-400">/ 10</span>
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] text-gray-400 font-medium">AULAS PENDIENTES</p>
-                <p className="text-xs text-amber-600 mt-0.5">Pendiente de BD</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ============ MODAL: Nueva Asignación ============ */}
