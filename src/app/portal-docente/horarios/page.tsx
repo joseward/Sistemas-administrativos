@@ -18,7 +18,7 @@ export default async function TeacherHorarioPage() {
       const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
       const email = payload.email as string;
       
-      teacher = await prisma.teacher.findUnique({ 
+      const teacherRecord = await prisma.teacher.findUnique({ 
         where: { email },
         include: {
           assignments: {
@@ -32,6 +32,24 @@ export default async function TeacherHorarioPage() {
           }
         }
       });
+
+      if (teacherRecord) {
+        teacher = teacherRecord;
+      } else if (payload.role === 'ADMIN' || payload.role === 'admin') {
+        teacher = await prisma.teacher.findFirst({
+          include: {
+            assignments: {
+              where: { isAvailable: false },
+              include: {
+                subject: true,
+                group: {
+                  include: { career: true }
+                }
+              }
+            }
+          }
+        });
+      }
     } catch (err) {
       console.warn('Invalid token in portal-docente:', err);
     }

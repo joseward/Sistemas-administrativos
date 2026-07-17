@@ -23,13 +23,20 @@ export default async function PortalDocentePage({
       const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
       const email = payload.email as string;
       
-      const teacher = await prisma.teacher.findUnique({ 
+      const teacherRecord = await prisma.teacher.findUnique({ 
         where: { email } 
       });
       
-      if (teacher) {
-        teacherId = teacher.id;
-        teacherName = teacher.firstName;
+      if (teacherRecord) {
+        teacherId = teacherRecord.id;
+        teacherName = teacherRecord.firstName;
+      } else if (payload.role === 'ADMIN' || payload.role === 'admin') {
+        // Vista previa para administrador
+        const firstTeacher = await prisma.teacher.findFirst();
+        if (firstTeacher) {
+          teacherId = firstTeacher.id;
+          teacherName = firstTeacher.firstName + ' (Vista Admin)';
+        }
       }
     } catch (err) {
       console.warn('Invalid token in portal-docente:', err);
