@@ -37,6 +37,25 @@ export default async function TeacherHorarioPage() {
     }
   }
 
+  let activeYear = '';
+  let activeCuatri = 0;
+  
+  if (teacher && teacher.assignments && teacher.assignments.length > 0) {
+    // Buscar el ciclo más reciente para no mostrar materias viejas empalmadas
+    const sorted = [...teacher.assignments].sort((a, b) => {
+      if (a.academicYear > b.academicYear) return -1;
+      if (a.academicYear < b.academicYear) return 1;
+      return b.cuatrimestre - a.cuatrimestre;
+    });
+    
+    activeYear = sorted[0].academicYear;
+    activeCuatri = sorted[0].cuatrimestre;
+    
+    teacher.assignments = teacher.assignments.filter(a => 
+      a.academicYear === activeYear && a.cuatrimestre === activeCuatri
+    );
+  }
+
   if (!teacher) {
     let payloadEmail = 'desconocido';
     if (token) {
@@ -122,14 +141,13 @@ export default async function TeacherHorarioPage() {
                         {hour}
                       </td>
                       {DAYS_OF_WEEK.map((_, dayIndex) => {
-                        // Buscar asignaciones para este día y que cubran esta hora
-                        const slots = teacher.assignments.filter(a => 
-                          a.scheduleDay === dayIndex && 
-                          a.startTime !== null && 
-                          a.endTime !== null && 
-                          a.startTime <= hour && 
-                          a.endTime > hour
-                        );
+                        // Buscar asignaciones que inicien exactamente en esta hora
+                        const currentH = hour.split(':')[0];
+                        const slots = teacher.assignments.filter(a => {
+                          if (a.scheduleDay !== dayIndex || !a.startTime || !a.endTime) return false;
+                          const startH = a.startTime.split(':')[0];
+                          return startH === currentH;
+                        });
 
                         if (slots.length === 0) {
                           return <td key={dayIndex} className="px-1 py-1"></td>;
@@ -153,9 +171,6 @@ export default async function TeacherHorarioPage() {
                         return (
                           <td key={dayIndex} className="px-1 py-1 align-top">
                             {groupedSlots.map((group, idx) => {
-                              // Solo renderizar en la primera hora del bloque
-                              if (group[0].startTime !== hour) return null;
-
                               const isFused = group.length > 1;
                               const subjectName = group[0].subject.name;
                               const timeRange = `${group[0].startTime} - ${group[0].endTime}`;
