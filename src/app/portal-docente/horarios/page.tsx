@@ -18,8 +18,8 @@ export default async function TeacherHorarioPage() {
       const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
       const email = payload.email as string;
       
-      teacher = await prisma.teacher.findUnique({ 
-        where: { email },
+      teacher = await prisma.teacher.findFirst({ 
+        where: { email: { equals: email, mode: 'insensitive' } },
         include: {
           assignments: {
             where: { isAvailable: false },
@@ -38,11 +38,23 @@ export default async function TeacherHorarioPage() {
   }
 
   if (!teacher) {
+    let payloadEmail = 'desconocido';
+    if (token) {
+      try {
+        const { payload } = await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
+        payloadEmail = payload.email as string;
+      } catch(e) {}
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f4f6f8] p-4">
         <div className="bg-white p-8 rounded-xl shadow-md text-center max-w-md w-full border border-gray-100">
           <div className="text-5xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Perfil No Encontrado</h2>
+          <p className="text-gray-600 mb-6">
+            No se encontró un expediente de maestro para el correo: <b>{payloadEmail}</b>. 
+            Asegúrate de que este correo coincida exactamente con el registrado en la <b>Gestión de Maestros</b>.
+          </p>
           <Link href="/login">
             <button className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-emerald-700 w-full transition-colors">
               Regresar al Login
