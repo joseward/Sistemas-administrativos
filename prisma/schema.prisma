@@ -49,6 +49,7 @@ model Teacher {
   cedula         String?  @unique
   specialization String?
   contractStatus String   @default("pending") // active, inactive, pending
+  schedulesPublishedAt DateTime? // Cuando el administrador envía/publica el horario
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
