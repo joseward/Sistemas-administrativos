@@ -14,6 +14,92 @@ const DAYS_OF_WEEK: Record<number, string> = {
   6: 'Domingo'
 };
 
+const TeacherAttendanceSheet = ({ teacher, assignments, selectedDate, isLast = true }: { teacher: any, assignments: any[], selectedDate: string, isLast?: boolean }) => {
+  // Ajustar la fecha para evitar el desfase por zona horaria agregando T12:00:00
+  const dateObj = new Date(selectedDate + 'T12:00:00');
+  
+  return (
+    <div className={`bg-white rounded-lg shadow-lg p-8 print:shadow-none print:p-0 ${!isLast ? 'print:break-after-page' : ''} mb-8`}>
+      {/* Cabecera del documento */}
+      <div className="border-b-2 border-gray-800 pb-4 mb-6 flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-wider">Universidad Aztlán Playa del Carmen</h2>
+          <h3 className="text-lg font-semibold text-gray-700 mt-1">Control de Asistencia Docente</h3>
+        </div>
+        <div className="text-right text-sm">
+          <p><span className="font-bold">Fecha:</span> {dateObj.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+      </div>
+
+      {/* Información del Maestro */}
+      <div className="grid grid-cols-2 gap-4 mb-8 text-sm border border-gray-300 rounded-lg p-4 bg-gray-50 print:bg-white print:border-gray-400">
+        <div className="space-y-2">
+          <p><span className="font-bold text-gray-700 w-24 inline-block">Docente:</span> <span className="uppercase">{teacher.firstName} {teacher.lastName}</span></p>
+          <p><span className="font-bold text-gray-700 w-24 inline-block">E-mail:</span> {teacher.email}</p>
+        </div>
+        <div className="space-y-2">
+          <p><span className="font-bold text-gray-700 w-24 inline-block">Teléfono:</span> {teacher.phone || 'N/A'}</p>
+          <p><span className="font-bold text-gray-700 w-24 inline-block">Especialidad:</span> {teacher.specialization || 'N/A'}</p>
+        </div>
+      </div>
+
+      {/* Tabla de Asistencia (Materias) */}
+      <div className="mb-12">
+        <table className="w-full text-sm border-collapse border border-gray-400">
+          <thead>
+            <tr className="bg-gray-100 print:bg-gray-100">
+              <th className="border border-gray-400 px-3 py-2 w-12 text-center">No.</th>
+              <th className="border border-gray-400 px-3 py-2 text-left">Materia / Grupo</th>
+              <th className="border border-gray-400 px-3 py-2 w-48 text-center">Horario de la Materia</th>
+              <th className="border border-gray-400 px-3 py-2 w-24 text-center">Asistencia</th>
+              <th className="border border-gray-400 px-3 py-2 w-48 text-center">Firma del Docente</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.map((assignment, idx) => {
+              const subjectName = assignment.subject?.name || 'Materia desconocida';
+              const groupName = assignment.group?.name || '';
+              const careerName = assignment.group?.career?.name || '';
+              return (
+                <tr key={assignment.id} className="print:break-inside-avoid">
+                  <td className="border border-gray-400 px-3 py-4 text-center">{idx + 1}</td>
+                  <td className="border border-gray-400 px-3 py-4 uppercase">
+                    <div className="font-bold">{subjectName}</div>
+                    <div className="text-xs text-gray-600 mt-1">{careerName} - {groupName}</div>
+                  </td>
+                  <td className="border border-gray-400 px-3 py-4 text-center text-gray-800 uppercase">
+                    {assignment.scheduleDay != null ? DAYS_OF_WEEK[assignment.scheduleDay] : '---'}<br/>
+                    {assignment.startTime && assignment.endTime ? `${assignment.startTime} a ${assignment.endTime} hrs.` : '---'}
+                  </td>
+                  <td className="border border-gray-400 px-3 py-4 text-center">
+                     <div className="w-6 h-6 border-2 border-gray-400 mx-auto rounded-sm print:border-black"></div>
+                  </td>
+                  <td className="border border-gray-400 px-3 py-4"></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Sección de Firmas de Coordinación */}
+      <div className="mt-24 flex justify-center px-12">
+        <div className="text-center w-64">
+          <div className="border-t border-black pt-2">
+            <p className="font-bold text-sm uppercase">Coordinación Académica</p>
+            <p className="text-xs text-gray-600">Sello y Validación</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer de impresión */}
+      <div className="mt-16 text-center text-[10px] text-gray-400 print:block">
+        Generado por el Sistema Administrativo Escolar — {new Date().toLocaleString()}
+      </div>
+    </div>
+  );
+};
+
 export default function AsistenciaPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
@@ -49,7 +135,7 @@ export default function AsistenciaPage() {
 
   // Asignaciones del maestro seleccionado (solo clases, no disponibilidad)
   const teacherAssignments = useMemo(() => {
-    if (!selectedTeacherId) return [];
+    if (!selectedTeacherId || selectedTeacherId === 'todos') return [];
     return assignments.filter(a => a.teacherId === selectedTeacherId && !a.isAvailable);
   }, [selectedTeacherId, assignments]);
 
@@ -94,6 +180,7 @@ export default function AsistenciaPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">-- Elija un maestro --</option>
+                  <option value="todos" className="font-bold text-blue-600">🖨️ TODOS LOS MAESTROS (Lote)</option>
                   {teachersWithAssignments.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.firstName} {t.lastName}
@@ -117,7 +204,7 @@ export default function AsistenciaPage() {
                   />
                   <Button
                     onClick={handlePrint}
-                    disabled={teacherAssignments.length === 0}
+                    disabled={!selectedTeacherId}
                     className="flex items-center gap-2"
                   >
                     🖨️ Imprimir
@@ -131,98 +218,46 @@ export default function AsistenciaPage() {
         {/* ============================================================== */}
         {/* DOCUMENTO IMPRIMIBLE (ASISTENCIA DOCENTE) */}
         {/* ============================================================== */}
-        {selectedTeacher && teacherAssignments.length > 0 && (
-          <div className="print:block">
-            <div className="bg-white rounded-lg shadow-lg p-8 print:shadow-none print:p-0 mb-8">
-              
-              {/* Cabecera del documento */}
-              <div className="border-b-2 border-gray-800 pb-4 mb-6 flex justify-between items-end">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-wider">Universidad Aztlán Playa del Carmen</h2>
-                  <h3 className="text-lg font-semibold text-gray-700 mt-1">Control de Asistencia Docente</h3>
-                </div>
-                <div className="text-right text-sm">
-                  <p><span className="font-bold">Fecha:</span> {new Date(selectedDate).toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                </div>
-              </div>
-
-              {/* Información del Maestro */}
-              <div className="grid grid-cols-2 gap-4 mb-8 text-sm border border-gray-300 rounded-lg p-4 bg-gray-50 print:bg-white print:border-gray-400">
-                <div className="space-y-2">
-                  <p><span className="font-bold text-gray-700 w-24 inline-block">Docente:</span> <span className="uppercase">{selectedTeacher.firstName} {selectedTeacher.lastName}</span></p>
-                  <p><span className="font-bold text-gray-700 w-24 inline-block">E-mail:</span> {selectedTeacher.email}</p>
-                </div>
-                <div className="space-y-2">
-                  <p><span className="font-bold text-gray-700 w-24 inline-block">Teléfono:</span> {selectedTeacher.phone || 'N/A'}</p>
-                  <p><span className="font-bold text-gray-700 w-24 inline-block">Especialidad:</span> {selectedTeacher.specialization || 'N/A'}</p>
-                </div>
-              </div>
-
-              {/* Tabla de Asistencia (Materias) */}
-              <div className="mb-12">
-                <table className="w-full text-sm border-collapse border border-gray-400">
-                  <thead>
-                    <tr className="bg-gray-100 print:bg-gray-100">
-                      <th className="border border-gray-400 px-3 py-2 w-12 text-center">No.</th>
-                      <th className="border border-gray-400 px-3 py-2 text-left">Materia / Grupo</th>
-                      <th className="border border-gray-400 px-3 py-2 w-48 text-center">Horario de la Materia</th>
-                      <th className="border border-gray-400 px-3 py-2 w-24 text-center">Asistencia</th>
-                      <th className="border border-gray-400 px-3 py-2 w-48 text-center">Firma del Docente</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {teacherAssignments.map((assignment, idx) => {
-                      const subjectName = assignment.subject?.name || 'Materia desconocida';
-                      const groupName = assignment.group?.name || '';
-                      const careerName = assignment.group?.career?.name || '';
-                      return (
-                        <tr key={assignment.id} className="print:break-inside-avoid">
-                          <td className="border border-gray-400 px-3 py-4 text-center">{idx + 1}</td>
-                          <td className="border border-gray-400 px-3 py-4 uppercase">
-                            <div className="font-bold">{subjectName}</div>
-                            <div className="text-xs text-gray-600 mt-1">{careerName} - {groupName}</div>
-                          </td>
-                          <td className="border border-gray-400 px-3 py-4 text-center text-gray-800 uppercase">
-                            {assignment.scheduleDay != null ? DAYS_OF_WEEK[assignment.scheduleDay] : '---'}<br/>
-                            {assignment.startTime && assignment.endTime ? `${assignment.startTime} a ${assignment.endTime} hrs.` : '---'}
-                          </td>
-                          <td className="border border-gray-400 px-3 py-4 text-center">
-                             <div className="w-6 h-6 border-2 border-gray-400 mx-auto rounded-sm print:border-black"></div>
-                          </td>
-                          <td className="border border-gray-400 px-3 py-4"></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Sección de Firmas de Coordinación */}
-              <div className="mt-24 grid grid-cols-2 gap-12 px-12">
-                <div className="text-center">
-                  <div className="border-t border-black pt-2">
-                    <p className="font-bold text-sm uppercase">{selectedTeacher.firstName} {selectedTeacher.lastName}</p>
-                    <p className="text-xs text-gray-600">Firma de Conformidad del Docente</p>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="border-t border-black pt-2">
-                    <p className="font-bold text-sm uppercase">Coordinación Académica</p>
-                    <p className="text-xs text-gray-600">Sello y Validación</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer de impresión */}
-              <div className="mt-16 text-center text-[10px] text-gray-400 print:block">
-                Generado por el Sistema Administrativo Escolar — {new Date().toLocaleString()}
-              </div>
+        {selectedTeacherId === 'todos' ? (
+          <>
+            <div className="bg-white rounded-lg shadow-md p-16 text-center border-2 border-blue-200 mt-8 print:hidden">
+              <div className="text-5xl mb-4">🖨️</div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Impresión por Lote Lista</h3>
+              <p className="text-gray-500 mb-6 max-w-lg mx-auto">
+                Se generarán las listas de asistencia para todos los <b>{teachersWithAssignments.length} maestros</b> con clases asignadas.
+                Da clic en imprimir para generar el documento de múltiples páginas.
+              </p>
+              <Button onClick={handlePrint} className="px-8 py-3 text-lg bg-blue-600 hover:bg-blue-700">
+                Iniciar Impresión de {teachersWithAssignments.length} Hojas
+              </Button>
             </div>
+            
+            {/* Hojas para imprimir en lote (solo visibles al imprimir) */}
+            <div className="hidden print:block">
+              {teachersWithAssignments.map((t, index) => (
+                <TeacherAttendanceSheet 
+                  key={t.id} 
+                  teacher={t} 
+                  assignments={assignments.filter(a => a.teacherId === t.id && !a.isAvailable)} 
+                  selectedDate={selectedDate} 
+                  isLast={index === teachersWithAssignments.length - 1}
+                />
+              ))}
+            </div>
+          </>
+        ) : selectedTeacher && teacherAssignments.length > 0 ? (
+          <div className="print:block">
+            <TeacherAttendanceSheet 
+              teacher={selectedTeacher} 
+              assignments={teacherAssignments} 
+              selectedDate={selectedDate} 
+              isLast={true}
+            />
           </div>
-        )}
+        ) : null}
 
         {/* Mensaje cuando no hay nada seleccionado */}
-        {!selectedTeacher && (
+        {!selectedTeacherId && (
           <div className="bg-white rounded-lg shadow-md p-16 text-center border-2 border-dashed border-gray-200 mt-8 print:hidden">
             <div className="text-5xl mb-4">📋</div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">No hay maestro seleccionado</h3>

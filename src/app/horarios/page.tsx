@@ -149,7 +149,7 @@ function HorariosContent() {
     ])
     .then(([assignmentsRes, availabilityRes, subjectsData, templatesRes, groupsData]) => {
       if (Array.isArray(subjectsData)) setSubjects(subjectsData);
-      if (templatesRes && !templatesRes.error) setDbTemplates(templatesRes);
+      if (templatesRes && !templatesRes.error) setDbTemplates(templatesRes.data || templatesRes || []);
       if (Array.isArray(groupsData)) setGroups(groupsData);
       
       let loaded: any[] = [];
