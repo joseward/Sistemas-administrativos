@@ -834,6 +834,8 @@ function HorariosContent() {
 
               return teachersInView.map(tid => {
                 const teacher = getTeacherById(tid);
+                if (!teacher) return null;
+
                 const tAssignments = filteredAssignments
                   .filter(a => a.teacherId === tid)
                   .sort((a, b) => (a.scheduleDay || -1) - (b.scheduleDay || -1) || (a.startTime || '').localeCompare(b.startTime || ''));
@@ -844,15 +846,15 @@ function HorariosContent() {
                     <div className="bg-gradient-to-r from-[#061266] to-[#1877f2] text-white px-6 py-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold text-lg">
-                          {teacher?.firstName?.charAt(0)}{teacher?.lastName?.charAt(0)}
+                          {teacher.firstName?.charAt(0)}{teacher.lastName?.charAt(0)}
                         </div>
-                        <h3 className="font-bold text-lg tracking-wide uppercase">{teacher?.firstName} {teacher?.lastName}</h3>
+                        <h3 className="font-bold text-lg tracking-wide uppercase">{teacher.firstName} {teacher.lastName}</h3>
                       </div>
                       <div className="flex items-center gap-2">
                         {tAssignments.length > 0 && (
                           <div className="flex gap-1 bg-white/10 rounded p-1 mr-2">
-                            <Button size="sm" variant="outline" onClick={() => handlePrint('teachers', teacher?.id)} className="h-6 px-2 text-[10px] font-bold text-white border-white/30 hover:bg-white/20 hover:text-white" title="Imprimir PDF">PDF</Button>
-                            <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('teachers', teacher?.id)} disabled={isCapturing} className="h-6 px-2 text-[10px] font-bold text-white border-white/30 hover:bg-white/20 hover:text-white" title="Descargar PNG">{isCapturing && printMode === 'teachers' && printTargetId === teacher?.id ? '...' : 'PNG'}</Button>
+                            <Button size="sm" variant="outline" onClick={() => handlePrint('teachers', teacher.id)} className="h-6 px-2 text-[10px] font-bold text-white border-white/30 hover:bg-white/20 hover:text-white" title="Imprimir PDF">PDF</Button>
+                            <Button size="sm" variant="outline" onClick={() => handleDownloadPNG('teachers', teacher.id)} disabled={isCapturing} className="h-6 px-2 text-[10px] font-bold text-white border-white/30 hover:bg-white/20 hover:text-white" title="Descargar PNG">{isCapturing && printMode === 'teachers' && printTargetId === teacher.id ? '...' : 'PNG'}</Button>
                           </div>
                         )}
                         <span className="text-xs font-semibold bg-white text-blue-900 px-3 py-1 rounded-full shadow-sm">
