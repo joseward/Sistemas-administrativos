@@ -53,7 +53,7 @@ export const CurriculumProvider = ({ children }: { children: React.ReactNode }) 
       setCareers(Array.isArray(cData) ? cData : []);
       setSubjects(Array.isArray(sData) ? sData : []);
       setGroups(Array.isArray(gData) ? gData : []);
-      setTemplates(Array.isArray(tData) ? tData : []);
+      setTemplates(Array.isArray(tData) ? tData : (tData?.data || []));
       setAcademicYears(Array.isArray(yData) ? yData : []);
       setBimestres(Array.isArray(bData) ? bData : []);
       setCuatrimestres(Array.isArray(cuData) ? cuData : []);
