@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 
 export default function FusionGruposPage() {
-  const { groups = [], subjects = [], refreshData = () => {}, refreshTick } = useCurriculum() || {};
+  const { groups = [], subjects = [], templates = [], refreshData = () => {}, refreshTick } = useCurriculum() || {};
   
   const [assignments, setAssignments] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -30,43 +30,48 @@ export default function FusionGruposPage() {
       .catch(console.error);
   }, [refreshTick]);
 
-  // Generar la lista de todas las materias a partir de las asignaciones
+  // Generar la lista de todas las materias a partir de las plantillas de los grupos
   const allTemplateSubjects = useMemo(() => {
     const list: any[] = [];
-    assignments.forEach(a => {
-      // Ignorar asignaciones huerfanas (mock, unassigned)
-      if (a.id.startsWith('unassigned-') || a.id.startsWith('mock-')) return;
-      
-      const group = groups.find(g => g.id === a.groupId);
+    templates.forEach(tpl => {
+      const group = groups.find(g => g.id === tpl.groupId);
       if (!group) return;
 
-      const subject = subjects.find(s => s.id === a.subjectId);
-      if (!subject) return;
+      (tpl.subjectIds || []).forEach((subjectId: string) => {
+        const subject = subjects.find(s => s.id === subjectId);
+        if (!subject) return;
 
-      const teacher = teachers.find(t => t.id === a.teacherId);
+        // Buscar si ya tiene una asignación (para saber su estado de fusión y docente)
+        const assignment = assignments.find(a => 
+          a.groupId === tpl.groupId && 
+          a.modulo === tpl.modulo && 
+          a.subjectId === subjectId
+        );
 
-      // Identificador único para la vista
-      const uniqueId = a.id;
+        const teacher = assignment && assignment.teacherId ? teachers.find(t => t.id === assignment.teacherId) : null;
 
-      list.push({
-        uniqueId,
-        id: a.id,
-        groupId: a.groupId,
-        modulo: a.modulo,
-        subjectId: a.subjectId,
-        groupName: group.name,
-        careerName: group.career?.name || 'Sin Carrera',
-        cuatrimestre: group.cuatrimestre,
-        academicYear: group.academicYear,
-        subjectName: subject.name,
-        assignment: a,
-        fusionGroupId: a.fusionGroupId || null,
-        teacherId: a.teacherId,
-        teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : null
+        // Identificador único para la vista
+        const uniqueId = `${tpl.groupId}_${tpl.modulo}_${subjectId}`;
+
+        list.push({
+          uniqueId,
+          groupId: tpl.groupId,
+          modulo: tpl.modulo,
+          subjectId: subjectId,
+          groupName: group.name,
+          careerName: group.career?.name || 'Sin Carrera',
+          cuatrimestre: group.cuatrimestre,
+          academicYear: group.academicYear,
+          subjectName: subject.name,
+          assignment: assignment || null,
+          fusionGroupId: assignment?.fusionGroupId || null,
+          teacherId: assignment?.teacherId || null,
+          teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : null
+        });
       });
     });
     return list;
-  }, [groups, subjects, assignments, teachers]);
+  }, [templates, groups, subjects, assignments, teachers]);
 
   const filteredSubjects = useMemo(() => {
     if (!searchTerm) return allTemplateSubjects;
