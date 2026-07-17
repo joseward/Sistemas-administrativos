@@ -3,51 +3,70 @@
 import React, { useState, useMemo } from 'react';
 import { useCurriculum } from '@/context/CurriculumContext';
 import { Button } from '@/components/ui/Button';
+import Link from 'next/link';
 
 export default function FusionGruposPage() {
-  const { templates = [], groups = [], subjects = [], assignments = [], refreshData = () => {} } = useCurriculum() || {};
+  const { groups = [], subjects = [], refreshData = () => {}, refreshTick } = useCurriculum() || {};
   
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedToFuse, setSelectedToFuse] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Generar la lista de todas las materias de todas las plantillas
+  React.useEffect(() => {
+    fetch('/api/assignments')
+      .then(res => res.json())
+      .then(data => {
+        setAssignments(data.data || data.assignments || (Array.isArray(data) ? data : []));
+      })
+      .catch(console.error);
+
+    fetch('/api/teachers')
+      .then(res => res.json())
+      .then(data => {
+        setTeachers(data.data || data.teachers || (Array.isArray(data) ? data : []));
+      })
+      .catch(console.error);
+  }, [refreshTick]);
+
+  // Generar la lista de todas las materias a partir de las asignaciones
   const allTemplateSubjects = useMemo(() => {
     const list: any[] = [];
-    templates.forEach(tpl => {
-      const group = groups.find(g => g.id === tpl.groupId);
+    assignments.forEach(a => {
+      // Ignorar asignaciones huerfanas (mock, unassigned)
+      if (a.id.startsWith('unassigned-') || a.id.startsWith('mock-')) return;
+      
+      const group = groups.find(g => g.id === a.groupId);
       if (!group) return;
 
-      tpl.subjectIds.forEach(subId => {
-        const subject = subjects.find(s => s.id === subId);
-        if (!subject) return;
+      const subject = subjects.find(s => s.id === a.subjectId);
+      if (!subject) return;
 
-        const assignment = assignments.find(a => 
-          a.groupId === tpl.groupId && 
-          a.modulo === tpl.modulo && 
-          a.subjectId === subId
-        );
+      const teacher = teachers.find(t => t.id === a.teacherId);
 
-        // Identificador único para la vista
-        const uniqueId = `${tpl.groupId}-${tpl.modulo}-${subId}`;
+      // Identificador único para la vista
+      const uniqueId = a.id;
 
-        list.push({
-          uniqueId,
-          groupId: tpl.groupId,
-          modulo: tpl.modulo,
-          subjectId: subId,
-          groupName: group.name,
-          careerName: group.career?.name || 'Sin Carrera',
-          cuatrimestre: group.cuatrimestre,
-          academicYear: group.academicYear,
-          subjectName: subject.name,
-          assignment: assignment,
-          fusionGroupId: assignment?.fusionGroupId || null
-        });
+      list.push({
+        uniqueId,
+        id: a.id,
+        groupId: a.groupId,
+        modulo: a.modulo,
+        subjectId: a.subjectId,
+        groupName: group.name,
+        careerName: group.career?.name || 'Sin Carrera',
+        cuatrimestre: group.cuatrimestre,
+        academicYear: group.academicYear,
+        subjectName: subject.name,
+        assignment: a,
+        fusionGroupId: a.fusionGroupId || null,
+        teacherId: a.teacherId,
+        teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : null
       });
     });
     return list;
-  }, [templates, groups, subjects, assignments]);
+  }, [groups, subjects, assignments, teachers]);
 
   const filteredSubjects = useMemo(() => {
     if (!searchTerm) return allTemplateSubjects;
@@ -55,7 +74,8 @@ export default function FusionGruposPage() {
     return allTemplateSubjects.filter(item => 
       item.subjectName.toLowerCase().includes(lower) || 
       item.groupName.toLowerCase().includes(lower) || 
-      item.careerName.toLowerCase().includes(lower)
+      item.careerName.toLowerCase().includes(lower) ||
+      (item.teacherName && item.teacherName.toLowerCase().includes(lower))
     );
   }, [allTemplateSubjects, searchTerm]);
 
@@ -141,6 +161,12 @@ export default function FusionGruposPage() {
   return (
     <div className="min-h-screen bg-gray-50/50 p-6">
       <div className="max-w-6xl mx-auto space-y-8">
+        
+        {/* Botón de regreso */}
+        <Link href="/" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+          <span className="mr-2">←</span> Regresar al inicio
+        </Link>
+
         <div>
           <h1 className="text-3xl font-extrabold text-[#061266] mb-2 tracking-tight">🔗 Fusión de Grupos</h1>
           <p className="text-gray-600">
@@ -154,7 +180,7 @@ export default function FusionGruposPage() {
             <div className="flex items-center gap-4">
               <input 
                 type="text" 
-                placeholder="Buscar por materia, carrera o grupo..."
+                placeholder="Buscar por materia, carrera, grupo o maestro..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="px-4 py-2 border rounded-lg text-sm w-80 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -177,6 +203,7 @@ export default function FusionGruposPage() {
                   <th className="px-5 py-3 font-semibold">Asignatura</th>
                   <th className="px-5 py-3 font-semibold">Carrera</th>
                   <th className="px-5 py-3 font-semibold">Grupo</th>
+                  <th className="px-5 py-3 font-semibold">Docente</th>
                   <th className="px-5 py-3 font-semibold">Estado de Fusión</th>
                 </tr>
               </thead>
@@ -208,15 +235,22 @@ export default function FusionGruposPage() {
                         <span className="font-semibold text-blue-600">{item.groupName}</span>
                         <span className="text-xs text-gray-500 ml-2">(Cuatri {item.cuatrimestre}, Mód {item.modulo})</span>
                       </td>
+                      <td className="px-5 py-3 text-gray-600 uppercase">
+                        {item.teacherName ? (
+                          <span className="font-semibold text-gray-800">{item.teacherName}</span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-600 border border-amber-200">Pendiente</span>
+                        )}
+                      </td>
                       <td className="px-5 py-3">
                         {isFused ? (
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-semibold">
+                          <div className="flex flex-col gap-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-semibold w-fit">
                               🔗 Fusionada
                             </span>
                             <button 
                               onClick={() => handleUnfuse(item.fusionGroupId)}
-                              className="text-xs text-gray-400 hover:text-red-500 transition-colors underline"
+                              className="text-[10px] text-gray-400 hover:text-red-500 transition-colors underline w-fit text-left"
                             >
                               Separar
                             </button>
@@ -230,7 +264,7 @@ export default function FusionGruposPage() {
                 })}
                 {filteredSubjects.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center text-gray-500">
+                    <td colSpan={6} className="px-5 py-8 text-center text-gray-500">
                       No se encontraron materias que coincidan con la búsqueda.
                     </td>
                   </tr>
