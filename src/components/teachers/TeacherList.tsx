@@ -181,7 +181,7 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
         {filterParam === 'missing_availability' && (
           <div className="mt-4 p-3 bg-amber-50 text-amber-800 border-l-4 border-amber-500 font-medium text-sm flex justify-between items-center shadow-sm">
             <span>⚠️ Mostrando únicamente maestros activos que NO han enviado su disponibilidad.</span>
-            <a href="/dashboard/teachers" className="text-amber-700 hover:text-amber-900 underline">Quitar filtro</a>
+            <a href="/maestros" className="text-amber-700 hover:text-amber-900 underline">Quitar filtro</a>
           </div>
         )}
       </div>

@@ -35,7 +35,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           
           {/* Maestros */}
-          <Link href="/dashboard/teachers" className="group h-full">
+          <Link href="/maestros" className="group h-full">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative overflow-hidden flex flex-col">
               <div className="absolute top-0 left-0 w-1 h-full bg-[#061266]"></div>
               <div className="w-14 h-14 bg-[#061266]/10 text-[#061266] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
