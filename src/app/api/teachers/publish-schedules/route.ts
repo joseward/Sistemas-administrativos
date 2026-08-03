@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
     const { teacherId } = await request.json();
 
     const updateData = { schedulesPublishedAt: new Date() };
+    const teachersToProcess: string[] = [];
 
     if (teacherId) {
       // Publicar para un solo maestro
@@ -35,11 +36,41 @@ export async function POST(request: NextRequest) {
         where: { id: teacherId },
         data: updateData
       });
+      teachersToProcess.push(teacherId);
     } else {
       // Publicar para todos
       await prisma.teacher.updateMany({
         data: updateData
       });
+      const allTeachers = await prisma.teacher.findMany({ select: { id: true } });
+      teachersToProcess.push(...allTeachers.map(t => t.id));
+    }
+
+    // Generar contratos (Anexo I) vacíos o por defecto para cada maestro publicado
+    const activeYear = await prisma.academicYear.findFirst({ where: { isActive: true } });
+    if (activeYear) {
+      for (const tId of teachersToProcess) {
+        const existingContract = await prisma.contract.findFirst({
+          where: { teacherId: tId, academicYear: activeYear.value }
+        });
+        
+        if (!existingContract) {
+          await prisma.contract.create({
+            data: {
+              teacherId: tId,
+              academicYear: activeYear.value,
+              contractType: 'hourly',
+              cuatrimestre: 'CUATRIMESTRE MAYO - AGOSTO',
+              mod1Title: 'PRIMER MÓDULO',
+              mod1Start: '05, 06 Y 07 DE MAYO - ENTRE SEMANA\n09 DE MAYO - SÁBADOS\n10 DE MAYO - DOMINGOS',
+              mod1End: '23, 24 Y 25 DE JUNIO - ENTRE SEMANA\n27 DE JUNIO - SÁBADOS\n28 DE JUNIO - DOMINGOS',
+              mod2Title: 'SEGUNDO MÓDULO',
+              mod2Start: '30 DE JUNIO, 01 Y 02 DE JULIO - ENTRE SEMANA\n04 DE JULIO - SÁBADOS\n05 DE JULIO - DOMINGOS',
+              mod2End: '18, 19 Y 20 DE AGOSTO - ENTRE SEMANA\n22 DE AGOSTO - SÁBADOS\n23 DE AGOSTO - DOMINGOS'
+            }
+          });
+        }
+      }
     }
 
     return NextResponse.json({ success: true });

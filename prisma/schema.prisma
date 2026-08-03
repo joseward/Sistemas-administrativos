@@ -326,22 +326,32 @@ model TeacherSubjectGroup {
 // ============================================
 model Contract {
   id            String    @id @default(cuid())
-  schoolId      String
+  schoolId      String?
   teacherId     String
   academicYear  String
   contractType  String // "full-time", "part-time", "hourly"
-  startDate     DateTime
-  endDate       DateTime
-  salary        Decimal   @db.Decimal(10, 2)
+  startDate     DateTime?
+  endDate       DateTime?
+  salary        Decimal?  @db.Decimal(10, 2)
   signedDate    DateTime?
   isSigned      Boolean   @default(false)
   signaturePath String?
+  
+  // Textos para Anexo I
+  cuatrimestre  String?
+  mod1Title     String?
+  mod1Start     String?
+  mod1End       String?
+  mod2Title     String?
+  mod2Start     String?
+  mod2End       String?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relaciones
-  school  School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  school  School?  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacher Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@index([teacherId])
   @@index([schoolId])
