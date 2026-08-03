@@ -12,6 +12,7 @@ type CurriculumContextType = {
   cuatrimestres: any[];
   classrooms: any[];
   refreshData: () => void;
+  refreshTick: number;
 };
 
 const CurriculumContext = createContext<CurriculumContextType>({
@@ -62,7 +63,7 @@ export const CurriculumProvider = ({ children }: { children: React.ReactNode }) 
   }, [refreshTick]);
 
   return (
-    <CurriculumContext.Provider value={{ academicLevels, careers, subjects, groups, templates, academicYears, bimestres, cuatrimestres, classrooms, refreshData }}>
+    <CurriculumContext.Provider value={{ academicLevels, careers, subjects, groups, templates, academicYears, bimestres, cuatrimestres, classrooms, refreshData, refreshTick }}>
       {children}
     </CurriculumContext.Provider>
   );
