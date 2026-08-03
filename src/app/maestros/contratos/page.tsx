@@ -24,6 +24,8 @@ export default function ContratosPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
   const [printMode, setPrintMode] = useState<'single' | 'all' | null>(null);
+  const [academicYear, setAcademicYear] = useState<string>('2026-2027'); // TODO: Obtener del contexto o API si es posible, temporalmente fijo o sacado de config.
+  const [savingConfig, setSavingConfig] = useState(false);
 
   // Estados para textos dinámicos del contrato (Inicializados con Catálogos)
   const defaultCuatrimestre = CUATRIMESTRES[1]?.label || 'CUATRIMESTRE MAYO - AGOSTO';
@@ -60,7 +62,51 @@ export default function ContratosPage() {
         }
       })
       .catch(err => console.error("Error fetching assignments", err));
+
+    // Obtener el ciclo escolar activo para poder guardar el contrato
+    fetch('/api/academic-years')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const active = data.data.find((y: any) => y.isActive);
+          if (active) setAcademicYear(active.value);
+        }
+      })
+      .catch(err => console.error(err));
   }, []);
+
+  // Cargar configuración de contrato desde la BD al seleccionar un docente
+  useEffect(() => {
+    if (selectedTeacherId && academicYear) {
+      fetch(`/api/contracts?teacherId=${selectedTeacherId}&academicYear=${academicYear}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data) {
+            setContractConfig({
+              cuatrimestre: data.data.cuatrimestre || defaultCuatrimestre.toUpperCase(),
+              mod1Title: data.data.mod1Title || defaultMod1.toUpperCase(),
+              mod1Start: data.data.mod1Start || '05, 06 Y 07 DE MAYO - ENTRE SEMANA\n09 DE MAYO - SÁBADOS\n10 DE MAYO - DOMINGOS',
+              mod1End: data.data.mod1End || '23, 24 Y 25 DE JUNIO - ENTRE SEMANA\n27 DE JUNIO - SÁBADOS\n28 DE JUNIO - DOMINGOS',
+              mod2Title: data.data.mod2Title || defaultMod2.toUpperCase(),
+              mod2Start: data.data.mod2Start || '30 DE JUNIO, 01 Y 02 DE JULIO - ENTRE SEMANA\n04 DE JULIO - SÁBADOS\n05 DE JULIO - DOMINGOS',
+              mod2End: data.data.mod2End || '18, 19 Y 20 DE AGOSTO - ENTRE SEMANA\n22 DE AGOSTO - SÁBADOS\n23 DE AGOSTO - DOMINGOS'
+            });
+          } else {
+            // Restaurar por defecto si no hay guardado
+            setContractConfig({
+              cuatrimestre: defaultCuatrimestre.toUpperCase(),
+              mod1Title: defaultMod1.toUpperCase(),
+              mod1Start: '05, 06 Y 07 DE MAYO - ENTRE SEMANA\n09 DE MAYO - SÁBADOS\n10 DE MAYO - DOMINGOS',
+              mod1End: '23, 24 Y 25 DE JUNIO - ENTRE SEMANA\n27 DE JUNIO - SÁBADOS\n28 DE JUNIO - DOMINGOS',
+              mod2Title: defaultMod2.toUpperCase(),
+              mod2Start: '30 DE JUNIO, 01 Y 02 DE JULIO - ENTRE SEMANA\n04 DE JULIO - SÁBADOS\n05 DE JULIO - DOMINGOS',
+              mod2End: '18, 19 Y 20 DE AGOSTO - ENTRE SEMANA\n22 DE AGOSTO - SÁBADOS\n23 DE AGOSTO - DOMINGOS'
+            });
+          }
+        })
+        .catch(console.error);
+    }
+  }, [selectedTeacherId, academicYear]);
 
   // Solo maestros que tienen asignaciones
   const teachersWithAssignments = useMemo(() => {
@@ -72,6 +118,38 @@ export default function ContratosPage() {
 
   const handleConfigChange = (field: string, value: string) => {
     setContractConfig(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveConfig = async (applyToAll: boolean = false) => {
+    if (!selectedTeacherId && !applyToAll) {
+      alert("Seleccione un docente primero.");
+      return;
+    }
+    
+    setSavingConfig(true);
+    try {
+      const res = await fetch('/api/contracts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teacherId: selectedTeacherId,
+          academicYear,
+          applyToAll,
+          ...contractConfig
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(applyToAll ? "Textos guardados y aplicados a todos los maestros." : "Configuración guardada para el docente actual.");
+      } else {
+        alert("Error al guardar: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error de red al guardar.");
+    } finally {
+      setSavingConfig(false);
+    }
   };
 
   useEffect(() => {
@@ -269,45 +347,87 @@ export default function ContratosPage() {
             
             {/* Controles Dinámicos del Contrato */}
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-sm font-bold text-gray-700 mb-4">Configuración de Fechas y Textos del Documento</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="col-span-full">
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Título del Cuatrimestre</label>
-                  <input type="text" value={contractConfig.cuatrimestre} onChange={e => handleConfigChange('cuatrimestre', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm uppercase" />
-                </div>
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Configuración de Fechas y Textos del Documento</h2>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Título del Cuatrimestre</label>
+              <input
+                type="text"
+                value={contractConfig.cuatrimestre}
+                onChange={(e) => handleConfigChange('cuatrimestre', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 uppercase"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-6 mb-4">
+              {/* Módulo 1 */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Título Módulo 1</label>
+                <input
+                  type="text"
+                  value={contractConfig.mod1Title}
+                  onChange={(e) => handleConfigChange('mod1Title', e.target.value)}
+                  className="w-full px-2 py-1 mb-3 border border-gray-300 rounded uppercase text-sm"
+                />
                 
-                {/* Módulo 1 */}
-                <div className="space-y-3 bg-gray-50 p-4 rounded-md">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Título Módulo 1</label>
-                    <input type="text" value={contractConfig.mod1Title} onChange={e => handleConfigChange('mod1Title', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm uppercase" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Inicio Módulo 1</label>
-                    <textarea rows={3} value={contractConfig.mod1Start} onChange={e => handleConfigChange('mod1Start', e.target.value)} className="w-full px-3 py-2 border rounded-md text-xs uppercase" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Término Módulo 1</label>
-                    <textarea rows={3} value={contractConfig.mod1End} onChange={e => handleConfigChange('mod1End', e.target.value)} className="w-full px-3 py-2 border rounded-md text-xs uppercase" />
-                  </div>
-                </div>
-
-                {/* Módulo 2 */}
-                <div className="space-y-3 bg-gray-50 p-4 rounded-md">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Título Módulo 2</label>
-                    <input type="text" value={contractConfig.mod2Title} onChange={e => handleConfigChange('mod2Title', e.target.value)} className="w-full px-3 py-2 border rounded-md text-sm uppercase" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Inicio Módulo 2</label>
-                    <textarea rows={3} value={contractConfig.mod2Start} onChange={e => handleConfigChange('mod2Start', e.target.value)} className="w-full px-3 py-2 border rounded-md text-xs uppercase" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Término Módulo 2</label>
-                    <textarea rows={3} value={contractConfig.mod2End} onChange={e => handleConfigChange('mod2End', e.target.value)} className="w-full px-3 py-2 border rounded-md text-xs uppercase" />
-                  </div>
-                </div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Inicio Módulo 1</label>
+                <textarea
+                  value={contractConfig.mod1Start}
+                  onChange={(e) => handleConfigChange('mod1Start', e.target.value)}
+                  className="w-full px-2 py-1 mb-3 border border-gray-300 rounded uppercase text-xs h-20 resize-none"
+                />
+                
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Término Módulo 1</label>
+                <textarea
+                  value={contractConfig.mod1End}
+                  onChange={(e) => handleConfigChange('mod1End', e.target.value)}
+                  className="w-full px-2 py-1 border border-gray-300 rounded uppercase text-xs h-20 resize-none"
+                />
               </div>
+
+              {/* Módulo 2 */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Título Módulo 2</label>
+                <input
+                  type="text"
+                  value={contractConfig.mod2Title}
+                  onChange={(e) => handleConfigChange('mod2Title', e.target.value)}
+                  className="w-full px-2 py-1 mb-3 border border-gray-300 rounded uppercase text-sm"
+                />
+                
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Inicio Módulo 2</label>
+                <textarea
+                  value={contractConfig.mod2Start}
+                  onChange={(e) => handleConfigChange('mod2Start', e.target.value)}
+                  className="w-full px-2 py-1 mb-3 border border-gray-300 rounded uppercase text-xs h-20 resize-none"
+                />
+                
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Término Módulo 2</label>
+                <textarea
+                  value={contractConfig.mod2End}
+                  onChange={(e) => handleConfigChange('mod2End', e.target.value)}
+                  className="w-full px-2 py-1 border border-gray-300 rounded uppercase text-xs h-20 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
+              <Button
+                variant="outline"
+                disabled={!selectedTeacherId || savingConfig}
+                onClick={() => handleSaveConfig(false)}
+                className="text-blue-700 border-blue-200 hover:bg-blue-50"
+              >
+                {savingConfig ? 'Guardando...' : 'Guardar Configuración'}
+              </Button>
+              <Button
+                disabled={savingConfig}
+                onClick={() => handleSaveConfig(true)}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {savingConfig ? 'Guardando...' : 'Aplicar a Todos los Maestros'}
+              </Button>
+            </div>
             </div>
           </div>
         </div>
