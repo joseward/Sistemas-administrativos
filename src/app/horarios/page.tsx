@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 import { PrintGroups } from '@/components/horarios/PrintGroups';
 import { PrintTeachers } from '@/components/horarios/PrintTeachers';
+import { AssignmentMatrixTable } from '@/components/horarios/AssignmentMatrixTable';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { cn } from '@/lib/utils';
@@ -38,7 +39,7 @@ function getTeacherColor(teacherId: string) {
 
 function HorariosContent() {
   const searchParams = useSearchParams();
-  const initialView = searchParams.get('view') as 'table' | 'week' | null;
+  const initialView = searchParams.get('view') as 'matrix' | 'table' | 'week' | null;
 
   const [teachers, setTeachers] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -52,7 +53,9 @@ function HorariosContent() {
   
   // Assign Preview State
   const [assignPreview, setAssignPreview] = useState<Omit<MockScheduleAssignment, 'id'> | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'week'>(initialView === 'table' ? 'table' : 'week');
+  const [viewMode, setViewMode] = useState<'matrix' | 'week' | 'table'>(
+    initialView === 'table' ? 'table' : initialView === 'week' ? 'week' : 'matrix'
+  );
   const [filterTeacher, setFilterTeacher] = useState<string>('');
   const [filterGroup, setFilterGroup] = useState<string>('');
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
@@ -460,6 +463,59 @@ function HorariosContent() {
 
 
 
+  // Handlers para la Matriz Inteligente de Asignación (1-Click)
+  const handleMatrixAssign = async (assignmentData: any) => {
+    try {
+      const res = await fetch('/api/assignments/single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assignmentData),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Refrescar asignaciones locales
+        const resAsg = await fetch('/api/assignments').then(r => r.json());
+        if (resAsg.success) {
+          setAssignments(resAsg.data);
+        }
+        return true;
+      } else {
+        alert('Error al asignar: ' + (data.error || 'Ocurrió un error'));
+        return false;
+      }
+    } catch (err) {
+      console.error('Error in handleMatrixAssign:', err);
+      alert('Error de conexión al asignar materia.');
+      return false;
+    }
+  };
+
+  const handleMatrixUnassign = async (assignment: any) => {
+    try {
+      const preview = { ...assignment, teacherId: null };
+      const res = await fetch('/api/assignments/single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preview),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const resAsg = await fetch('/api/assignments').then(r => r.json());
+        if (resAsg.success) {
+          setAssignments(resAsg.data);
+        }
+        return true;
+      } else {
+        alert('Error al desasignar: ' + (data.error || 'Ocurrió un error'));
+        return false;
+      }
+    } catch (err) {
+      console.error('Error in handleMatrixUnassign:', err);
+      alert('Error de conexión al desasignar materia.');
+      return false;
+    }
+  };
+
   const handlePublishSchedules = async () => {
     // 1. Determinar qué maestro(s) se van a publicar
     let teachersToPublish = [];
@@ -594,14 +650,25 @@ function HorariosContent() {
         <div id="filtros-horarios" className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex flex-wrap items-center gap-4">
             {/* Toggle de vista */}
-            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            <div className="flex rounded-xl border border-gray-300 overflow-hidden shadow-xs bg-gray-50 p-1 gap-1">
+              <button
+                onClick={() => setViewMode('matrix')}
+                className={cn(
+                  'px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5',
+                  viewMode === 'matrix'
+                    ? 'bg-[#061266] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                )}
+              >
+                📊 Matriz Inteligente
+              </button>
               <button
                 onClick={() => setViewMode('week')}
                 className={cn(
-                  'px-4 py-2 text-sm font-medium transition-colors',
+                  'px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5',
                   viewMode === 'week'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#061266] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                 )}
               >
                 📅 Vista Semanal
@@ -609,13 +676,13 @@ function HorariosContent() {
               <button
                 onClick={() => setViewMode('table')}
                 className={cn(
-                  'px-4 py-2 text-sm font-medium transition-colors',
+                  'px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5',
                   viewMode === 'table'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#061266] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                 )}
               >
-                📋 Vista Tabla
+                📋 Vista por Docente
               </button>
             </div>
 
@@ -690,7 +757,7 @@ function HorariosContent() {
             <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-emerald-500 flex flex-col justify-center">
               <p className="text-sm font-medium text-gray-500">Maestros con Horarios</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {new Set(assignments.filter(a => a.isAvailable).map(a => a.teacherId)).size}
+                {new Set(assignments.filter(a => a.teacherId).map(a => a.teacherId)).size}
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-purple-500 flex flex-col justify-center">
@@ -718,6 +785,21 @@ function HorariosContent() {
             </div>
           </div>
         </div>
+
+        {/* ============ VISTA MATRIZ INTELIGENTE (Opción 1) ============ */}
+        {viewMode === 'matrix' && (
+          <AssignmentMatrixTable
+            templates={dbTemplates}
+            groups={groups}
+            subjects={subjects}
+            teachers={teachers}
+            assignments={assignments}
+            teacherAvailability={teacherAvailability}
+            academicYear="2026-2027"
+            onAssign={handleMatrixAssign}
+            onUnassign={handleMatrixUnassign}
+          />
+        )}
 
         {/* ============ VISTA SEMANAL ============ */}
         {viewMode === 'week' && (
