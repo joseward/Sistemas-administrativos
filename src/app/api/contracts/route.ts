@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { jwtVerify } from 'jose';
+import { ensureContractForTeacher, getLatestContractConfig, upsertContractsForAllTeachers } from '@/lib/contracts';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
@@ -22,18 +23,38 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const teacherId = searchParams.get('teacherId');
-  const academicYear = searchParams.get('academicYear');
-
-  if (!teacherId || !academicYear) {
-    return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 });
-  }
+  const academicYear = searchParams.get('academicYear') || undefined;
 
   try {
-    const contract = await prisma.contract.findFirst({
-      where: { teacherId, academicYear }
-    });
-    return NextResponse.json({ success: true, data: contract });
+    if (teacherId) {
+      // Buscar contrato del maestro para el ciclo especificado
+      let contract = await prisma.contract.findFirst({
+        where: {
+          teacherId,
+          ...(academicYear ? { academicYear } : {})
+        },
+        orderBy: { updatedAt: 'desc' }
+      });
+
+      // Si no existe, intentar asegurar/autogenerar si el docente existe
+      if (!contract) {
+        contract = await ensureContractForTeacher(teacherId, academicYear);
+      }
+
+      // Si aún no tiene contrato guardado, devolver la configuración global más reciente como base
+      if (!contract) {
+        const config = await getLatestContractConfig(academicYear);
+        return NextResponse.json({ success: true, data: config, isDefault: true });
+      }
+
+      return NextResponse.json({ success: true, data: contract });
+    }
+
+    // Si no se pide un maestro específico, devolver la configuración global activa
+    const globalConfig = await getLatestContractConfig(academicYear);
+    return NextResponse.json({ success: true, data: globalConfig });
   } catch (error) {
+    console.error('Error al obtener contrato:', error);
     return NextResponse.json({ error: 'Error al obtener contrato' }, { status: 500 });
   }
 }
@@ -47,26 +68,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { teacherId, academicYear, applyToAll, ...configData } = body;
 
-    if (!academicYear) {
-      return NextResponse.json({ error: 'Falta ciclo escolar' }, { status: 400 });
-    }
+    const year = academicYear || '2026-2027';
 
     if (applyToAll) {
-      // Actualizar todos los contratos del ciclo actual
-      await prisma.contract.updateMany({
-        where: { academicYear },
-        data: configData
-      });
-      return NextResponse.json({ success: true });
+      // Aplicar y asegurar contrato para todos los maestros
+      await upsertContractsForAllTeachers(year, configData);
+      return NextResponse.json({ success: true, message: 'Configuración aplicada a todos los maestros' });
     }
 
     if (!teacherId) {
       return NextResponse.json({ error: 'Falta maestro' }, { status: 400 });
     }
 
+    // Obtener maestro para conocer schoolId
+    const teacher = await prisma.teacher.findUnique({
+      where: { id: teacherId },
+      select: { schoolId: true }
+    });
+
     // Actualizar o crear para un solo maestro
     const existing = await prisma.contract.findFirst({
-      where: { teacherId, academicYear }
+      where: { teacherId, academicYear: year }
     });
 
     if (existing) {
@@ -78,15 +100,17 @@ export async function POST(request: NextRequest) {
       await prisma.contract.create({
         data: {
           teacherId,
-          academicYear,
+          schoolId: teacher?.schoolId,
+          academicYear: year,
           contractType: 'hourly',
           ...configData
         }
       });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: 'Contrato guardado correctamente' });
   } catch (error) {
+    console.error('Error al guardar contrato:', error);
     return NextResponse.json({ error: 'Error al guardar contrato' }, { status: 500 });
   }
 }

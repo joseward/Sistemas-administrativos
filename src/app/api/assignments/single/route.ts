@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { jwtVerify } from 'jose';
+import { ensureContractForTeacher } from '@/lib/contracts';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
@@ -22,6 +23,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Faltan datos requeridos (subjectId, groupId)' }, { status: 400 });
     }
 
+    let finalAcademicYear = academicYear;
+    if (!finalAcademicYear) {
+      const activeYear = await prisma.academicYear.findFirst({
+        where: { isActive: true },
+        orderBy: { value: 'desc' }
+      });
+      finalAcademicYear = activeYear ? activeYear.value : '2026-2027';
+    }
+
     if (id && !id.startsWith('unassigned-') && !id.startsWith('mock-') && !id.startsWith('pending-')) {
       // Actualizar existente
       const existing = await prisma.teacherSubjectGroup.findUnique({ where: { id } });
@@ -32,7 +42,7 @@ export async function POST(request: NextRequest) {
         groupId,
         modulo,
         cuatrimestre,
-        academicYear: academicYear || '2023-2024',
+        academicYear: finalAcademicYear,
         isAvailable: isAvailable || false,
         createdById: userId,
       };
@@ -76,11 +86,16 @@ export async function POST(request: NextRequest) {
           classroom: classroom || '',
           modulo,
           cuatrimestre,
-          academicYear: academicYear || '2023-2024',
+          academicYear: finalAcademicYear,
           isAvailable: isAvailable || false,
           createdById: userId,
         }
       });
+    }
+
+    // Autogenerar / asegurar contrato para el maestro si fue asignado
+    if (teacherId) {
+      await ensureContractForTeacher(teacherId, finalAcademicYear);
     }
 
     return NextResponse.json({ success: true, message: 'Asignación guardada correctamente' });
