@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSearchParams } from 'next/navigation';
 import { Button, Badge, LoadingSpinner, Input } from '@/components/ui';
+import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOCK_TEACHERS, MOCK_USERS } from '@/lib/mockData';
 
@@ -151,9 +152,9 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
     } as const;
 
     const labels = {
-      active: '✓ Activo',
-      inactive: '✕ Inactivo',
-      pending: '⊙ Pendiente',
+      active: 'Activo',
+      inactive: 'Inactivo',
+      pending: 'Pendiente',
     };
 
     return <Badge variant={variants[status]}>{labels[status]}</Badge>;
@@ -178,7 +179,10 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
         />
         {filterParam === 'missing_availability' && (
           <div className="mt-4 p-3 bg-amber-50 text-amber-800 border-l-4 border-amber-500 font-medium text-sm flex justify-between items-center shadow-sm">
-            <span>⚠️ Mostrando únicamente maestros activos que NO han enviado su disponibilidad.</span>
+            <span className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              Mostrando únicamente maestros activos que NO han enviado su disponibilidad.
+            </span>
             <a href="/maestros" className="text-amber-700 hover:text-amber-900 underline">Quitar filtro</a>
           </div>
         )}

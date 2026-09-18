@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
+import { Search, ChevronDown } from 'lucide-react';
 
 interface SearchableSelectProps {
   value: string;
@@ -34,13 +35,13 @@ export function SearchableSelect({ value, onChange, options, placeholder = "Busc
         onClick={() => { setIsOpen(!isOpen); setSearch(""); }}
       >
         <span className="truncate flex-1 text-left">{selectedOption ? selectedOption.label : placeholder}</span>
-        <span className="text-gray-400 text-[10px] ml-1 print:hidden">▼</span>
+        <ChevronDown className="w-3.5 h-3.5 text-gray-400 ml-1 print:hidden" />
       </div>
       
       {isOpen && (
         <div className="absolute z-[999] w-64 sm:w-72 mt-1 bg-white border border-gray-200 shadow-xl rounded-md overflow-hidden left-0 print:hidden">
           <div className="p-2 border-b border-gray-100 flex items-center gap-2 bg-gray-50">
-            <span className="text-gray-400 text-sm">🔍</span>
+            <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
             <input 
               type="text" 
               className="w-full bg-transparent outline-none text-xs" 

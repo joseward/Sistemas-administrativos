@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { TeacherList, TeacherForm, AvailabilityGrid } from '@/components/teachers';
 import { Modal, Button, Input, LoadingSpinner } from '@/components/ui';
+import { X } from 'lucide-react';
 
 interface Teacher {
   id: string;
@@ -121,8 +122,10 @@ export default function TeachersPage() {
                     setSelectedTeacher(null);
                     setShowAvailability(false);
                   }}
+                  className="flex items-center gap-1.5"
                 >
-                  ✕ Cerrar
+                  <X className="w-4 h-4" />
+                  Cerrar
                 </Button>
               </div>
               <AvailabilityGrid teacherId={selectedTeacher.id} />

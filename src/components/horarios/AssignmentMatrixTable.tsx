@@ -368,7 +368,7 @@ export function AssignmentMatrixTable({
               onChange={e => setSelectedCareer(e.target.value)}
               className="py-2 px-3 text-sm bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
-              <option value="all">🎓 Todas las carreras</option>
+              <option value="all">Todas las carreras</option>
               {careersList.map(c => (
                 <option key={c} value={c}>{c}</option>
               ))}
@@ -380,7 +380,7 @@ export function AssignmentMatrixTable({
               onChange={e => setSelectedModule(e.target.value)}
               className="py-2 px-3 text-sm bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
-              <option value="all">⏱️ Todos los Módulos</option>
+              <option value="all">Todos los Módulos</option>
               <option value="1">Módulo 1</option>
               <option value="2">Módulo 2</option>
             </select>
@@ -638,9 +638,15 @@ export function AssignmentMatrixTable({
                                               </div>
                                               <span className="text-[10px] text-gray-500 block truncate">
                                                 {hasAvailability && !conflictingClass ? (
-                                                  <span className="text-emerald-600 font-medium">✓ Disponible en este horario</span>
+                                                  <span className="text-emerald-600 font-medium inline-flex items-center gap-1">
+                                                    <Check className="w-3 h-3 text-emerald-600" />
+                                                    Disponible en este horario
+                                                  </span>
                                                 ) : conflictingClass ? (
-                                                  <span className="text-rose-500 font-medium">⚠ Conflicto ({conflictingClass.startTime})</span>
+                                                  <span className="text-rose-500 font-medium inline-flex items-center gap-1">
+                                                    <AlertCircle className="w-3 h-3 text-rose-500" />
+                                                    Conflicto ({conflictingClass.startTime})
+                                                  </span>
                                                 ) : (
                                                   <span>Sin disp. declarada</span>
                                                 )}

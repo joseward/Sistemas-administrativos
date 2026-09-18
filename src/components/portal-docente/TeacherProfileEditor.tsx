@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input, Select } from '@/components/ui';
+import { CheckCircle2 } from 'lucide-react';
 import { MOCK_TEACHERS, type MockTeacher } from '@/lib/mockData';
 
 const ProfileSchema = z.object({
@@ -81,8 +82,9 @@ export function TeacherProfileEditor({ teacherId }: TeacherProfileEditorProps) {
       <h2 className="text-2xl font-bold text-[#061266] mb-6">Información Personal</h2>
       
       {successMsg && (
-        <div className="mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm">
-          ✅ {successMsg}
+        <div className="mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>{successMsg}</span>
         </div>
       )}
 

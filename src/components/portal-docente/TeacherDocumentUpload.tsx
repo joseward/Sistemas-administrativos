@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button, Input } from '@/components/ui';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface TeacherDocumentUploadProps {
   teacherId: string;
@@ -107,14 +108,16 @@ export function TeacherDocumentUpload({ teacherId }: TeacherDocumentUploadProps)
       </div>
 
       {errorMsg && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm">
-          ⚠️ {errorMsg}
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>{errorMsg}</span>
         </div>
       )}
       
       {successMsg && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm">
-          ✅ {successMsg}
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>{successMsg}</span>
         </div>
       )}
 

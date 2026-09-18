@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui';
 import { TIME_SLOTS } from '@/lib/mockData';
 import { ChangePasswordForm } from './ChangePasswordForm';
+import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 interface TeacherScheduleEditorProps {
   teacherId: string;
@@ -182,14 +183,16 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
         </div>
 
         {successMsg && (
-          <div className="mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-medium">
-            ✅ {successMsg}
+          <div className="mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-medium flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <span>{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium">
-            ⚠️ {errorMsg}
+          <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <span>{errorMsg}</span>
           </div>
         )}
 
@@ -243,8 +246,8 @@ export function TeacherScheduleEditor({ teacherId }: TeacherScheduleEditorProps)
                     </div>
                   </td>
                   <td className="p-1 text-center border border-transparent print:hidden">
-                    <button onClick={() => removeRow(index)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-2">
-                      ✕
+                    <button onClick={() => removeRow(index)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-2" title="Eliminar fila">
+                      <X className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>

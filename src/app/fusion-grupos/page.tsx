@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useCurriculum } from '@/context/CurriculumContext';
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
+import { Link2, ArrowLeft } from 'lucide-react';
 
 export default function FusionGruposPage() {
   const { groups = [], subjects = [], templates = [], refreshData = () => {}, refreshTick } = useCurriculum() || {};
@@ -169,11 +170,14 @@ export default function FusionGruposPage() {
         
         {/* Botón de regreso */}
         <Link href="/" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
-          <span className="mr-2">←</span> Regresar al inicio
+          <ArrowLeft className="w-4 h-4 mr-2" /> Regresar al inicio
         </Link>
 
         <div>
-          <h1 className="text-3xl font-extrabold text-[#061266] mb-2 tracking-tight">🔗 Fusión de Grupos</h1>
+          <h1 className="text-3xl font-extrabold text-[#061266] mb-2 tracking-tight flex items-center gap-3">
+            <Link2 className="w-8 h-8 text-orange-500" />
+            Fusión de Grupos
+          </h1>
           <p className="text-gray-600">
             Une materias de diferentes carreras o grupos para que compartan el mismo maestro, aula y horario de forma sincronizada.
           </p>
@@ -250,8 +254,9 @@ export default function FusionGruposPage() {
                       <td className="px-5 py-3">
                         {isFused ? (
                           <div className="flex flex-col gap-1">
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-100 text-orange-800 text-xs font-semibold w-fit">
-                              🔗 Fusionada
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-orange-100 text-orange-800 text-xs font-semibold w-fit">
+                              <Link2 className="w-3.5 h-3.5 text-orange-600" />
+                              Fusionada
                             </span>
                             <button 
                               onClick={() => handleUnfuse(item.fusionGroupId)}

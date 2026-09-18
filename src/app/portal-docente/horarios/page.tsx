@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import prisma from '@/lib/prisma';
-import { ChevronLeft, Calendar, Info } from 'lucide-react';
+import { ChevronLeft, Calendar, Info, Clock, MapPin, AlertCircle, Link2 } from 'lucide-react';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 const DAYS_OF_WEEK = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -68,7 +68,9 @@ export default async function TeacherHorarioPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f4f6f8] p-4">
         <div className="bg-white p-8 rounded-xl shadow-md text-center max-w-md w-full border border-gray-100">
-          <div className="text-5xl mb-4">⚠️</div>
+          <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8" />
+          </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Perfil No Encontrado</h2>
           <p className="text-gray-600 mb-6">
             No se encontró un expediente de maestro para el correo: <b>{payloadEmail}</b>. 
@@ -180,7 +182,7 @@ export default async function TeacherHorarioPage() {
                               let tooltipText = '';
 
                               if (isFused) {
-                                groupLabel = 'Múltiples Grupos 🔗';
+                                groupLabel = 'Múltiples Grupos (Compartida)';
                                 tooltipText = group.map((s: any) => `${s.group.name} (${s.group.career?.name || 'Gral'})`).join(' | ');
                               } else {
                                 groupLabel = group[0].group.name;
@@ -195,15 +197,16 @@ export default async function TeacherHorarioPage() {
                                   <div className="font-bold text-purple-900 text-xs leading-tight mb-1">
                                     {subjectName}
                                   </div>
-                                  <div className="text-[10px] font-semibold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded inline-block mb-1" title={tooltipText}>
+                                  <div className="text-[10px] font-semibold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded inline-flex items-center gap-1 mb-1" title={tooltipText}>
+                                    {isFused && <Link2 className="w-3 h-3 inline text-purple-600" />}
                                     {groupLabel}
                                   </div>
                                   <div className="flex flex-col gap-0.5 text-[10px] text-gray-600 mt-1">
                                     <div className="flex items-center gap-1">
-                                      <span>⏰</span> {timeRange}
+                                      <Clock className="w-3 h-3 text-purple-400" /> {timeRange}
                                     </div>
                                     <div className="flex items-center gap-1 font-medium">
-                                      <span>📍</span> {classroom}
+                                      <MapPin className="w-3 h-3 text-purple-400" /> {classroom}
                                     </div>
                                   </div>
                                   

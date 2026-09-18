@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input, Modal } from '@/components/ui';
+import { CheckCircle2 } from 'lucide-react';
 import { MOCK_USERS, type MockUser } from '@/lib/mockData';
 
 const PasswordSchema = z.object({
@@ -93,9 +94,13 @@ export function ChangePasswordModal({ isOpen, onClose, user, onSuccess }: Change
       }
     >
       {submitSuccess ? (
-        <div className="p-6 text-center text-green-700 bg-green-50 rounded-lg border border-green-200">
-          <span className="block text-4xl mb-3">✅</span>
-          La contraseña se ha actualizado correctamente. El usuario ya puede iniciar sesión.
+        <div className="p-6 text-center text-emerald-800 bg-emerald-50 rounded-xl border border-emerald-200">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <p className="font-medium">
+            La contraseña se ha actualizado correctamente. El usuario ya puede iniciar sesión.
+          </p>
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

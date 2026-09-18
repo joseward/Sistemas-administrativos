@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui';
+import { CheckSquare, Printer, ClipboardList, ArrowLeft } from 'lucide-react';
 
 const DAYS_OF_WEEK: Record<number, string> = {
   0: 'Lunes',
@@ -154,13 +155,16 @@ export default function AsistenciaPage() {
             href="/"
             className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium mb-6 transition-colors group"
           >
-            <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Regresar al inicio
           </Link>
 
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-4xl font-bold text-[#061266]">✅ Control de Asistencia</h1>
+              <h1 className="text-4xl font-bold text-[#061266] flex items-center gap-3">
+                <CheckSquare className="w-9 h-9 text-emerald-600" />
+                Control de Asistencia
+              </h1>
               <p className="text-gray-600 mt-2">
                 Selecciona un maestro y su clase para generar la lista de asistencia imprimible.
               </p>
@@ -179,7 +183,7 @@ export default function AsistenciaPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">-- Elija un maestro --</option>
-                  <option value="todos" className="font-bold text-blue-600">🖨️ TODOS LOS MAESTROS (Lote)</option>
+                  <option value="todos" className="font-bold text-blue-600">TODOS LOS MAESTROS (Lote completo)</option>
                   {teachersWithAssignments.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.firstName} {t.lastName}
@@ -206,7 +210,8 @@ export default function AsistenciaPage() {
                     disabled={!selectedTeacherId}
                     className="flex items-center gap-2"
                   >
-                    🖨️ Imprimir
+                    <Printer className="w-4 h-4" />
+                    Imprimir
                   </Button>
                 </div>
               </div>
@@ -220,7 +225,9 @@ export default function AsistenciaPage() {
         {selectedTeacherId === 'todos' ? (
           <>
             <div className="bg-white rounded-lg shadow-md p-16 text-center border-2 border-blue-200 mt-8 print:hidden">
-              <div className="text-5xl mb-4">🖨️</div>
+              <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+                <Printer className="w-8 h-8" />
+              </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">Impresión por Lote Lista</h3>
               <p className="text-gray-500 mb-6 max-w-lg mx-auto">
                 Se generarán las listas de asistencia para todos los <b>{teachersWithAssignments.length} maestros</b> con clases asignadas.
@@ -258,7 +265,9 @@ export default function AsistenciaPage() {
         {/* Mensaje cuando no hay nada seleccionado */}
         {!selectedTeacherId && (
           <div className="bg-white rounded-lg shadow-md p-16 text-center border-2 border-dashed border-gray-200 mt-8 print:hidden">
-            <div className="text-5xl mb-4">📋</div>
+            <div className="w-16 h-16 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-4">
+              <ClipboardList className="w-8 h-8" />
+            </div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">No hay maestro seleccionado</h3>
             <p className="text-gray-500">
               Selecciona un maestro en la parte superior para generar su reporte de asistencia.

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Button, Modal } from '@/components/ui';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { Download, CheckCircle2, AlertCircle, Eye, Archive } from 'lucide-react';
 
 interface DocumentManagementProps {
   teacher: any;
@@ -97,9 +98,10 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
                 variant="primary" 
                 onClick={handleDownloadAll} 
                 isLoading={isZipping}
-                className="text-sm"
+                className="text-sm flex items-center gap-1.5"
               >
-                📦 Descargar Todos (.ZIP)
+                <Archive className="w-4 h-4" />
+                Descargar Todos (.ZIP)
               </Button>
             </div>
           )}
@@ -123,12 +125,14 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
                       <td className="p-3 font-medium text-gray-900">{req.label}</td>
                       <td className="p-3">
                         {doc ? (
-                          <span className="inline-flex items-center gap-1 text-emerald-700 text-xs font-medium">
-                            ✅ Entregado
+                          <span className="inline-flex items-center gap-1.5 text-emerald-700 text-xs font-semibold">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            Entregado
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-red-600 text-xs font-medium">
-                            ❌ Falta
+                          <span className="inline-flex items-center gap-1.5 text-red-600 text-xs font-semibold">
+                            <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                            Falta
                           </span>
                         )}
                       </td>
@@ -149,18 +153,20 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
                               href={doc.fileUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 rounded transition-colors"
+                              className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 rounded transition-colors"
                               title="Ver en el navegador"
                             >
-                              👁️ Ver
+                              <Eye className="w-3.5 h-3.5 text-gray-500" />
+                              Ver
                             </a>
                             <a 
                               href={`${doc.fileUrl}?download=`}
                               download={doc.fileName}
-                              className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded transition-colors"
+                              className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded transition-colors"
                               title="Forzar descarga"
                             >
-                              ⬇️ Descargar
+                              <Download className="w-3.5 h-3.5 text-blue-600" />
+                              Descargar
                             </a>
                           </div>
                         ) : (

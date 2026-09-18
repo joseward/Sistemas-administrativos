@@ -82,7 +82,7 @@ export function CloneTemplateModal({
   if (!sourceTemplate || !sourceGroup) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="📋 Clonar Plantilla a Otro Grupo">
+    <Modal isOpen={isOpen} onClose={onClose} title="Clonar Plantilla a Otro Grupo">
       <div className="space-y-5">
         {/* Origen */}
         <div className="bg-blue-50/80 p-4 rounded-xl border border-blue-200">

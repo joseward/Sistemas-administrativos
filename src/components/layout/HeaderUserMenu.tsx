@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { LogOut, ChevronDown } from 'lucide-react';
 
 export function HeaderUserMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,7 +41,7 @@ export function HeaderUserMenu() {
         <div className="w-8 h-8 rounded-full bg-[#fdb515] flex items-center justify-center text-[#061266] font-bold shadow-sm">
           AD
         </div>
-        <span className="text-xs text-gray-300 -ml-2 hidden md:inline">▼</span>
+        <ChevronDown className="w-3.5 h-3.5 text-gray-300 -ml-2 hidden md:inline" />
       </button>
 
       {/* Menú desplegable */}
@@ -51,7 +52,7 @@ export function HeaderUserMenu() {
               onClick={handleLogout}
               className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
             >
-              <span>🚪</span> Cerrar sesión
+              <LogOut className="w-4 h-4 text-red-500" /> Cerrar sesión
             </button>
           </div>
         </div>

@@ -8,6 +8,7 @@ import {
   MOCK_BIMESTRES,
   CUATRIMESTRES,
 } from '@/lib/mockData';
+import { FileText, Printer, Files } from 'lucide-react';
 
 export default function ContratosPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -144,7 +145,7 @@ export default function ContratosPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(applyToAll ? "✅ Textos y fechas guardados y aplicados a todos los maestros correctamente." : "✅ Configuración guardada para el docente actual.");
+        alert(applyToAll ? "Textos y fechas guardados y aplicados a todos los maestros correctamente." : "Configuración guardada para el docente actual.");
       } else {
         alert("Error al guardar: " + data.error);
       }
@@ -308,7 +309,10 @@ export default function ContratosPage() {
 
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-4xl font-bold text-[#061266]">📄 Contratos y Asignaciones</h1>
+              <h1 className="text-4xl font-bold text-[#061266] flex items-center gap-3">
+                <FileText className="w-9 h-9 text-[#061266]" />
+                Contratos y Asignaciones
+              </h1>
               <p className="text-gray-600 mt-2">
                 Genera el Anexo I de Asignación por docente para el cuatrimestre con datos de materias en vivo.
               </p>
@@ -338,7 +342,8 @@ export default function ContratosPage() {
                   disabled={!selectedTeacherId || printMode !== null}
                   className="flex items-center gap-2 h-[42px] bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                 >
-                  🖨️ Imprimir Actual
+                  <Printer className="w-4 h-4" />
+                  Imprimir Actual
                 </Button>
                 <Button
                   onClick={() => setPrintMode('all')}
@@ -346,7 +351,8 @@ export default function ContratosPage() {
                   variant="outline"
                   className="flex items-center gap-2 h-[42px] border-blue-600 text-blue-700 hover:bg-blue-50 font-semibold"
                 >
-                  📑 Imprimir Todos ({teachersWithAssignments.length})
+                  <Files className="w-4 h-4" />
+                  Imprimir Todos ({teachersWithAssignments.length})
                 </Button>
               </div>
             </div>
@@ -466,7 +472,7 @@ export default function ContratosPage() {
 
         {printMode !== 'all' && !selectedTeacher && (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center border border-gray-200 border-dashed print:hidden">
-            <span className="text-4xl block mb-4">📄</span>
+            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-gray-700">Ningún docente seleccionado</h3>
             <p className="text-gray-500 mt-2">
               {teachersWithAssignments.length === 0 

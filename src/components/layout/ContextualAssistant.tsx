@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { Bot, X, Compass, HelpCircle } from 'lucide-react';
 
 export function ContextualAssistant() {
   const pathname = usePathname();
@@ -72,11 +73,12 @@ export function ContextualAssistant() {
       {isOpen && (
         <div className="bg-white rounded-2xl shadow-2xl border border-blue-100 w-80 mb-4 overflow-hidden flex flex-col transform transition-all animate-in slide-in-from-bottom-4">
           <div className="bg-[#061266] text-white p-4 flex justify-between items-center">
-            <h3 className="font-bold flex items-center gap-2">
-              🤖 {helpInfo.title}
+            <h3 className="font-bold flex items-center gap-2 text-sm">
+              <Bot className="w-5 h-5 text-blue-300" />
+              {helpInfo.title}
             </h3>
-            <button onClick={() => setIsOpen(false)} className="text-white hover:text-gray-300">
-              ✖
+            <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white transition-colors">
+              <X className="w-4 h-4" />
             </button>
           </div>
           
@@ -99,9 +101,10 @@ export function ContextualAssistant() {
             <div className="p-4 border-t border-gray-100 bg-gray-50">
               <button 
                 onClick={startTour}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 text-sm"
               >
-                🧭 Iniciar Tour Guiado de esta página
+                <Compass className="w-4 h-4" />
+                Iniciar Tour Guiado de esta página
               </button>
             </div>
           )}
@@ -111,43 +114,13 @@ export function ContextualAssistant() {
       {/* Botón Flotante */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-16 h-16 bg-[#061266] hover:bg-blue-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center border-2 border-white group relative overflow-hidden"
+        className="w-14 h-14 bg-[#061266] hover:bg-blue-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center border-2 border-white group relative"
         aria-label="Abrir asistente de ayuda"
       >
         {isOpen ? (
-          <span className="text-3xl group-hover:scale-110 transition-transform">×</span>
+          <X className="w-6 h-6 transition-transform" />
         ) : (
-          <div className="relative w-full h-full flex items-center justify-center">
-            <style>{`
-              @keyframes catPlay {
-                0%, 20% { transform: translateX(-5px); }
-                10%, 30% { transform: translateX(5px); }
-                40% { transform: translateX(-5px) rotate(0deg); }
-                50%, 90% { transform: translateX(-5px) translateY(5px) rotate(-90deg); }
-                100% { transform: translateX(-5px) rotate(0deg); }
-              }
-              @keyframes yarnRoll {
-                0%, 20% { transform: translateX(0px) rotate(0deg); }
-                10%, 30% { transform: translateX(10px) rotate(90deg); }
-                40%, 90% { transform: translateX(15px) rotate(180deg); opacity: 1; }
-                95% { opacity: 0; }
-                100% { transform: translateX(0px) rotate(0deg); opacity: 1; }
-              }
-              @keyframes zzz {
-                0%, 45% { opacity: 0; transform: translateY(0) scale(0.5); }
-                55% { opacity: 1; transform: translateY(-10px) scale(1); }
-                70% { opacity: 0; transform: translateY(-20px) scale(1.2); }
-                80% { opacity: 1; transform: translateY(-10px) scale(1); }
-                95% { opacity: 0; transform: translateY(-20px) scale(1.2); }
-                100% { opacity: 0; }
-              }
-            `}</style>
-            <div className="absolute flex items-center justify-center w-full h-full">
-              <span style={{ animation: 'catPlay 6s infinite' }} className="text-3xl origin-center z-10">🐈</span>
-              <span style={{ animation: 'yarnRoll 6s infinite' }} className="text-xl absolute right-1 bottom-3">🧶</span>
-              <span style={{ animation: 'zzz 6s infinite' }} className="text-sm absolute left-1 top-1 opacity-0">💤</span>
-            </div>
-          </div>
+          <Bot className="w-7 h-7 text-white group-hover:scale-110 transition-transform" />
         )}
       </button>
     </div>

@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
+import { CheckCheck } from 'lucide-react';
 import { MockGroupTemplate } from '@/lib/mockData';
 import { useCurriculum } from '@/context/CurriculumContext';
 
@@ -257,9 +258,10 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
               <button
                 type="button"
                 onClick={handleSelectAllSubjects}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors inline-flex items-center gap-1.5"
               >
-                {selectedSubjects.length === availableSubjects.length ? 'Desmarcar Todas' : '✨ Seleccionar Todas'}
+                <CheckCheck className="w-3.5 h-3.5" />
+                {selectedSubjects.length === availableSubjects.length ? 'Desmarcar Todas' : 'Seleccionar Todas'}
               </button>
             </div>
             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">

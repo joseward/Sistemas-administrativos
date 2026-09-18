@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose';
 import prisma from '@/lib/prisma';
 import { TeacherScheduleEditor } from '@/components/portal-docente/TeacherScheduleEditor';
 import { TeacherDocumentUpload } from '@/components/portal-docente/TeacherDocumentUpload';
-import { Calendar, Clock, FileText, ChevronLeft, ArrowRight, Construction } from 'lucide-react';
+import { Calendar, Clock, FileText, ChevronLeft, ArrowRight, Construction, AlertCircle } from 'lucide-react';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
@@ -48,7 +48,9 @@ export default async function PortalDocentePage({
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f4f6f8] p-4">
         <div className="bg-white p-8 rounded-xl shadow-md text-center max-w-md w-full border border-gray-100">
-          <div className="text-5xl mb-4">⚠️</div>
+          <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8" />
+          </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Perfil No Encontrado</h2>
           <p className="text-gray-600 mb-6">
             No se encontró un expediente de maestro para el correo: <b>{payloadEmail}</b>. 
@@ -91,7 +93,7 @@ export default async function PortalDocentePage({
           <div className="fade-in">
             <div className="mb-10 print:hidden">
               <h2 className="text-4xl font-black text-[#061266] mb-3 tracking-tight">
-                ¡Hola, {teacherName}! 👋
+                ¡Hola, {teacherName}!
               </h2>
               <p className="text-gray-600 text-lg">Bienvenido a tu espacio personal. Selecciona una opción para comenzar.</p>
             </div>

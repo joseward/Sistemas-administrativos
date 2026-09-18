@@ -13,7 +13,7 @@ import { AssignmentEditModal } from '@/components/grupos/AssignmentEditModal';
 import { TemplateCreatorModal } from '@/components/grupos/TemplateCreatorModal';
 import { CloneTemplateModal } from '@/components/grupos/CloneTemplateModal';
 import { useCurriculum } from '@/context/CurriculumContext';
-import { Copy, Plus, Trash2, Edit3, ArrowRight, Layers, Building2, Clock, Check, Sparkles } from 'lucide-react';
+import { Copy, Plus, Trash2, Edit3, ArrowRight, Layers, Building2, Clock, Check, Sparkles, GraduationCap, School, TrendingUp, Users, ArrowLeft } from 'lucide-react';
 
 export default function GruposPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -411,14 +411,17 @@ export default function GruposPage() {
           href="/"
           className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium mb-6 transition-colors group"
         >
-          <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           Regresar al inicio
         </Link>
 
         {/* Header */}
         <div className="mb-6 flex justify-between items-end">
           <div>
-            <h1 className="text-4xl font-bold text-[#061266]">👥 Grupos Académicos</h1>
+            <h1 className="text-4xl font-bold text-[#061266] flex items-center gap-3">
+              <Users className="w-9 h-9 text-blue-600" />
+              Grupos Académicos
+            </h1>
             <p className="text-gray-600 mt-2">
               Gestiona las plantillas de grupos y las materias asignadas.
             </p>
@@ -515,7 +518,9 @@ export default function GruposPage() {
         <div className="flex flex-col gap-8">
           {filteredGroups.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm p-12 text-center border-2 border-dashed border-blue-200">
-              <div className="text-6xl mb-4">🏫</div>
+              <div className="w-20 h-20 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+                <School className="w-10 h-10" />
+              </div>
               <h3 className="text-2xl font-bold text-[#061266] mb-2">¡Empecemos a organizar tus grupos!</h3>
               <p className="text-gray-600 max-w-lg mx-auto mb-8">
                 Las plantillas te permiten definir qué materias lleva cada grupo en el cuatrimestre, facilitando la asignación de maestros después.
@@ -635,7 +640,8 @@ export default function GruposPage() {
                                 onClick={() => handlePromoteClick(g.group, currentTemplate)}
                                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 hover:text-blue-600 transition-colors shadow-2xs"
                               >
-                                🚀 Promover Ciclo
+                                <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+                                Promover Ciclo
                               </button>
                             </>
                           )}
@@ -898,7 +904,7 @@ export default function GruposPage() {
         <Modal 
           isOpen={!!promotePreview} 
           onClose={() => setPromotePreview(null)} 
-          title="🚀 Vista Previa de Promoción"
+          title="Vista Previa de Promoción"
           maxWidth="max-w-2xl"
         >
           <div className="p-6">

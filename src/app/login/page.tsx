@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Shield, GraduationCap, Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -135,28 +136,28 @@ export default function LoginPage() {
                   onClick={() => setSelectedRole('admin')}
                   className="w-full border-2 border-gray-100 hover:border-[#1877f2] hover:bg-blue-50/50 p-4 rounded-2xl flex items-center gap-4 transition-all group"
                 >
-                  <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
-                    🛠️
+                  <div className="w-12 h-12 bg-blue-100 text-[#1877f2] rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Shield className="w-6 h-6" />
                   </div>
                   <div className="text-left flex-1">
                     <h3 className="font-bold text-gray-800 group-hover:text-[#1877f2] transition-colors">Personal Administrativo</h3>
                     <p className="text-xs text-gray-500 mt-1">Gestión de escuela, maestros y horarios</p>
                   </div>
-                  <div className="text-gray-300 group-hover:text-[#1877f2] transition-colors">→</div>
+                  <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-[#1877f2] transition-colors" />
                 </button>
 
                 <button 
                   onClick={() => setSelectedRole('docente')}
                   className="w-full border-2 border-gray-100 hover:border-emerald-500 hover:bg-emerald-50/50 p-4 rounded-2xl flex items-center gap-4 transition-all group"
                 >
-                  <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
-                    👨‍🏫
+                  <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <GraduationCap className="w-6 h-6" />
                   </div>
                   <div className="text-left flex-1">
                     <h3 className="font-bold text-gray-800 group-hover:text-emerald-600 transition-colors">Docentes</h3>
                     <p className="text-xs text-gray-500 mt-1">Portal de clases, tareas y asistencias</p>
                   </div>
-                  <div className="text-gray-300 group-hover:text-emerald-600 transition-colors">→</div>
+                  <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-emerald-600 transition-colors" />
                 </button>
               </div>
             ) : (
@@ -165,16 +166,17 @@ export default function LoginPage() {
                 <button 
                   type="button" 
                   onClick={() => setSelectedRole(null)}
-                  className="text-xs text-[#1877f2] font-medium hover:underline flex items-center gap-1 mb-2"
+                  className="text-xs text-[#1877f2] font-medium hover:underline flex items-center gap-1.5 mb-2"
                 >
-                  ← Cambiar perfil
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Cambiar perfil
                 </button>
               {/* Input Correo */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-600 ml-1">Correo electrónico</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400">✉️</span>
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Mail className="w-4 h-4 text-gray-400" />
                   </div>
                   <input 
                     type="email" 
@@ -190,8 +192,8 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-600 ml-1">Contraseña</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400">🔒</span>
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <Lock className="w-4 h-4 text-gray-400" />
                   </div>
                   <input 
                     type={showPassword ? "text" : "password"} 
