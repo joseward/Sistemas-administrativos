@@ -12,7 +12,6 @@ interface Teacher {
   email: string;
   phone?: string;
   cedula?: string;
-  specialization?: string;
   contractStatus: 'active' | 'inactive' | 'pending';
 }
 

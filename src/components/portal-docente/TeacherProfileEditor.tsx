@@ -12,7 +12,6 @@ const ProfileSchema = z.object({
   lastName: z.string().min(2, 'Apellido debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   phone: z.string().optional().or(z.literal('')),
-  specialization: z.string().optional().or(z.literal('')),
 });
 
 type ProfileFormData = z.infer<typeof ProfileSchema>;
@@ -39,7 +38,6 @@ export function TeacherProfileEditor({ teacherId }: TeacherProfileEditorProps) {
       lastName: '',
       email: '',
       phone: '',
-      specialization: '',
     },
   });
 
@@ -50,7 +48,6 @@ export function TeacherProfileEditor({ teacherId }: TeacherProfileEditorProps) {
         lastName: teacher.lastName,
         email: teacher.email,
         phone: teacher.phone || '',
-        specialization: teacher.specialization || '',
       });
     }
   }, [teacher, reset]);
@@ -68,7 +65,6 @@ export function TeacherProfileEditor({ teacherId }: TeacherProfileEditorProps) {
           lastName: data.lastName,
           email: data.email,
           phone: data.phone,
-          specialization: data.specialization
         };
         setSuccessMsg('Información actualizada correctamente.');
         setTimeout(() => setSuccessMsg(null), 3000);
@@ -113,18 +109,11 @@ export function TeacherProfileEditor({ teacherId }: TeacherProfileEditorProps) {
         />
         <p className="text-xs text-gray-500 -mt-3 mb-4 ml-1">El correo electrónico debe cambiarse desde administración.</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            label="Teléfono de Contacto"
-            {...register('phone')}
-            error={errors.phone?.message}
-          />
-          <Input
-            label="Especialidad / Perfil Profesional"
-            {...register('specialization')}
-            error={errors.specialization?.message}
-          />
-        </div>
+        <Input
+          label="Teléfono de Contacto"
+          {...register('phone')}
+          error={errors.phone?.message}
+        />
 
         <div className="pt-4 flex justify-end">
           <Button type="submit" isLoading={submitting} className="bg-emerald-600 hover:bg-emerald-700">

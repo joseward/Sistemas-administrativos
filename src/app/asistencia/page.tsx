@@ -39,7 +39,6 @@ const TeacherAttendanceSheet = ({ teacher, assignments, selectedDate, isLast = t
         </div>
         <div className="space-y-2">
           <p><span className="font-bold text-gray-700 w-24 inline-block">Teléfono:</span> {teacher.phone || 'N/A'}</p>
-          <p><span className="font-bold text-gray-700 w-24 inline-block">Especialidad:</span> {teacher.specialization || 'N/A'}</p>
         </div>
       </div>
 

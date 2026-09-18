@@ -31,7 +31,6 @@ export function PrintTeachers({ assignments, teachers, subjects, isCapturing }: 
             <div className="text-center mb-6 border-b-2 border-black pb-4">
                <h1 className="text-2xl font-black uppercase mb-1">HORARIO DEL DOCENTE</h1>
                <h2 className="text-xl font-bold uppercase">{teacher.firstName} {teacher.lastName}</h2>
-               <p className="text-md text-gray-700">{teacher.specialization}</p>
             </div>
             
             {Object.keys(byDay).sort().map((dayStr) => {

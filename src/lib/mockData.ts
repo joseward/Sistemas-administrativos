@@ -69,7 +69,6 @@ export interface MockTeacher {
   lastName: string;
   email: string;
   phone?: string;
-  specialization?: string;
   contractStatus: 'active' | 'inactive' | 'pending';
   createdAt: string;
 }
@@ -81,7 +80,6 @@ export const MOCK_TEACHERS: MockTeacher[] = [
     lastName: 'Pérez García',
     email: 'juan.perez@institutotech.edu',
     phone: '+506-8765-4321',
-    specialization: 'Matemáticas y Cálculo',
     contractStatus: 'active',
     createdAt: '2026-01-15T08:00:00Z',
   },
@@ -91,7 +89,6 @@ export const MOCK_TEACHERS: MockTeacher[] = [
     lastName: 'López Hernández',
     email: 'maria.lopez@institutotech.edu',
     phone: '+506-8234-5678',
-    specialization: 'Ciencias Naturales',
     contractStatus: 'active',
     createdAt: '2026-02-10T08:00:00Z',
   },
@@ -101,7 +98,6 @@ export const MOCK_TEACHERS: MockTeacher[] = [
     lastName: 'Ramírez Solano',
     email: 'carlos.ramirez@institutotech.edu',
     phone: '+506-8901-2345',
-    specialization: 'Estudios Sociales',
     contractStatus: 'pending',
     createdAt: '2026-05-20T08:00:00Z',
   },

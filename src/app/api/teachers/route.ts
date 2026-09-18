@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, cedula, specialization, contractStatus } = body;
+    const { firstName, lastName, email, phone, cedula, contractStatus } = body;
 
     // Obtener quién está creando el maestro
     let adminId = undefined;
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           email,
           phone,
           cedula,
-          specialization,
+          specialization: null,
           contractStatus: contractStatus || 'active',
           createdByUserId: adminId,
         },

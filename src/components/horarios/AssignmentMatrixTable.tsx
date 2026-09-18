@@ -233,20 +233,14 @@ export function AssignmentMatrixTable({
         !(item.endTime <= a.startTime || item.startTime >= a.endTime)
       );
 
-      // 3. Especialidad
-      const specialization = teacher.specialization || '';
-      const matchesSpecialization = specialization && item.subjectName.toLowerCase().includes(specialization.toLowerCase());
-
       let score = 0;
-      if (hasAvailability) score += 50;
-      if (!conflictingClass) score += 30;
-      if (matchesSpecialization) score += 20;
+      if (hasAvailability) score += 60;
+      if (!conflictingClass) score += 40;
 
       return {
         teacher,
         hasAvailability,
         conflictingClass,
-        matchesSpecialization,
         score
       };
     }).sort((a, b) => b.score - a.score);
@@ -561,9 +555,6 @@ export function AssignmentMatrixTable({
                                     <span className="font-bold text-gray-900 text-xs block truncate">
                                       {item.assignedTeacher.firstName} {item.assignedTeacher.lastName}
                                     </span>
-                                    <span className="text-[10px] text-gray-500 block truncate">
-                                      {item.assignedTeacher.specialization || 'Docente'}
-                                    </span>
                                   </div>
                                 </div>
 
@@ -620,7 +611,7 @@ export function AssignmentMatrixTable({
                                       No hay maestros registrados.
                                     </div>
                                   ) : (
-                                    recommendations.map(({ teacher, hasAvailability, conflictingClass, matchesSpecialization }) => {
+                                    recommendations.map(({ teacher, hasAvailability, conflictingClass }) => {
                                       const isCurrent = item.assignedTeacher?.id === teacher.id;
 
                                       return (
@@ -644,9 +635,6 @@ export function AssignmentMatrixTable({
                                                 <span className="text-xs text-gray-900 font-semibold truncate">
                                                   {teacher.firstName} {teacher.lastName}
                                                 </span>
-                                                {matchesSpecialization && (
-                                                  <span title="Especialidad coincide" className="text-amber-500 text-[10px]">⭐</span>
-                                                )}
                                               </div>
                                               <span className="text-[10px] text-gray-500 block truncate">
                                                 {hasAvailability && !conflictingClass ? (

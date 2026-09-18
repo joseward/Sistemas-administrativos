@@ -1196,7 +1196,7 @@ function HorariosContent() {
                 <optgroup label="✅ Maestros Disponibles (Sugeridos)">
                   {suggestedTeachers.map(t => (
                     <option key={`sug-${t.id}`} value={t.id}>
-                      {t.firstName} {t.lastName} — {t.specialization}
+                      {t.firstName} {t.lastName}
                     </option>
                   ))}
                 </optgroup>
@@ -1204,7 +1204,7 @@ function HorariosContent() {
               <optgroup label="Todos los maestros">
                 {activeTeachers.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.firstName} {t.lastName} — {t.specialization}
+                    {t.firstName} {t.lastName}
                   </option>
                 ))}
               </optgroup>

@@ -13,7 +13,6 @@ interface Teacher {
   lastName: string;
   email: string;
   phone?: string;
-  specialization?: string;
   contractStatus: 'active' | 'inactive' | 'pending';
   createdAt: string;
   createdByUser?: {
@@ -129,8 +128,7 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
     const matchesSearch = (
       teacher.firstName.toLowerCase().includes(searchLower) ||
       teacher.lastName.toLowerCase().includes(searchLower) ||
-      teacher.email.toLowerCase().includes(searchLower) ||
-      (teacher.specialization?.toLowerCase().includes(searchLower) ?? false)
+      teacher.email.toLowerCase().includes(searchLower)
     );
 
     if (!matchesSearch) return false;
@@ -170,7 +168,7 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
       {/* Barra de búsqueda y título de filtro */}
       <div className="w-full">
         <Input
-          placeholder="Buscar por nombre, email o especialidad..."
+          placeholder="Buscar por nombre o email..."
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
@@ -194,68 +192,63 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
       )}
 
       {/* Tabla de maestros */}
-      <div className="overflow-x-auto border border-gray-300 rounded-lg">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100 border-b border-gray-300">
-            <tr>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                Nombre
-              </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                Email
-              </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                Especialidad
-              </th>
-              <th className="px-4 py-3 text-left font-semibold text-gray-700">
-                Teléfono
-              </th>
-              <th className="px-4 py-3 text-center font-semibold text-gray-700">
-                Estado
-              </th>
-              <th className="px-4 py-3 text-center font-semibold text-gray-700">
-                Registro
-              </th>
-              <th className="px-4 py-3 text-center font-semibold text-gray-700">
-                Creado por
-              </th>
-              <th className="px-4 py-3 text-center font-semibold text-gray-700">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTeachers.length === 0 ? (
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-gray-500">
-                  {searchTerm
-                    ? 'No hay maestros que coincidan con tu búsqueda'
-                    : 'No hay maestros registrados'}
-                </td>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                  Nombre
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                  Email
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                  Teléfono
+                </th>
+                <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  Estado
+                </th>
+                <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  Registro
+                </th>
+                <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  Creado por
+                </th>
+                <th className="px-4 py-3 text-center font-semibold text-gray-700">
+                  Acciones
+                </th>
               </tr>
-            ) : (
-              filteredTeachers.map((teacher) => (
-                <tr
-                  key={teacher.id}
-                  className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-3 text-gray-900 font-medium">
-                    {teacher.firstName} {teacher.lastName}
+            </thead>
+            <tbody>
+              {filteredTeachers.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-6 text-center text-gray-500">
+                    {searchTerm
+                      ? 'No hay maestros que coincidan con tu búsqueda'
+                      : 'No hay maestros registrados'}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">{teacher.email}</td>
-                  <td className="px-4 py-3 text-gray-700">
-                    {teacher.specialization || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">
-                    {teacher.phone || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {getStatusBadge(teacher.contractStatus)}
-                  </td>
-                  <td className="px-4 py-3 text-center text-gray-700">
-                    {new Date(teacher.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-center text-sm text-gray-600">
+                </tr>
+              ) : (
+                filteredTeachers.map((teacher) => (
+                  <tr
+                    key={teacher.id}
+                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3 text-gray-900 font-medium">
+                      {teacher.firstName} {teacher.lastName}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">{teacher.email}</td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {teacher.phone || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {getStatusBadge(teacher.contractStatus)}
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-700">
+                      {new Date(teacher.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3 text-center text-sm text-gray-600">
                     {teacher.createdByUser 
                       ? `${teacher.createdByUser.firstName || ''} ${teacher.createdByUser.lastName || ''}`.trim() || 'Admin'
                       : '—'}
@@ -285,6 +278,7 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
           </tbody>
         </table>
       </div>
+    </div>
 
       {/* Paginación */}
       {pagination && pagination.pages > 1 && (

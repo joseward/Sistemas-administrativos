@@ -14,7 +14,6 @@ const TeacherFormSchema = z.object({
   email: z.string().email('Email inválido'),
   phone: z.string().optional().or(z.literal('')),
   cedula: z.string().optional().or(z.literal('')),
-  specialization: z.string().optional().or(z.literal('')),
   contractStatus: z.enum(['active', 'inactive', 'pending']),
 });
 
@@ -32,7 +31,6 @@ interface TeacherFormProps {
     email: string;
     phone?: string;
     cedula?: string;
-    specialization?: string;
     contractStatus: 'active' | 'inactive' | 'pending';
   } | null;
 }
@@ -61,7 +59,6 @@ export function TeacherForm({
           email: editingTeacher.email,
           phone: editingTeacher.phone || '',
           cedula: editingTeacher.cedula || '',
-          specialization: editingTeacher.specialization || '',
           contractStatus: editingTeacher.contractStatus,
         }
       : {
@@ -70,7 +67,6 @@ export function TeacherForm({
           email: '',
           phone: '',
           cedula: '',
-          specialization: '',
           contractStatus: 'pending',
         },
   });
@@ -85,7 +81,6 @@ export function TeacherForm({
           email: editingTeacher.email,
           phone: editingTeacher.phone || '',
           cedula: editingTeacher.cedula || '',
-          specialization: editingTeacher.specialization || '',
           contractStatus: editingTeacher.contractStatus,
         });
       } else {
@@ -95,7 +90,6 @@ export function TeacherForm({
           email: '',
           phone: '',
           cedula: '',
-          specialization: '',
           contractStatus: 'pending',
         });
       }
@@ -201,17 +195,6 @@ export function TeacherForm({
           placeholder="Ej: 1-2345-6789"
           {...register('cedula')}
           error={errors.cedula?.message}
-        />
-
-        {/* Especialidad */}
-        <Select
-          label="Especialidad (Opcional)"
-          {...register('specialization')}
-          error={errors.specialization?.message}
-          options={[
-            { value: '', label: '-- Selecciona una materia / especialidad --' },
-            ...MOCK_SUBJECTS.map(s => ({ value: s.name, label: s.name }))
-          ]}
         />
 
         {/* Estado del Contrato */}
