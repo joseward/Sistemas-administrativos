@@ -24,9 +24,23 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
   const [endTime, setEndTime] = useState('');
   const [classroom, setClassroom] = useState('');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
-  const { academicLevels = [], careers = [], subjects = [], groups = [], bimestres = [], cuatrimestres = [], classrooms = [], refreshData = () => {} } = useCurriculum() || {};
+  const { academicLevels = [], careers = [], subjects = [], groups = [], bimestres = [], cuatrimestres = [], classrooms = [], templates = [], refreshData = () => {} } = useCurriculum() || {};
 
+  // Detectar si el grupo ya tiene plantilla para este módulo
+  const existingTemplateForGroup = useMemo(() => {
+    if (!groupId || !modulo) return null;
+    return templates.find((t: any) => t.groupId === groupId && t.modulo === Number(modulo)) || null;
+  }, [groupId, modulo, templates]);
 
+  React.useEffect(() => {
+    if (existingTemplateForGroup && !initialData) {
+      if (existingTemplateForGroup.classroom) setClassroom(existingTemplateForGroup.classroom);
+      if (existingTemplateForGroup.turno) setTurno(existingTemplateForGroup.turno);
+      if (existingTemplateForGroup.startTime) setStartTime(existingTemplateForGroup.startTime);
+      if (existingTemplateForGroup.endTime) setEndTime(existingTemplateForGroup.endTime);
+      if (existingTemplateForGroup.subjectIds) setSelectedSubjects(existingTemplateForGroup.subjectIds);
+    }
+  }, [existingTemplateForGroup, initialData]);
 
   React.useEffect(() => {
     if (isOpen && initialData) {
@@ -87,6 +101,14 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
         ? prev.filter(id => id !== subjectId)
         : [...prev, subjectId]
     );
+  };
+
+  const handleSelectAllSubjects = () => {
+    if (selectedSubjects.length === availableSubjects.length) {
+      setSelectedSubjects([]);
+    } else {
+      setSelectedSubjects(availableSubjects.map((s: any) => s.id));
+    }
   };
 
   const handleSave = () => {
@@ -218,10 +240,28 @@ export function TemplateCreatorModal({ isOpen, onClose, onSave, initialData }: T
 
 
 
+        {existingTemplateForGroup && !initialData && (
+          <div className="p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-xs flex items-center gap-2">
+            <span className="font-bold text-sm">ℹ️</span>
+            <span>Este grupo ya cuenta con una plantilla para el Módulo {modulo}. Al guardar, se actualizarán las materias y datos sin duplicar el grupo.</span>
+          </div>
+        )}
+
         {availableSubjects.length > 0 && (
           <div className="mt-4 border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Materias del Cuatrimestre</h3>
-            <p className="text-xs text-gray-500 mb-3">Selecciona las materias que se impartirán en este Módulo a este Grupo.</p>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700">Materias de la Carrera</h3>
+                <p className="text-xs text-gray-500">Selecciona las materias que se impartirán en este Módulo a este Grupo.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSelectAllSubjects}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
+              >
+                {selectedSubjects.length === availableSubjects.length ? 'Desmarcar Todas' : '✨ Seleccionar Todas'}
+              </button>
+            </div>
             <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
               {availableSubjects.map(subject => (
                 <label key={subject.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-gray-50 cursor-pointer">
