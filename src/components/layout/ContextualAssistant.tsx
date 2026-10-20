@@ -39,13 +39,17 @@ export function ContextualAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isOpen && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isLoading]);
 
   // Ocultar asistente en login, en el portal del docente y en la sección de maestros
   if (
@@ -166,10 +170,14 @@ export function ContextualAssistant() {
     }
   };
 
-  // Renderizado ligero de formato Markdown (negritas y saltos de línea)
+  // Renderizado ligero de formato Markdown (negritas, cursivas y saltos de línea)
   const formatMessageText = (text: string) => {
-    return text.split('\n').map((line, i) => {
-      const parts = line.split(/(\*\*.*?\*\*)/g);
+    const normalized = text.replace(/\*\*\s*\n\s*/g, '**');
+    return normalized.split('\n').map((line, i) => {
+      if (line.trim() === '---') {
+        return <hr key={i} className="my-2 border-gray-200" />;
+      }
+      const parts = line.split(/(\*\*.*?\*\*|\*[^*]+?\*)/g);
       return (
         <p key={i} className={`${line.trim() === '' ? 'h-2' : 'mb-1 last:mb-0'}`}>
           {parts.map((part, j) => {
@@ -178,6 +186,13 @@ export function ContextualAssistant() {
                 <strong key={j} className="font-bold">
                   {part.slice(2, -2)}
                 </strong>
+              );
+            }
+            if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+              return (
+                <span key={j} className="text-gray-600 italic">
+                  {part.slice(1, -1)}
+                </span>
               );
             }
             return <span key={j}>{part}</span>;
@@ -189,11 +204,14 @@ export function ContextualAssistant() {
 
   return (
     <div className="fixed bottom-6 right-6 z-[100] print:hidden flex flex-col items-end">
-      {/* Ventana del Copiloto IA */}
+      {/* Ventana del Copiloto IA con altura fija y scroll interno garantizado */}
       {isOpen && (
-        <div className="bg-white rounded-2xl shadow-2xl border border-blue-200/80 w-[360px] sm:w-[400px] mb-4 overflow-hidden flex flex-col transform transition-all animate-in slide-in-from-bottom-4">
-          {/* Cabecera Limpia */}
-          <div className="bg-gradient-to-r from-[#061266] to-blue-900 text-white px-4 py-3.5 flex justify-between items-center">
+        <div
+          style={{ height: '500px', maxHeight: 'calc(100vh - 130px)' }}
+          className="bg-white rounded-2xl shadow-2xl border border-blue-200/80 w-[360px] sm:w-[400px] mb-4 overflow-hidden flex flex-col transform transition-all animate-in slide-in-from-bottom-4"
+        >
+          {/* Cabecera Fija (Siempre visible) */}
+          <div className="bg-gradient-to-r from-[#061266] to-blue-900 text-white px-4 py-3.5 flex justify-between items-center shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
                 <Sparkles className="w-4 h-4 text-[#fdb515]" />
@@ -221,14 +239,18 @@ export function ContextualAssistant() {
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                title="Cerrar chat"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Área de Mensajes */}
-          <div className="p-4 flex-1 h-[400px] overflow-y-auto space-y-3 bg-gray-50/60">
+          {/* Área de Mensajes con Scroll de Rueda de Mouse */}
+          <div
+            ref={messagesContainerRef}
+            className="p-4 flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-3 bg-gray-50/60"
+          >
             {messages.map((msg, idx) => (
               <div
                 key={idx}
@@ -314,17 +336,15 @@ export function ContextualAssistant() {
                 </div>
               </div>
             )}
-
-            <div ref={messagesEndRef} />
           </div>
 
-          {/* Caja de texto para enviar mensaje a Gemini */}
+          {/* Caja de texto fija abajo para enviar mensaje a Gemini */}
           <form
             onSubmit={e => {
               e.preventDefault();
               sendMessage();
             }}
-            className="p-3 bg-white border-t border-gray-200 flex items-center gap-2"
+            className="p-3 bg-white border-t border-gray-200 flex items-center gap-2 shrink-0"
           >
             <input
               type="text"
