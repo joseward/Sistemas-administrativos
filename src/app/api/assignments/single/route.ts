@@ -93,9 +93,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Autogenerar / asegurar contrato para el maestro si fue asignado
+    // Autogenerar / asegurar contrato para el maestro si fue asignado y habilitar visualización en su portal
     if (teacherId) {
       await ensureContractForTeacher(teacherId, finalAcademicYear);
+      await prisma.teacher.update({
+        where: { id: teacherId },
+        data: { schedulesPublishedAt: new Date() }
+      }).catch(() => {});
     }
 
     return NextResponse.json({ success: true, message: 'Asignación guardada correctamente' });

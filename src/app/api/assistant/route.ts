@@ -476,12 +476,18 @@ async function executeToolCall(
         startTime: finalStart,
         endTime: finalEnd,
         classroom: finalRoom,
-        isAvailable: true,
+        isAvailable: false,
         createdById: userId,
       },
     });
 
     await ensureContractForTeacher(teacherId, finalYear);
+    await prisma.teacher
+      .update({
+        where: { id: teacherId },
+        data: { schedulesPublishedAt: new Date() },
+      })
+      .catch(() => {});
 
     return {
       resultMessage: `Asignación guardada exitosamente y contrato actualizado automáticamente.`,

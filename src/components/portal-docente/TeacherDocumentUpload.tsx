@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Button, Input } from '@/components/ui';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui';
+import { AlertCircle, CheckCircle2, FileText, Upload, ExternalLink } from 'lucide-react';
 
 interface TeacherDocumentUploadProps {
   teacherId: string;
@@ -40,7 +40,7 @@ export function TeacherDocumentUpload({ teacherId }: TeacherDocumentUploadProps)
       const res = await fetch(`/api/teachers/${teacherId}/documents`);
       const data = await res.json();
       if (data.success) {
-        setDocuments(data.data);
+        setDocuments(data.data || []);
       }
     } catch (err) {
       console.error(err);
@@ -57,7 +57,6 @@ export function TeacherDocumentUpload({ teacherId }: TeacherDocumentUploadProps)
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Generar descripción automática con la fecha actual
     const today = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const description = `${docInfo.label} - ${today}`;
 
@@ -79,7 +78,7 @@ export function TeacherDocumentUpload({ teacherId }: TeacherDocumentUploadProps)
       const data = await res.json();
 
       if (data.success) {
-        setSuccessMsg(`Documento ${docInfo.label} subido correctamente.`);
+        setSuccessMsg(`Documento "${docInfo.label}" enviado correctamente a Coordinación.`);
         loadDocuments();
         setTimeout(() => setSuccessMsg(''), 4000);
       } else {
@@ -89,79 +88,130 @@ export function TeacherDocumentUpload({ teacherId }: TeacherDocumentUploadProps)
       setErrorMsg('Error de conexión al subir el documento.');
     } finally {
       setUploadingType(null);
-      // Limpiar input file
       e.target.value = '';
     }
   };
 
   if (loading) {
-    return <div className="text-center p-8">Cargando documentos...</div>;
+    return <div className="text-center p-8 text-gray-500">Cargando tu expediente digital...</div>;
   }
 
+  const uploadedCount = REQUIRED_DOCUMENTS.filter(req =>
+    documents.some(d => d.type === req.type)
+  ).length;
+  const totalCount = REQUIRED_DOCUMENTS.length;
+  const progressPercent = Math.round((uploadedCount / totalCount) * 100);
+
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto print:hidden">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#061266]">Expediente del Docente</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Sube la documentación requerida por el área administrativa. Todos los documentos deben ser escaneados y estar en formato PDF o Word.
-        </p>
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 print:hidden">
+      {/* Encabezado y Barra de Progreso del Expediente */}
+      <div className="mb-6 pb-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-[#061266]">Expediente del Docente</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Sube tu documentación escaneada en formato PDF o Word. El área administrativa la recibe al instante.
+          </p>
+        </div>
+
+        <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 min-w-[220px]">
+          <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+            <span className="text-gray-700">
+              {uploadedCount} de {totalCount} entregados
+            </span>
+            <span className={uploadedCount === totalCount ? 'text-emerald-600' : 'text-blue-600'}>
+              {progressPercent}%
+            </span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                uploadedCount === totalCount ? 'bg-emerald-500' : 'bg-blue-600'
+              }`}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       {errorMsg && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm flex items-center gap-2">
+        <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
-      
+
       {successMsg && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm flex items-center gap-2">
+        <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
-      <div className="space-y-4">
-        {REQUIRED_DOCUMENTS.map((docInfo) => {
-          const uploadedDoc = documents.find((d) => d.type === docInfo.type);
-          
+      <div className="space-y-3">
+        {REQUIRED_DOCUMENTS.map(docInfo => {
+          const uploadedDoc = documents.find(d => d.type === docInfo.type);
+
           return (
-            <div key={docInfo.type} className="border border-gray-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50">
+            <div
+              key={docInfo.type}
+              className={`border rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${
+                uploadedDoc
+                  ? 'border-emerald-200/80 bg-emerald-50/20'
+                  : 'border-gray-200 bg-gray-50/50 hover:bg-gray-50'
+              }`}
+            >
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold text-gray-900">{docInfo.label}</h3>
+                <div className="flex items-center gap-2.5 mb-1">
+                  <FileText
+                    className={`w-4 h-4 shrink-0 ${
+                      uploadedDoc ? 'text-emerald-600' : 'text-gray-400'
+                    }`}
+                  />
+                  <h3 className="font-semibold text-gray-900 text-sm">{docInfo.label}</h3>
                   {uploadedDoc ? (
-                    <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full font-medium">Entregado</span>
+                    <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Entregado
+                    </span>
                   ) : (
-                    <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full font-medium">Pendiente</span>
+                    <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                      Pendiente
+                    </span>
                   )}
                 </div>
                 {uploadedDoc && uploadedDoc.description ? (
-                  <p className="text-xs text-gray-500">Nota: {uploadedDoc.description}</p>
+                  <p className="text-xs text-gray-500 pl-6">Nota: {uploadedDoc.description}</p>
                 ) : (
-                  <p className="text-xs text-gray-500">Formato aceptado: PDF, Word.</p>
+                  <p className="text-xs text-gray-500 pl-6">Formato aceptado: PDF, Word.</p>
                 )}
                 {uploadedDoc && (
-                  <a href={uploadedDoc.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline mt-1 inline-block">
+                  <a
+                    href={uploadedDoc.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline mt-1 pl-6"
+                  >
+                    <ExternalLink className="w-3 h-3" />
                     Ver documento subido
                   </a>
                 )}
               </div>
 
-              <div className="flex flex-col md:flex-row items-end md:items-center gap-3">
-                <div className="relative overflow-hidden inline-block shrink-0">
-                  <Button 
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="relative overflow-hidden inline-block">
+                  <Button
                     variant={uploadedDoc ? 'secondary' : 'primary'}
                     isLoading={uploadingType === docInfo.type}
-                    className="w-full md:w-auto relative"
-                    as="span" // Prevent it from acting as a submit button implicitly if wrapped, but just for styling
+                    className="w-full md:w-auto relative flex items-center gap-1.5 text-xs"
+                    as="span"
                   >
+                    <Upload className="w-3.5 h-3.5" />
                     {uploadedDoc ? 'Sustituir documento' : 'Subir documento'}
                   </Button>
                   <input
                     type="file"
                     accept={docInfo.accepted}
-                    onChange={(e) => handleUpload(e, docInfo)}
+                    onChange={e => handleUpload(e, docInfo)}
                     disabled={uploadingType === docInfo.type}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />

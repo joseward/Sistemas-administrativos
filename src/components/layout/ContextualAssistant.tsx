@@ -47,8 +47,12 @@ export function ContextualAssistant() {
     }
   }, [messages, isOpen]);
 
-  // Ocultar asistente en la página de login
-  if (pathname.includes('/login')) {
+  // Ocultar asistente en login, en el portal del docente y en la sección de maestros
+  if (
+    pathname.includes('/login') ||
+    pathname.includes('/portal-docente') ||
+    pathname.includes('/maestros')
+  ) {
     return null;
   }
 
