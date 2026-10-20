@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose';
 import prisma from '@/lib/prisma';
 import { TeacherScheduleEditor } from '@/components/portal-docente/TeacherScheduleEditor';
 import { TeacherDocumentUpload } from '@/components/portal-docente/TeacherDocumentUpload';
-import { Calendar, Clock, FileText, ChevronLeft, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, FileText, ChevronLeft, ArrowRight, AlertCircle, BookOpen } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -89,15 +89,24 @@ export default async function PortalDocentePage({
           <div className="flex items-center gap-3">
             <h1 className="font-bold text-xl tracking-tight hidden sm:block">Portal del Docente</h1>
           </div>
-          {tab !== 'dashboard' && (
+          <div className="flex items-center gap-3">
             <Link
-              href="/portal-docente"
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 transition-colors px-4 py-1.5 rounded-full text-sm font-medium"
+              href="/manual?role=docente"
+              className="flex items-center gap-2 bg-[#fdb515] hover:bg-amber-400 text-[#061266] transition-colors px-4 py-1.5 rounded-full text-xs font-extrabold shadow-xs"
             >
-              <ChevronLeft className="w-4 h-4" />
-              Volver al Menú
+              <BookOpen className="w-3.5 h-3.5" />
+              Guía Rápida de Uso
             </Link>
-          )}
+            {tab !== 'dashboard' && (
+              <Link
+                href="/portal-docente"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 transition-colors px-4 py-1.5 rounded-full text-sm font-medium"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Volver al Menú
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 

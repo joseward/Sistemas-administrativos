@@ -13,6 +13,7 @@ import {
   FolderOpen,
   CheckSquare,
   ShieldCheck,
+  BookOpen,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -25,13 +26,20 @@ const NAV_ITEMS = [
   { href: '/documentos', label: '6. Expedientes', icon: FolderOpen },
   { href: '/asistencia', label: '7. Asistencia', icon: CheckSquare },
   { href: '/usuarios', label: 'Accesos', icon: ShieldCheck },
+  { href: '/manual', label: 'Manual', icon: BookOpen },
 ];
 
 export function TopNavBar() {
   const pathname = usePathname();
 
-  // Ocultar en el menú principal (/), en login y en portal docente; mostrar solo dentro de los departamentos
-  if (!pathname || pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/portal-docente')) {
+  // Ocultar en el menú principal (/), en login, en portal docente y en manual; mostrar solo dentro de los departamentos administrativos
+  if (
+    !pathname ||
+    pathname === '/' ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/portal-docente') ||
+    pathname.startsWith('/manual')
+  ) {
     return null;
   }
 

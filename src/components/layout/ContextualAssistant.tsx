@@ -55,7 +55,10 @@ export function ContextualAssistant() {
   if (
     pathname.includes('/login') ||
     pathname.includes('/portal-docente') ||
-    pathname.includes('/maestros')
+    pathname.includes('/maestros') ||
+    (pathname.includes('/manual') &&
+      typeof window !== 'undefined' &&
+      window.location.search.includes('role=docente'))
   ) {
     return null;
   }
