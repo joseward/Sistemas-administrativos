@@ -1,126 +1,482 @@
 'use client';
 
-import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { Bot, X, Compass, HelpCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  Bot,
+  X,
+  Compass,
+  Send,
+  Sparkles,
+  ArrowRight,
+  MessageCircle,
+  HelpCircle,
+  Loader2,
+  Trash2,
+  CheckCircle2,
+} from 'lucide-react';
+
+interface AssistantAction {
+  type: 'NAVIGATE' | 'START_TOUR' | 'REFRESH_DATA' | 'WHATSAPP';
+  url?: string;
+  label?: string;
+  tourId?: string;
+}
+
+interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+  actions?: AssistantAction[];
+}
+
+const INITIAL_MESSAGE: ChatMessage = {
+  role: 'model',
+  text: '¡Hola! Soy tu **Copiloto Administrativo con IA Gemini**. Conozco toda la plataforma y los datos en vivo de tu escuela.\n\nPuedes preguntarme cómo funciona cualquier sección, consultar qué materias o maestros están pendientes, o pedirme que realice una acción por ti.',
+};
 
 export function ContextualAssistant() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'chat' | 'faq'>('chat');
+  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'chat') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isOpen, activeTab]);
 
   // Ocultar asistente en la página de login
   if (pathname.includes('/login')) {
     return null;
   }
 
-  // Diccionario de conocimiento contextual
+  // Diccionario de conocimiento contextual para la pestaña de Guía Rápida
   const getContextualHelp = () => {
     if (pathname.includes('/horarios')) {
       return {
-        title: 'Ayuda: Gestión de Horarios',
+        title: 'Gestión de Horarios',
         faqs: [
-          { q: '¿Qué es una asignación?', a: 'Es la vinculación de un Maestro, una Materia y un Salón en un horario específico.' },
-          { q: '¿Cómo sé si el maestro puede?', a: 'Al hacer clic en "Sugerir Maestro" o seleccionar manualmente, el sistema te avisará con una alerta roja si el maestro no está disponible o tiene choques de horario.' },
-          { q: '¿Cómo envío los horarios?', a: 'Usa el botón superior "Generar PDFs". Esto generará una hoja limpia lista para descargar en PDF por cada grupo, la cual podrás enviar.' }
+          {
+            q: '¿Cómo asigno materias en 1 clic?',
+            a: 'En la vista "Matriz Inteligente", haz clic en "+ Asignar Maestro" en cualquier fila. Verás primero a los docentes disponibles y sin choques de horario.',
+          },
+          {
+            q: '¿Cómo descargo los horarios en Excel o PDF?',
+            a: 'Usa el botón verde "Exportar Excel (.xls)" en la Matriz para descargar la Sábana de Horarios, o "Generar PDFs" en la parte superior para imprimir por grupo o maestro.',
+          },
         ],
-        tourId: 'horarios-tour'
+        tourId: 'horarios-tour',
+        quickPrompts: [
+          '¿Qué materias faltan por asignar?',
+          'Muéstrame solo las materias pendientes',
+          'Inicia el tour guiado de horarios',
+        ],
       };
     }
-    
+
     if (pathname.includes('/grupos')) {
       return {
-        title: 'Ayuda: Grupos y Plantillas',
+        title: 'Grupos y Plantillas',
         faqs: [
-          { q: '¿Qué es una plantilla?', a: 'Es el molde base de materias que llevará un grupo. Se usa para rellenar los horarios rápidamente después.' },
-          { q: '¿Qué hace el botón Promover?', a: 'Clona la plantilla actual pero para el siguiente cuatrimestre, cargando en automático las nuevas materias de esa carrera.' },
+          {
+            q: '¿Qué es una plantilla?',
+            a: 'Es el paquete de materias, turno y aula que lleva un grupo en el Módulo 1 o Módulo 2.',
+          },
+          {
+            q: '¿Para qué sirve "Promover Todos"?',
+            a: 'Calcula y genera en 1 solo clic las plantillas del siguiente módulo o cuatrimestre para todos tus grupos activos.',
+          },
         ],
-        tourId: 'grupos-tour'
+        tourId: 'grupos-tour',
+        quickPrompts: [
+          '¿Cuántos grupos y plantillas tenemos?',
+          '¿Cómo funciona el botón Promover Todos?',
+          'Inicia el tour guiado de grupos',
+        ],
       };
     }
 
     if (pathname.includes('/maestros')) {
       return {
-        title: 'Ayuda: Portal de Maestros',
+        title: 'Directorio y Contratos de Maestros',
         faqs: [
-          { q: '¿Cómo ingresan los maestros?', a: 'Los maestros ingresan con su correo a través de /portal-docente. Desde ahí enviarán su disponibilidad.' },
-          { q: '¿Para qué sirve el estatus?', a: 'Si un maestro está "Inactivo", no aparecerá en las sugerencias para asignar nuevos horarios.' }
+          {
+            q: '¿Cómo ingresan los maestros al Portal Docente?',
+            a: 'Ingresan con su correo institucional y la contraseña inicial "docente123" desde /portal-docente para registrar su disponibilidad y subir documentos.',
+          },
+          {
+            q: '¿Cómo se generan los contratos?',
+            a: 'Se autogeneran en cuanto le asignas al menos una materia al maestro en la sección de Horarios.',
+          },
         ],
-        tourId: null
+        tourId: null,
+        quickPrompts: [
+          '¿Qué maestros no han enviado disponibilidad?',
+          'Filtra los maestros sin disponibilidad',
+          'Llévame a Contratos de Maestros',
+        ],
       };
     }
 
     return {
-      title: 'Centro de Ayuda',
+      title: 'Centro de Ayuda y Copiloto IA',
       faqs: [
-        { q: '¿Cómo empiezo?', a: 'Te sugerimos empezar registrando a tus Maestros, luego crea los Grupos y finalmente asígnales Horarios.' }
+        {
+          q: '¿Cuál es el orden recomendado de trabajo?',
+          a: 'Sigue los pasos de la barra superior: 1. Maestros → 2. Grupos → 3. Fusión → 4. Horarios → 5. Contratos → 6. Expedientes → 7. Asistencia.',
+        },
+        {
+          q: '¿Qué puede hacer el Copiloto IA?',
+          a: 'Puede consultar datos reales de tu base de datos, llevarte a cualquier pantalla, dar de alta maestros, asignar clases, fusionar grupos o preparar recordatorios de WhatsApp.',
+        },
       ],
-      tourId: null
+      tourId: null,
+      quickPrompts: [
+        '¿Qué materias faltan por asignar?',
+        '¿A qué maestros les faltan documentos?',
+        'Llévame a las materias pendientes en Horarios',
+      ],
     };
   };
 
   const helpInfo = getContextualHelp();
 
-  // Función para disparar eventos de tour
-  const startTour = () => {
+  const startTour = (customTourId?: string) => {
+    const targetTour = customTourId || helpInfo.tourId;
+    if (!targetTour) return;
     setIsOpen(false);
-    // Disparamos un evento custom que cada página escuchará si tiene un tour configurado
-    window.dispatchEvent(new CustomEvent('start-tour', { detail: { tourId: helpInfo.tourId } }));
+    window.dispatchEvent(new CustomEvent('start-tour', { detail: { tourId: targetTour } }));
+  };
+
+  const sendMessage = async (textToSend?: string) => {
+    const trimmed = (textToSend ?? input).trim();
+    if (!trimmed || isLoading) return;
+
+    const newMessages: ChatMessage[] = [...messages, { role: 'user', text: trimmed }];
+    setMessages(newMessages);
+    if (!textToSend) setInput('');
+    setIsLoading(true);
+
+    try {
+      // Enviar últimos 10 mensajes para mantener contexto ágil
+      const historyForApi = newMessages.slice(-10).map(m => ({
+        role: m.role,
+        text: m.text,
+      }));
+
+      const res = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: historyForApi,
+          pathname,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'model',
+            text: data.error || 'No pude procesar tu solicitud en este momento. Intenta de nuevo.',
+          },
+        ]);
+      } else {
+        const actions: AssistantAction[] = data.actions || [];
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'model',
+            text: data.reply,
+            actions,
+          },
+        ]);
+
+        // Ejecutar acciones automáticas en el cliente si corresponde
+        actions.forEach(action => {
+          if (action.type === 'NAVIGATE' && action.url) {
+            router.push(action.url);
+          } else if (action.type === 'START_TOUR' && action.tourId) {
+            setTimeout(() => startTour(action.tourId), 400);
+          } else if (action.type === 'REFRESH_DATA') {
+            router.refresh();
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error calling AI assistant:', error);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'model',
+          text: 'Error de conexión con el servidor. Por favor verifica tu conexión.',
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Renderizado ligero de formato Markdown (negritas y saltos de línea)
+  const formatMessageText = (text: string) => {
+    return text.split('\n').map((line, i) => {
+      const parts = line.split(/(\*\*.*?\*\*)/g);
+      return (
+        <p key={i} className={`${line.trim() === '' ? 'h-2' : 'mb-1 last:mb-0'}`}>
+          {parts.map((part, j) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return (
+                <strong key={j} className="font-bold">
+                  {part.slice(2, -2)}
+                </strong>
+              );
+            }
+            return <span key={j}>{part}</span>;
+          })}
+        </p>
+      );
+    });
   };
 
   return (
     <div className="fixed bottom-6 right-6 z-[100] print:hidden flex flex-col items-end">
-      {/* Caja del chat/asistente */}
+      {/* Ventana del Copiloto IA */}
       {isOpen && (
-        <div className="bg-white rounded-2xl shadow-2xl border border-blue-100 w-80 mb-4 overflow-hidden flex flex-col transform transition-all animate-in slide-in-from-bottom-4">
-          <div className="bg-[#061266] text-white p-4 flex justify-between items-center">
-            <h3 className="font-bold flex items-center gap-2 text-sm">
-              <Bot className="w-5 h-5 text-blue-300" />
-              {helpInfo.title}
-            </h3>
-            <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          
-          <div className="p-4 flex-1 max-h-[60vh] overflow-y-auto">
-            <p className="text-sm text-gray-600 mb-4">
-              Estoy aquí para ayudarte. Basado en la pantalla donde estás, estas son las dudas más comunes:
-            </p>
-            
-            <div className="space-y-4">
-              {helpInfo.faqs.map((faq, idx) => (
-                <div key={idx} className="bg-blue-50 rounded-lg p-3">
-                  <h4 className="text-sm font-bold text-blue-900 mb-1">{faq.q}</h4>
-                  <p className="text-xs text-blue-800 leading-relaxed">{faq.a}</p>
+        <div className="bg-white rounded-2xl shadow-2xl border border-blue-200/80 w-[360px] sm:w-[400px] mb-4 overflow-hidden flex flex-col transform transition-all animate-in slide-in-from-bottom-4">
+          {/* Cabecera */}
+          <div className="bg-gradient-to-r from-[#061266] to-blue-900 text-white p-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+                  <Sparkles className="w-4 h-4 text-[#fdb515]" />
                 </div>
-              ))}
+                <div>
+                  <h3 className="font-bold text-sm flex items-center gap-1.5">
+                    Copiloto IA Aztlán
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#fdb515] text-[#061266]">
+                      Gemini
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-blue-200">Asistente inteligente en tiempo real</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {activeTab === 'chat' && messages.length > 1 && (
+                  <button
+                    onClick={() => setMessages([INITIAL_MESSAGE])}
+                    className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                    title="Limpiar conversación"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Pestañas: Chat IA vs Guía Rápida */}
+            <div className="flex gap-1.5 mt-3 bg-blue-950/60 p-1 rounded-xl">
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'chat'
+                    ? 'bg-white text-[#061266] shadow-xs'
+                    : 'text-blue-200 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Chat con IA
+              </button>
+              <button
+                onClick={() => setActiveTab('faq')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'faq'
+                    ? 'bg-white text-[#061266] shadow-xs'
+                    : 'text-blue-200 hover:text-white'
+                }`}
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                Ayuda Rápida
+              </button>
             </div>
           </div>
-          
-          {helpInfo.tourId && (
-            <div className="p-4 border-t border-gray-100 bg-gray-50">
-              <button 
-                onClick={startTour}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 text-sm"
+
+          {activeTab === 'chat' ? (
+            <>
+              {/* Área de Mensajes */}
+              <div className="p-4 flex-1 h-[380px] overflow-y-auto space-y-3 bg-gray-50/60">
+                {messages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex flex-col ${
+                      msg.role === 'user' ? 'items-end' : 'items-start'
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-2xs ${
+                        msg.role === 'user'
+                          ? 'bg-[#061266] text-white rounded-br-xs'
+                          : 'bg-white text-gray-800 border border-gray-200/80 rounded-bl-xs'
+                      }`}
+                    >
+                      {formatMessageText(msg.text)}
+
+                      {/* Botones de acciones ejecutadas o sugeridas */}
+                      {msg.actions && msg.actions.length > 0 && (
+                        <div className="mt-2.5 pt-2 border-t border-gray-100 flex flex-col gap-1.5">
+                          {msg.actions.map((act, aIdx) => {
+                            if (act.type === 'WHATSAPP' && act.url) {
+                              return (
+                                <a
+                                  key={aIdx}
+                                  href={act.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                  {act.label || 'Abrir WhatsApp'}
+                                </a>
+                              );
+                            }
+                            if ((act.type === 'NAVIGATE' || act.type === 'REFRESH_DATA') && act.url) {
+                              return (
+                                <button
+                                  key={aIdx}
+                                  onClick={() => router.push(act.url!)}
+                                  className="inline-flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-bold text-xs transition-colors cursor-pointer"
+                                >
+                                  <span className="flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    {act.label || 'Ver sección'}
+                                  </span>
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </button>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <div className="flex items-start">
+                    <div className="bg-white border border-gray-200/80 rounded-2xl rounded-bl-xs px-3.5 py-2.5 text-xs text-gray-500 flex items-center gap-2 shadow-2xs">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                      <span>Analizando y ejecutando...</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sugerencias rápidas iniciales */}
+                {messages.length === 1 && !isLoading && (
+                  <div className="pt-2 space-y-1.5">
+                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1">
+                      Sugerencias rápidas:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {helpInfo.quickPrompts.map((prompt, pIdx) => (
+                        <button
+                          key={pIdx}
+                          onClick={() => sendMessage(prompt)}
+                          className="text-left text-xs bg-white hover:bg-blue-50 text-blue-800 border border-blue-200/80 rounded-xl px-3 py-1.5 font-medium transition-colors shadow-2xs cursor-pointer"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Caja de texto para enviar mensaje a Gemini */}
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  sendMessage();
+                }}
+                className="p-3 bg-white border-t border-gray-200 flex items-center gap-2"
               >
-                <Compass className="w-4 h-4" />
-                Iniciar Tour Guiado de esta página
-              </button>
+                <input
+                  type="text"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  placeholder="Pregúntame algo o pídeme una acción..."
+                  disabled={isLoading}
+                  className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60"
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isLoading}
+                  className="p-2.5 rounded-xl bg-[#061266] hover:bg-blue-800 disabled:opacity-40 text-white transition-colors cursor-pointer"
+                  title="Enviar"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </>
+          ) : (
+            /* Pestaña de Preguntas Frecuentes y Tour Guiado */
+            <div className="p-4 flex-1 max-h-[420px] overflow-y-auto space-y-4">
+              <p className="text-xs text-gray-600">
+                Basado en la pantalla donde estás (<strong>{helpInfo.title}</strong>), estas son las dudas más comunes:
+              </p>
+
+              <div className="space-y-3">
+                {helpInfo.faqs.map((faq, idx) => (
+                  <div key={idx} className="bg-blue-50/80 border border-blue-100 rounded-xl p-3">
+                    <h4 className="text-xs font-bold text-blue-900 mb-1">{faq.q}</h4>
+                    <p className="text-xs text-blue-800 leading-relaxed">{faq.a}</p>
+                  </div>
+                ))}
+              </div>
+
+              {helpInfo.tourId && (
+                <div className="pt-2">
+                  <button
+                    onClick={() => startTour()}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 text-xs cursor-pointer"
+                  >
+                    <Compass className="w-4 h-4" />
+                    Iniciar Tour Guiado de esta página
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Botón Flotante */}
+      {/* Botón Flotante Principal */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-[#061266] hover:bg-blue-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center border-2 border-white group relative"
-        aria-label="Abrir asistente de ayuda"
+        className="w-14 h-14 bg-[#061266] hover:bg-blue-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center border-2 border-[#fdb515] group relative cursor-pointer"
+        aria-label="Abrir Copiloto con IA"
       >
         {isOpen ? (
           <X className="w-6 h-6 transition-transform" />
         ) : (
-          <Bot className="w-7 h-7 text-white group-hover:scale-110 transition-transform" />
+          <div className="relative">
+            <Bot className="w-7 h-7 text-white group-hover:scale-110 transition-transform" />
+            <Sparkles className="w-3.5 h-3.5 text-[#fdb515] absolute -top-1 -right-1.5 animate-pulse" />
+          </div>
         )}
       </button>
     </div>
