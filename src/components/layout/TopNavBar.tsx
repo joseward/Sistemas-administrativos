@@ -30,8 +30,8 @@ const NAV_ITEMS = [
 export function TopNavBar() {
   const pathname = usePathname();
 
-  // No mostrar la barra administrativa en el login ni en el portal docente
-  if (!pathname || pathname.startsWith('/login') || pathname.startsWith('/portal-docente')) {
+  // Ocultar en el menú principal (/), en login y en portal docente; mostrar solo dentro de los departamentos
+  if (!pathname || pathname === '/' || pathname.startsWith('/login') || pathname.startsWith('/portal-docente')) {
     return null;
   }
 
