@@ -92,7 +92,7 @@ export default async function TeacherHorarioPage() {
   const hasAssignedClasses = teacher.assignments && teacher.assignments.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8] flex flex-col font-sans">
+    <div className="min-h-screen print:min-h-0 bg-[#f4f6f8] print:bg-white flex flex-col font-sans">
       <header className="bg-gradient-to-r from-[#061266] to-[#1877f2] text-white shadow-md sticky top-0 z-50 print:hidden">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -108,7 +108,7 @@ export default async function TeacherHorarioPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto p-6 lg:p-8">
+      <main className="flex-1 max-w-5xl w-full mx-auto p-6 lg:p-8 print:p-0 print:m-0 print:max-w-none">
         <div className="mb-6 print:hidden">
           <h2 className="text-3xl font-black text-[#061266] mb-1 tracking-tight flex items-center gap-3">
             <Calendar className="w-8 h-8 text-blue-600" />
