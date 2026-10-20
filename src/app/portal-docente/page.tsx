@@ -32,7 +32,7 @@ export default async function PortalDocentePage({
       const teacher = await prisma.teacher.findFirst({
         where: { email: { equals: email, mode: 'insensitive' } },
         include: {
-          availabilities: { where: { isAvailable: true } },
+          availability: { where: { isAvailable: true } },
           documents: true,
           assignments: { where: { scheduleDay: { gte: 0 } } },
         },
@@ -41,7 +41,7 @@ export default async function PortalDocentePage({
       if (teacher) {
         teacherId = teacher.id;
         teacherName = teacher.firstName;
-        availabilityCount = teacher.availabilities?.length || 0;
+        availabilityCount = teacher.availability?.length || 0;
         documentsCount = teacher.documents?.length || 0;
         assignedClassesCount = teacher.assignments?.length || 0;
       }
@@ -69,11 +69,11 @@ export default async function PortalDocentePage({
           <p className="text-gray-600 mb-6">
             No se encontró un expediente de maestro para el correo: <b>{payloadEmail}</b>. Asegúrate de que este correo coincida exactamente con el registrado en la <b>Gestión de Maestros</b>.
           </p>
-          <Link href="/login">
+          <a href="/api/auth/logout">
             <button className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-emerald-700 w-full transition-colors">
               Regresar al Login
             </button>
-          </Link>
+          </a>
         </div>
       </div>
     );

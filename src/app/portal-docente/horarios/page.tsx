@@ -79,11 +79,11 @@ export default async function TeacherHorarioPage() {
           <p className="text-gray-600 mb-6">
             No se encontró un expediente de maestro para el correo: <b>{payloadEmail}</b>. Asegúrate de que este correo coincida exactamente con el registrado en la <b>Gestión de Maestros</b>.
           </p>
-          <Link href="/login">
+          <a href="/api/auth/logout">
             <button className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-emerald-700 w-full transition-colors">
               Regresar al Login
             </button>
-          </Link>
+          </a>
         </div>
       </div>
     );
