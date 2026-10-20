@@ -13,7 +13,7 @@ import { AssignmentEditModal } from '@/components/grupos/AssignmentEditModal';
 import { TemplateCreatorModal } from '@/components/grupos/TemplateCreatorModal';
 import { CloneTemplateModal } from '@/components/grupos/CloneTemplateModal';
 import { useCurriculum } from '@/context/CurriculumContext';
-import { Copy, Plus, Trash2, Edit3, ArrowRight, Layers, Building2, Clock, Check, Sparkles, GraduationCap, School, TrendingUp, Users, ArrowLeft } from 'lucide-react';
+import { Copy, Plus, Trash2, Edit3, ArrowRight, Layers, Building2, Clock, Check, Sparkles, GraduationCap, School, TrendingUp, Users, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function GruposPage() {
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -36,8 +36,10 @@ export default function GruposPage() {
   const [cloningData, setCloningData] = useState<{ template: any; group: any } | null>(null);
   const [addingSubjectToTemplateId, setAddingSubjectToTemplateId] = useState<string | null>(null);
 
-  // Promote Preview State
+  // Promote Preview State (Individual y Masiva)
   const [promotePreview, setPromotePreview] = useState<{group: any, template: MockGroupTemplate, nextCuatri: number, nextModulo: number, nextSubjects: any[], isNextCuatri: boolean} | null>(null);
+  const [bulkPromoteList, setBulkPromoteList] = useState<Array<{group: any, careerName: string, template: MockGroupTemplate, nextCuatri: number, nextModulo: number, nextSubjects: any[], isNextCuatri: boolean}> | null>(null);
+  const [isBulkPromoting, setIsBulkPromoting] = useState(false);
   const [templateToEdit, setTemplateToEdit] = useState<MockGroupTemplate | null>(null);
 
   const [assignments, setAssignments] = useState<any[]>(MOCK_ASSIGNMENTS);
@@ -164,9 +166,9 @@ export default function GruposPage() {
     const result = Array.from(grouped.values()).filter(g => g.modules[1].template !== null || g.modules[2].template !== null);
     
     // Si hay filtro por módulo específico, filtrar solo los que tienen ese módulo
-    if (filters.modulo) {
+    if (filters.modulo && filters.modulo !== 'Todos los módulos') {
       const targetMod = Number(filters.modulo) as 1 | 2;
-      return result.filter(g => g.modules[targetMod].template !== null);
+      return result.filter(g => g.modules[targetMod]?.template !== null);
     }
 
     return result;
@@ -209,7 +211,8 @@ export default function GruposPage() {
     return Array.from(byCareer.entries());
   }, [filteredGroups]);
 
-  const handlePromoteClick = (group: any, template: MockGroupTemplate) => {
+  // Función auxiliar para calcular el siguiente paso de promoción de un grupo
+  const calculateGroupPromotion = (group: any, template: MockGroupTemplate) => {
     const currentCuatri = group.cuatrimestre;
     const currentModulo = template.modulo;
     
@@ -230,14 +233,14 @@ export default function GruposPage() {
 
     let nextCuatri = currentCuatri;
     let nextModulo = currentModulo + 1;
-    let nextSubjects = [];
+    let nextSubjects: any[] = [];
     let isNextCuatri = false;
 
-    if (missingSubjectsCurrentCuatri.length > 0) {
-      // Hay materias restantes en el cuatrimestre actual, se promueve al siguiente módulo (bimestre)
+    if (missingSubjectsCurrentCuatri.length > 0 && currentModulo === 1) {
+      // Hay materias restantes en el cuatrimestre actual, se promueve al Módulo 2
       nextSubjects = missingSubjectsCurrentCuatri.slice(0, 3);
     } else {
-      // Ya se dieron todas, se promueve al siguiente cuatrimestre
+      // Ya se dieron todas o ya está en Módulo 2, se promueve al siguiente cuatrimestre
       nextCuatri = currentCuatri + 1;
       nextModulo = 1;
       isNextCuatri = true;
@@ -247,9 +250,87 @@ export default function GruposPage() {
       ).slice(0, 3);
     }
 
-    setPromotePreview({
-      group, template, nextCuatri, nextModulo, nextSubjects, isNextCuatri
+    return { group, template, nextCuatri, nextModulo, nextSubjects, isNextCuatri };
+  };
+
+  const handlePromoteClick = (group: any, template: MockGroupTemplate) => {
+    const promo = calculateGroupPromotion(group, template);
+    setPromotePreview(promo);
+  };
+
+  // Preparar Promoción Masiva de Todos los Grupos Visibles
+  const handleBulkPromoteClick = () => {
+    const items: Array<{group: any, careerName: string, template: MockGroupTemplate, nextCuatri: number, nextModulo: number, nextSubjects: any[], isNextCuatri: boolean}> = [];
+
+    filteredGroups.forEach(g => {
+      // Tomar la plantilla más avanzada del grupo (Módulo 2 si existe, si no Módulo 1)
+      const latestTpl = g.modules[2].template || g.modules[1].template;
+      if (!latestTpl) return;
+
+      const promo = calculateGroupPromotion(g.group, latestTpl);
+      items.push({
+        ...promo,
+        careerName: g.careerName,
+      });
     });
+
+    setBulkPromoteList(items);
+  };
+
+  const confirmBulkPromote = async () => {
+    if (!bulkPromoteList) return;
+    const validItems = bulkPromoteList.filter(item => item.nextSubjects.length > 0);
+    if (validItems.length === 0) {
+      setBulkPromoteList(null);
+      return;
+    }
+
+    setIsBulkPromoting(true);
+    try {
+      for (const item of validItems) {
+        let targetGroupId = item.group.id;
+
+        if (item.isNextCuatri) {
+          // Crear o actualizar el grupo para el nuevo cuatrimestre conservando su nombre base
+          const resGroup = await fetch('/api/groups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: item.group.name,
+              careerId: item.group.careerId,
+              cuatrimestre: item.nextCuatri,
+              academicYear: item.group.academicYear,
+              schoolId: item.group.schoolId,
+              modality: item.group.modality
+            })
+          });
+          const createdGroup = await resGroup.json();
+          if (!createdGroup.error && createdGroup.id) {
+            targetGroupId = createdGroup.id;
+          }
+        }
+
+        await fetch('/api/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            groupId: targetGroupId,
+            modulo: item.nextModulo,
+            turno: item.template.turno,
+            classroom: item.template.classroom,
+            subjectIds: item.nextSubjects.map(s => s.id),
+          })
+        });
+      }
+
+      setBulkPromoteList(null);
+      refreshData();
+    } catch (err) {
+      console.error(err);
+      alert('Ocurrió un error durante la promoción masiva.');
+    } finally {
+      setIsBulkPromoting(false);
+    }
   };
 
   const confirmPromote = async () => {
@@ -416,7 +497,7 @@ export default function GruposPage() {
         </Link>
 
         {/* Header */}
-        <div className="mb-6 flex justify-between items-end">
+        <div className="mb-6 flex flex-col md:flex-row justify-between md:items-end gap-4">
           <div>
             <h1 className="text-4xl font-bold text-[#061266] flex items-center gap-3">
               <Users className="w-9 h-9 text-blue-600" />
@@ -426,7 +507,17 @@ export default function GruposPage() {
               Gestiona las plantillas de grupos y las materias asignadas.
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-3">
+            {filteredGroups.length > 0 && (
+              <Button
+                onClick={handleBulkPromoteClick}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
+                title="Promover todos los grupos activos al siguiente módulo o cuatrimestre en 1 clic"
+              >
+                <TrendingUp className="w-4 h-4" />
+                Promover Todos ({filteredGroups.length})
+              </Button>
+            )}
             <Button id="btn-nueva-plantilla" onClick={() => setIsTemplateModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2">
               <span className="text-lg">+</span> Nueva Plantilla
             </Button>
@@ -446,7 +537,7 @@ export default function GruposPage() {
               title="Configurar Catálogos"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.894 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.894 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.398.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </button>
@@ -899,7 +990,7 @@ export default function GruposPage() {
         }}
       />
 
-      {/* Modal de Vista Previa de Promoción */}
+      {/* Modal de Vista Previa de Promoción Individual */}
       {promotePreview && (
         <Modal 
           isOpen={!!promotePreview} 
@@ -911,7 +1002,7 @@ export default function GruposPage() {
             <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg">
               <h3 className="text-amber-800 font-bold mb-1">Confirmación de Acción Automática</h3>
               <p className="text-sm text-amber-700">
-                Estás a punto de promover este grupo. Se creará una <strong>nueva plantilla</strong> para el cuatrimestre siguiente sin afectar los datos actuales del cuatrimestre vigente.
+                Estás a punto de promover este grupo. Se creará una <strong>nueva plantilla</strong> para el período siguiente sin afectar los datos actuales.
               </p>
             </div>
 
@@ -923,7 +1014,7 @@ export default function GruposPage() {
               </div>
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 shadow-sm relative">
                 <div className="absolute -left-5 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 shadow-sm border text-blue-500">
-                  →
+                  <ArrowRight className="w-4 h-4" />
                 </div>
                 <p className="text-xs text-blue-600 uppercase font-bold mb-1">{promotePreview.isNextCuatri ? 'A Sig. Cuatrimestre' : 'A Sig. Bimestre'}</p>
                 <p className="font-semibold text-gray-900">{promotePreview.group.career?.name || promotePreview.group.name}</p>
@@ -939,7 +1030,7 @@ export default function GruposPage() {
                 {promotePreview.nextSubjects.length > 0 ? (
                   promotePreview.nextSubjects.map(sub => (
                     <li key={sub.id} className="text-sm bg-gray-50 p-2 rounded flex items-center gap-2">
-                      <span className="text-emerald-500 text-xs">●</span> {sub.name}
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> {sub.name}
                     </li>
                   ))
                 ) : (
@@ -959,6 +1050,85 @@ export default function GruposPage() {
               >
                 Confirmar y Clonar Plantilla
               </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal de Promoción Masiva de Ciclo */}
+      {bulkPromoteList && (
+        <Modal
+          isOpen={!!bulkPromoteList}
+          onClose={() => !isBulkPromoting && setBulkPromoteList(null)}
+          title="Promoción Masiva de Ciclo en 1 Clic"
+          maxWidth="max-w-3xl"
+        >
+          <div className="p-6">
+            <div className="bg-indigo-50 border-l-4 border-indigo-600 p-4 mb-6 rounded-r-xl">
+              <h3 className="text-indigo-900 font-bold mb-1 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-indigo-600" />
+                Avance Automático de Todos los Grupos
+              </h3>
+              <p className="text-xs text-indigo-700">
+                El sistema generará automáticamente las plantillas del siguiente módulo o cuatrimestre para todos los grupos listados con sus materias oficiales de catálogo, conservando aula y turno.
+              </p>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 border border-gray-200 rounded-xl mb-6">
+              {bulkPromoteList.map((item, idx) => {
+                const hasSubjects = item.nextSubjects.length > 0;
+                return (
+                  <div key={idx} className="p-3.5 bg-white hover:bg-gray-50 flex items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900 text-sm">Grupo {item.group.name}</span>
+                        <span className="text-xs text-gray-500">({item.careerName})</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs mt-1">
+                        <span className="text-gray-500">
+                          Cuatri {item.group.cuatrimestre} · Mód {item.template.modulo}
+                        </span>
+                        <ArrowRight className="w-3.5 h-3.5 text-indigo-500" />
+                        <span className="font-bold text-indigo-700">
+                          Cuatri {item.nextCuatri} · Mód {item.nextModulo}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      {hasSubjects ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {item.nextSubjects.length} materias listas
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          Sin materias en catálogo
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500 font-medium">
+                {bulkPromoteList.filter(i => i.nextSubjects.length > 0).length} de {bulkPromoteList.length} grupos listos para promoverse
+              </span>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setBulkPromoteList(null)} disabled={isBulkPromoting}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={confirmBulkPromote}
+                  disabled={isBulkPromoting || bulkPromoteList.filter(i => i.nextSubjects.length > 0).length === 0}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  {isBulkPromoting ? 'Promoviendo grupos...' : 'Confirmar Promoción Masiva'}
+                </Button>
+              </div>
             </div>
           </div>
         </Modal>

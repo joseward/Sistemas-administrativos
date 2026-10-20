@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSearchParams } from 'next/navigation';
 import { Button, Badge, LoadingSpinner, Input } from '@/components/ui';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MOCK_TEACHERS, MOCK_USERS } from '@/lib/mockData';
+import { MOCK_TEACHERS } from '@/lib/mockData';
 
 interface Teacher {
   id: string;
@@ -54,19 +54,17 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
     fetchTeachers();
   }, [currentPage]);
 
-  // Si hay filtro de disponibilidad, cargamos la disponibilidad
+  // Cargar disponibilidad para mostrar estado y permitir recordatorios rápidos
   useEffect(() => {
-    if (filterParam === 'missing_availability') {
-      fetch('/api/availability')
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setAvailability(data.data);
-          }
-        })
-        .catch(console.error);
-    }
-  }, [filterParam]);
+    fetch('/api/availability')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          setAvailability(data.data);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const fetchTeachers = async () => {
     setLoading(true);
@@ -123,6 +121,21 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
     }
   };
 
+  const handleWhatsAppReminder = (teacher: Teacher, hasAvail: boolean) => {
+    const cleanPhone = (teacher.phone || '').replace(/\D/g, '');
+    const portalUrl = typeof window !== 'undefined' ? `${window.location.origin}/portal-docente` : '';
+    const message = hasAvail
+      ? `Hola Prof. ${teacher.firstName} ${teacher.lastName}, le saludamos de coordinación académica para informarle sobre la planeación de horarios en el Portal Docente (${portalUrl}).`
+      : `Hola Prof. ${teacher.firstName} ${teacher.lastName}, le saludamos cordialmente de coordinación académica para recordarle registrar su disponibilidad de horario en el Portal Docente (${portalUrl}) para la asignación de sus clases. ¡Muchas gracias!`;
+
+    const encodedMsg = encodeURIComponent(message);
+    const url = cleanPhone
+      ? `https://wa.me/${cleanPhone.length === 10 ? '52' + cleanPhone : cleanPhone}?text=${encodedMsg}`
+      : `https://api.whatsapp.com/send?text=${encodedMsg}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   // Filtrar maestros por búsqueda
   const filteredTeachers = teachers.filter((teacher) => {
     const searchLower = searchTerm.toLowerCase();
@@ -137,7 +150,7 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
     // Filtro adicional desde URL
     if (filterParam === 'missing_availability') {
       if (teacher.contractStatus !== 'active') return false;
-      const hasAvailability = availability.some(a => a.teacherId === teacher.id);
+      const hasAvailability = availability.some(a => a.teacherId === teacher.id && a.isAvailable);
       if (hasAvailability) return false;
     }
 
@@ -181,7 +194,7 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
           <div className="mt-4 p-3 bg-amber-50 text-amber-800 border-l-4 border-amber-500 font-medium text-sm flex justify-between items-center shadow-sm">
             <span className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-              Mostrando únicamente maestros activos que NO han enviado su disponibilidad.
+              Mostrando únicamente maestros activos que NO han enviado su disponibilidad. Puedes enviarles un recordatorio por WhatsApp en 1 clic.
             </span>
             <a href="/maestros" className="text-amber-700 hover:text-amber-900 underline">Quitar filtro</a>
           </div>
@@ -211,10 +224,10 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
                   Teléfono
                 </th>
                 <th className="px-4 py-3 text-center font-semibold text-gray-700">
-                  Estado
+                  Disponibilidad
                 </th>
                 <th className="px-4 py-3 text-center font-semibold text-gray-700">
-                  Registro
+                  Estado
                 </th>
                 <th className="px-4 py-3 text-center font-semibold text-gray-700">
                   Creado por
@@ -234,55 +247,78 @@ export function TeacherList({ schoolId, onEdit, onDelete }: TeacherListProps) {
                   </td>
                 </tr>
               ) : (
-                filteredTeachers.map((teacher) => (
-                  <tr
-                    key={teacher.id}
-                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-4 py-3 text-gray-900 font-medium">
-                      {teacher.firstName} {teacher.lastName}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">{teacher.email}</td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {teacher.phone || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {getStatusBadge(teacher.contractStatus)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-700">
-                      {new Date(teacher.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-600">
-                    {teacher.createdByUser 
-                      ? `${teacher.createdByUser.firstName || ''} ${teacher.createdByUser.lastName || ''}`.trim() || 'Admin'
-                      : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex gap-2 justify-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onEdit?.(teacher)}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        isLoading={deleting === teacher.id}
-                        onClick={() => handleDelete(teacher.id)}
-                      >
-                        Eliminar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                filteredTeachers.map((teacher) => {
+                  const hasAvail = availability.some(a => a.teacherId === teacher.id && a.isAvailable);
+
+                  return (
+                    <tr
+                      key={teacher.id}
+                      className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3 text-gray-900 font-medium">
+                        {teacher.firstName} {teacher.lastName}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{teacher.email}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {teacher.phone || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {hasAvail ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            Enviada
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                            Pendiente
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {getStatusBadge(teacher.contractStatus)}
+                      </td>
+                      <td className="px-4 py-3 text-center text-sm text-gray-600">
+                        {teacher.createdByUser 
+                          ? `${teacher.createdByUser.firstName || ''} ${teacher.createdByUser.lastName || ''}`.trim() || 'Admin'
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex gap-2 justify-center items-center">
+                          <button
+                            type="button"
+                            onClick={() => handleWhatsAppReminder(teacher, hasAvail)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+                            title={hasAvail ? 'Contactar por WhatsApp' : 'Enviar recordatorio de disponibilidad por WhatsApp en 1 clic'}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onEdit?.(teacher)}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            isLoading={deleting === teacher.id}
+                            onClick={() => handleDelete(teacher.id)}
+                          >
+                            Eliminar
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
       {/* Paginación */}
       {pagination && pagination.pages > 1 && (

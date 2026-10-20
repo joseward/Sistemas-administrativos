@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { saveAs } from 'file-saver';
 import { 
   Search, 
   Filter, 
@@ -17,7 +20,8 @@ import {
   Link as LinkIcon,
   Check,
   Building2,
-  GraduationCap
+  GraduationCap,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -58,11 +62,23 @@ export function AssignmentMatrixTable({
   onAssign,
   onUnassign,
 }: AssignmentMatrixTableProps) {
+  const searchParams = useSearchParams();
+  const statusQuery = searchParams.get('status');
+
   // Filtros rápidos
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCareer, setSelectedCareer] = useState<string>('all');
   const [selectedModule, setSelectedModule] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'assigned'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'assigned'>(() => {
+    if (statusQuery === 'pending' || statusQuery === 'assigned') return statusQuery;
+    return 'all';
+  });
+
+  useEffect(() => {
+    if (statusQuery === 'pending' || statusQuery === 'assigned') {
+      setStatusFilter(statusQuery);
+    }
+  }, [statusQuery]);
   
   // Feedback visual de guardado en vivo
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -150,6 +166,22 @@ export function AssignmentMatrixTable({
     return list;
   }, [templates, groups, subjects, assignments, teachers, academicYear]);
 
+  // Detector de materias candidatas a fusión (misma materia en distinto grupo y mismo módulo)
+  const fusionCandidatesSet = useMemo(() => {
+    const counts = new Map<string, Set<string>>();
+    matrixItems.forEach(item => {
+      if (item.isFusion) return;
+      const normKey = `${item.subjectName.trim().toLowerCase()}_${item.modulo}`;
+      if (!counts.has(normKey)) counts.set(normKey, new Set());
+      counts.get(normKey)!.add(item.groupId);
+    });
+    const result = new Set<string>();
+    counts.forEach((groupSet, key) => {
+      if (groupSet.size >= 2) result.add(key);
+    });
+    return result;
+  }, [matrixItems]);
+
   // Filtrado de la matriz
   const filteredItems = useMemo(() => {
     return matrixItems.filter(item => {
@@ -209,6 +241,77 @@ export function AssignmentMatrixTable({
   const assignedSlots = matrixItems.filter(i => i.assignedTeacher !== null).length;
   const pendingSlots = totalSlots - assignedSlots;
   const progressPercent = totalSlots > 0 ? Math.round((assignedSlots / totalSlots) * 100) : 0;
+
+  // Exportar Sábana de Horarios a Excel (.xls)
+  const handleExportExcel = () => {
+    const rowsToExport = filteredItems.length > 0 ? filteredItems : matrixItems;
+    const rowsHtml = rowsToExport.map(item => {
+      const teacherName = item.assignedTeacher
+        ? `${item.assignedTeacher.firstName} ${item.assignedTeacher.lastName}`
+        : 'SIN ASIGNAR';
+      const statusText = item.assignedTeacher ? 'Cubierta' : 'Pendiente';
+      const bgStatus = item.assignedTeacher ? '#ecfdf5' : '#fff1f2';
+      const colorStatus = item.assignedTeacher ? '#047857' : '#be123c';
+
+      return `
+        <tr>
+          <td style="border:1px solid #cbd5e1; padding:6px;">${item.careerName}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; font-weight:bold;">${item.groupName}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">${item.cuatrimestre}°</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">Módulo ${item.modulo}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">${item.turno}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">${item.subjectCode || '-'}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold;">${item.subjectName}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">${DAYS_OF_WEEK[item.scheduleDay] || '-'}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">${item.startTime} - ${item.endTime}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">${item.classroom}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px;">${teacherName}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">${item.isFusion ? 'Sí (Fusionada)' : 'No'}</td>
+          <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; background-color:${bgStatus}; color:${colorStatus}; font-weight:bold;">${statusText}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+      </head>
+      <body>
+        <table style="border-collapse:collapse; font-family:Arial, sans-serif; font-size:12px;">
+          <thead>
+            <tr>
+              <th colspan="13" style="background-color:#061266; color:#ffffff; font-size:15px; padding:10px; text-align:left;">
+                SÁBANA GENERAL DE HORARIOS Y ASIGNACIONES DOCENTES — CICLO ${academicYear}
+              </th>
+            </tr>
+            <tr style="background-color:#1e293b; color:#ffffff; font-weight:bold;">
+              <th style="border:1px solid #cbd5e1; padding:8px;">Carrera</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Grupo</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Cuatrimestre</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Módulo</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Turno</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Clave</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Materia</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Día</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Horario</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Aula</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Docente Asignado</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Fusión</th>
+              <th style="border:1px solid #cbd5e1; padding:8px;">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    saveAs(blob, `Sabana_Horarios_${academicYear}.xls`);
+  };
 
   // Analizar compatibilidad de maestros para una materia/fila
   const getTeacherRecommendations = (item: any) => {
@@ -309,7 +412,7 @@ export function AssignmentMatrixTable({
             </div>
           </div>
 
-          {/* Estadísticas Visuales tipo Semáforo */}
+          {/* Estadísticas Visuales tipo Semáforo + Exportar Excel */}
           <div className="flex items-center gap-4 flex-wrap">
             <div className="px-4 py-2 bg-gray-50 rounded-xl border border-gray-100 text-center">
               <span className="text-xs text-gray-400 font-semibold block">TOTAL CLASES</span>
@@ -337,6 +440,15 @@ export function AssignmentMatrixTable({
                 />
               </div>
             </div>
+
+            <button
+              onClick={handleExportExcel}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+              title="Descargar Sábana de Horarios en formato Excel (.xls)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Exportar Excel (.xls)
+            </button>
           </div>
         </div>
 
@@ -479,6 +591,7 @@ export function AssignmentMatrixTable({
                       const isJustSaved = lastSavedKey === item.rowKey;
                       const isOpen = openSelectorKey === item.rowKey;
                       const recommendations = isOpen ? getTeacherRecommendations(item) : [];
+                      const canBeFused = !item.isFusion && fusionCandidatesSet.has(`${item.subjectName.trim().toLowerCase()}_${item.modulo}`);
 
                       return (
                         <tr 
@@ -489,7 +602,7 @@ export function AssignmentMatrixTable({
                         >
                           {/* 1. Materia */}
                           <td className="py-3 px-6">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-gray-900 leading-snug">
                                 {item.subjectName}
                               </span>
@@ -500,6 +613,15 @@ export function AssignmentMatrixTable({
                                 >
                                   <LinkIcon className="w-3 h-3" /> Fusionada
                                 </span>
+                              )}
+                              {canBeFused && (
+                                <Link
+                                  href="/fusion-grupos"
+                                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-full border border-indigo-200 transition-colors"
+                                  title="Esta materia se imparte en otro grupo en el mismo módulo. Haz clic para fusionarla en 1 clic."
+                                >
+                                  <Sparkles className="w-3 h-3" /> Posible fusión
+                                </Link>
                               )}
                             </div>
                             {item.subjectCode && (

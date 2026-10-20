@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Button, Modal } from '@/components/ui';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { Download, CheckCircle2, AlertCircle, Eye, Archive } from 'lucide-react';
+import { Download, CheckCircle2, AlertCircle, Eye, Archive, MessageCircle } from 'lucide-react';
 
 interface DocumentManagementProps {
   teacher: any;
@@ -28,6 +28,27 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
   const [isOpen, setIsOpen] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const documents = teacher.documents || [];
+
+  const missingDocuments = REQUIRED_DOCUMENTS.filter(
+    req => !documents.some((d: any) => d.type === req.type)
+  );
+
+  const handleWhatsAppRemindDocs = () => {
+    const cleanPhone = (teacher.phone || '').replace(/\D/g, '');
+    const portalUrl = typeof window !== 'undefined' ? `${window.location.origin}/portal-docente` : '';
+    const missingList = missingDocuments.map(d => `• ${d.label}`).join('\n');
+
+    const message = missingDocuments.length > 0
+      ? `Hola Prof. ${teacher.firstName} ${teacher.lastName}, le saludamos cordialmente de coordinación académica. Le escribimos para recordarle completar su expediente digital en el Portal Docente (${portalUrl}).\n\nDocumentos pendientes (${missingDocuments.length}):\n${missingList}\n\n¡Muchas gracias por su apoyo!`
+      : `Hola Prof. ${teacher.firstName} ${teacher.lastName}, le confirmamos que su expediente digital se encuentra 100% completo. ¡Muchas gracias!`;
+
+    const encodedMsg = encodeURIComponent(message);
+    const url = cleanPhone
+      ? `https://wa.me/${cleanPhone.length === 10 ? '52' + cleanPhone : cleanPhone}?text=${encodedMsg}`
+      : `https://api.whatsapp.com/send?text=${encodedMsg}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   const handleDownloadAll = async () => {
     if (documents.length === 0) return;
@@ -67,9 +88,22 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
 
   return (
     <>
-      <Button variant="secondary" onClick={() => setIsOpen(true)} className="text-xs">
-        Ver Detalles
-      </Button>
+      <div className="flex items-center justify-end gap-2">
+        {missingDocuments.length > 0 && (
+          <button
+            type="button"
+            onClick={handleWhatsAppRemindDocs}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+            title={`Recordar por WhatsApp (${missingDocuments.length} documentos pendientes)`}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>Recordar</span>
+          </button>
+        )}
+        <Button variant="secondary" onClick={() => setIsOpen(true)} className="text-xs">
+          Ver Detalles
+        </Button>
+      </div>
 
       <Modal
         isOpen={isOpen}
@@ -92,8 +126,18 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
             )}
           </div>
           
-          {documents.length > 0 && (
-            <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            {missingDocuments.length > 0 && (
+              <button
+                type="button"
+                onClick={handleWhatsAppRemindDocs}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Solicitar Faltantes por WhatsApp ({missingDocuments.length})
+              </button>
+            )}
+            {documents.length > 0 && (
               <Button 
                 variant="primary" 
                 onClick={handleDownloadAll} 
@@ -103,8 +147,8 @@ export function DocumentManagement({ teacher, requiredDocs }: DocumentManagement
                 <Archive className="w-4 h-4" />
                 Descargar Todos (.ZIP)
               </Button>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <table className="w-full text-left text-sm">
