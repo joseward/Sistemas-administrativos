@@ -5,9 +5,24 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button, Badge, Modal, Input } from '@/components/ui';
 import { Select } from '@/components/ui/Select';
+import { 
+  Calendar, 
+  Table as TableIcon, 
+  UserCheck, 
+  X, 
+  Send, 
+  MapPin, 
+  CalendarX2, 
+  Link2, 
+  AlertCircle, 
+  Sparkles, 
+  ArrowLeft,
+  GraduationCap
+} from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/Tooltip';
 import { PrintGroups } from '@/components/horarios/PrintGroups';
 import { PrintTeachers } from '@/components/horarios/PrintTeachers';
+import { AssignmentMatrixTable } from '@/components/horarios/AssignmentMatrixTable';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { cn } from '@/lib/utils';
@@ -38,7 +53,7 @@ function getTeacherColor(teacherId: string) {
 
 function HorariosContent() {
   const searchParams = useSearchParams();
-  const initialView = searchParams.get('view') as 'table' | 'week' | null;
+  const initialView = searchParams.get('view') as 'matrix' | 'table' | 'week' | null;
 
   const [teachers, setTeachers] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -52,7 +67,9 @@ function HorariosContent() {
   
   // Assign Preview State
   const [assignPreview, setAssignPreview] = useState<Omit<MockScheduleAssignment, 'id'> | null>(null);
-  const [viewMode, setViewMode] = useState<'table' | 'week'>(initialView === 'table' ? 'table' : 'week');
+  const [viewMode, setViewMode] = useState<'matrix' | 'week' | 'table'>(
+    initialView === 'table' ? 'table' : initialView === 'week' ? 'week' : 'matrix'
+  );
   const [filterTeacher, setFilterTeacher] = useState<string>('');
   const [filterGroup, setFilterGroup] = useState<string>('');
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
@@ -308,7 +325,7 @@ function HorariosContent() {
           });
         })
       ).then(() => {
-        alert(`✨ Magia completada: Se asignaron y GUARDARON ${newAssignedCount} materias a los horarios disponibles.`);
+        alert(`Asignación completada: Se asignaron y guardaron ${newAssignedCount} materias a los horarios disponibles.`);
       }).catch(err => {
         console.error(err);
         alert('Se asignaron localmente pero hubo un error al guardar en la base de datos.');
@@ -460,6 +477,59 @@ function HorariosContent() {
 
 
 
+  // Handlers para la Matriz Inteligente de Asignación (1-Click)
+  const handleMatrixAssign = async (assignmentData: any) => {
+    try {
+      const res = await fetch('/api/assignments/single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assignmentData),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Refrescar asignaciones locales
+        const resAsg = await fetch('/api/assignments').then(r => r.json());
+        if (resAsg.success) {
+          setAssignments(resAsg.data);
+        }
+        return true;
+      } else {
+        alert('Error al asignar: ' + (data.error || 'Ocurrió un error'));
+        return false;
+      }
+    } catch (err) {
+      console.error('Error in handleMatrixAssign:', err);
+      alert('Error de conexión al asignar materia.');
+      return false;
+    }
+  };
+
+  const handleMatrixUnassign = async (assignment: any) => {
+    try {
+      const preview = { ...assignment, teacherId: null };
+      const res = await fetch('/api/assignments/single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preview),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const resAsg = await fetch('/api/assignments').then(r => r.json());
+        if (resAsg.success) {
+          setAssignments(resAsg.data);
+        }
+        return true;
+      } else {
+        alert('Error al desasignar: ' + (data.error || 'Ocurrió un error'));
+        return false;
+      }
+    } catch (err) {
+      console.error('Error in handleMatrixUnassign:', err);
+      alert('Error de conexión al desasignar materia.');
+      return false;
+    }
+  };
+
   const handlePublishSchedules = async () => {
     // 1. Determinar qué maestro(s) se van a publicar
     let teachersToPublish = [];
@@ -576,14 +646,17 @@ function HorariosContent() {
           href="/"
           className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium mb-6 transition-colors group"
         >
-          <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           Regresar al inicio
         </Link>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-[#061266]">📅 Gestión de Horarios</h1>
+            <h1 className="text-4xl font-bold text-[#061266] flex items-center gap-3">
+              <Calendar className="w-9 h-9 text-blue-600" />
+              Gestión de Horarios
+            </h1>
             <p className="text-gray-600 mt-2">
               Asigna horarios vinculando Maestro → Materia → Grupo. Se validan conflictos automáticamente.
             </p>
@@ -594,28 +667,42 @@ function HorariosContent() {
         <div id="filtros-horarios" className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex flex-wrap items-center gap-4">
             {/* Toggle de vista */}
-            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            <div className="flex rounded-xl border border-gray-300 overflow-hidden shadow-xs bg-gray-50 p-1 gap-1">
+              <button
+                onClick={() => setViewMode('matrix')}
+                className={cn(
+                  'px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5',
+                  viewMode === 'matrix'
+                    ? 'bg-[#061266] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                )}
+              >
+                <TableIcon className="w-4 h-4" />
+                Matriz Inteligente
+              </button>
               <button
                 onClick={() => setViewMode('week')}
                 className={cn(
-                  'px-4 py-2 text-sm font-medium transition-colors',
+                  'px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5',
                   viewMode === 'week'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#061266] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                 )}
               >
-                📅 Vista Semanal
+                <Calendar className="w-4 h-4" />
+                Vista Semanal
               </button>
               <button
                 onClick={() => setViewMode('table')}
                 className={cn(
-                  'px-4 py-2 text-sm font-medium transition-colors',
+                  'px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5',
                   viewMode === 'table'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'bg-[#061266] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
                 )}
               >
-                📋 Vista Tabla
+                <UserCheck className="w-4 h-4" />
+                Vista por Docente
               </button>
             </div>
 
@@ -669,9 +756,10 @@ function HorariosContent() {
             {(filterTeacher || filterGroup) && (
               <button
                 onClick={() => { setFilterTeacher(''); setFilterGroup(''); }}
-                className="text-sm text-red-600 hover:text-red-800 font-medium ml-2"
+                className="text-sm text-red-600 hover:text-red-800 font-medium ml-2 inline-flex items-center gap-1"
               >
-                ✕ Limpiar filtros
+                <X className="w-3.5 h-3.5" />
+                Limpiar filtros
               </button>
             )}
 
@@ -690,7 +778,7 @@ function HorariosContent() {
             <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-emerald-500 flex flex-col justify-center">
               <p className="text-sm font-medium text-gray-500">Maestros con Horarios</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {new Set(assignments.filter(a => a.isAvailable).map(a => a.teacherId)).size}
+                {new Set(assignments.filter(a => a.teacherId).map(a => a.teacherId)).size}
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-sm p-4 border-l-4 border-purple-500 flex flex-col justify-center">
@@ -712,12 +800,27 @@ function HorariosContent() {
                 onClick={() => handlePublishSchedules()} 
                 className="w-full h-full text-sm flex-col py-3 bg-[#061266] hover:bg-blue-900"
               >
-                <span className="text-xl mb-1">📬</span>
+                <Send className="w-5 h-5 mb-1 text-white" />
                 {filterTeacher ? 'Enviar Horario a Docente' : 'Enviar Horarios a Todos'}
               </Button>
             </div>
           </div>
         </div>
+
+        {/* ============ VISTA MATRIZ INTELIGENTE (Opción 1) ============ */}
+        {viewMode === 'matrix' && (
+          <AssignmentMatrixTable
+            templates={dbTemplates}
+            groups={groups}
+            subjects={subjects}
+            teachers={teachers}
+            assignments={assignments}
+            teacherAvailability={teacherAvailability}
+            academicYear="2026-2027"
+            onAssign={handleMatrixAssign}
+            onUnassign={handleMatrixUnassign}
+          />
+        )}
 
         {/* ============ VISTA SEMANAL ============ */}
         {viewMode === 'week' && (
@@ -772,8 +875,9 @@ function HorariosContent() {
                                     {group?.name} · {a.startTime}-{a.endTime}
                                   </p>
                                   {a.classroom && (
-                                    <p className="text-[10px] text-gray-400 leading-tight">
-                                      📍 {a.classroom}
+                                    <p className="text-[10px] text-gray-400 leading-tight flex items-center gap-0.5">
+                                      <MapPin className="w-2.5 h-2.5 inline text-gray-400 flex-shrink-0" />
+                                      {a.classroom}
                                     </p>
                                   )}
                                 </div>
@@ -823,7 +927,9 @@ function HorariosContent() {
               if (teachersInView.length === 0) {
                 return (
                   <div className="bg-white rounded-xl shadow-md p-16 text-center border border-gray-100">
-                    <div className="text-6xl mb-4">🗓️</div>
+                    <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+                      <CalendarX2 className="w-8 h-8" />
+                    </div>
                     <h3 className="text-xl font-bold text-gray-800 mb-2">No hay horarios disponibles</h3>
                     <p className="text-sm text-gray-500">
                       {filterTeacher ? 'Este docente no ha enviado su disponibilidad o no tienes grupos seleccionados.' : 'No hay docentes con disponibilidad o clases que coincidan con los filtros.'}
@@ -921,7 +1027,7 @@ function HorariosContent() {
                                               }
                                             }}
                                           >
-                                            <option value="">➕ Asignar nueva clase en este bloque...</option>
+                                            <option value="">+ Asignar nueva clase en este bloque...</option>
                                             {availableTemplateSlots.map(([groupName, options]) => (
                                               <optgroup key={groupName} label={groupName}>
                                                 {options.map((opt: any) => (
@@ -949,7 +1055,7 @@ function HorariosContent() {
                                             <td className="px-6 py-2">
                                               <div className="flex items-center gap-2">
                                                 <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-blue-300 text-blue-900 shadow-sm truncate flex justify-between items-center">
-                                      <span>🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom}) {a.fusionGroupId && <span className="ml-2 text-orange-500" title="Clase Fusionada">🔗</span>}</span>
+                                      <span className="flex items-center gap-1.5"><GraduationCap className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" /> Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom}) {a.fusionGroupId && <span className="ml-2 inline-flex items-center text-orange-500" title="Clase Fusionada"><Link2 className="w-3.5 h-3.5" /></span>}</span>
                                                   {a.createdBy && (
                                                     <span className="text-xs text-blue-600 font-normal italic print:hidden pl-2 border-l border-blue-200">
                                                       Asignado por: {a.createdBy.firstName || a.createdBy.email.split('@')[0]}
@@ -980,7 +1086,7 @@ function HorariosContent() {
                                                   className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-bold border border-transparent hover:border-red-200 transition-colors"
                                                   title="Eliminar Asignación"
                                                 >
-                                                  ✕
+                                                  <X className="w-4 h-4" />
                                                 </button>
                                               </div>
                                             </td>
@@ -1008,7 +1114,7 @@ function HorariosContent() {
                                       <td className="px-6 py-2">
                                         <div className="flex items-center gap-2">
                                           <div className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium bg-white border-red-300 text-red-900 shadow-sm truncate flex justify-between items-center">
-                                            <span>🎓 Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom}) {a.fusionGroupId && <span className="ml-2 text-orange-500" title="Clase Fusionada">🔗</span>}</span>
+                                            <span className="flex items-center gap-1.5"><GraduationCap className="w-3.5 h-3.5 text-red-600 flex-shrink-0" /> Mód {a.modulo} | {assignedGroup?.name} - {assignedSubject?.name} ({a.classroom}) {a.fusionGroupId && <span className="ml-2 inline-flex items-center text-orange-500" title="Clase Fusionada"><Link2 className="w-3.5 h-3.5" /></span>}</span>
                                             {a.createdBy && (
                                               <span className="text-xs text-red-600 font-normal italic print:hidden pl-2 border-l border-red-200">
                                                 Asignado por: {a.createdBy.firstName || a.createdBy.email.split('@')[0]}
@@ -1039,7 +1145,7 @@ function HorariosContent() {
                                             className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg font-bold border border-transparent hover:border-red-200 transition-colors"
                                             title="Eliminar Asignación"
                                           >
-                                            ✕
+                                            <X className="w-4 h-4" />
                                           </button>
                                         </div>
                                       </td>
@@ -1079,8 +1185,9 @@ function HorariosContent() {
       >
         <div className="space-y-4">
           {formError && (
-            <div className="p-3 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm">
-              ⚠️ {formError}
+            <div className="p-3 bg-red-50 border border-red-300 rounded-lg text-red-700 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{formError}</span>
             </div>
           )}
 
@@ -1098,9 +1205,10 @@ function HorariosContent() {
                       setFormError('No hay maestros disponibles para este horario.');
                     }
                   }}
-                  className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 bg-emerald-50 px-2 py-1 rounded"
+                  className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 bg-emerald-50 px-2 py-1 rounded inline-flex items-center gap-1"
                 >
-                  ✨ Sugerir Maestro
+                  <Sparkles className="w-3 h-3 text-emerald-600" />
+                  Sugerir Maestro
                 </button>
               )}
             </div>
@@ -1111,10 +1219,10 @@ function HorariosContent() {
             >
               <option value="">Seleccionar maestro...</option>
               {suggestedTeachers.length > 0 && formData.scheduleDay !== '' && (
-                <optgroup label="✅ Maestros Disponibles (Sugeridos)">
+                <optgroup label="Maestros Disponibles (Sugeridos)">
                   {suggestedTeachers.map(t => (
                     <option key={`sug-${t.id}`} value={t.id}>
-                      {t.firstName} {t.lastName} — {t.specialization}
+                      {t.firstName} {t.lastName}
                     </option>
                   ))}
                 </optgroup>
@@ -1122,14 +1230,15 @@ function HorariosContent() {
               <optgroup label="Todos los maestros">
                 {activeTeachers.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.firstName} {t.lastName} — {t.specialization}
+                    {t.firstName} {t.lastName}
                   </option>
                 ))}
               </optgroup>
             </select>
             {activeTeachers.length === 0 && (
-              <p className="text-xs text-amber-600 mt-1">
-                ⚠️ No hay maestros activos. Ve a la sección de Maestros para activar alguno.
+              <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                No hay maestros activos. Ve a la sección de Maestros para activar alguno.
               </p>
             )}
           </div>
@@ -1207,7 +1316,7 @@ function HorariosContent() {
         <Modal 
           isOpen={!!assignPreview} 
           onClose={() => setAssignPreview(null)} 
-          title="✨ Vista Previa de Asignación"
+          title="Vista Previa de Asignación"
         >
           <div className="p-6">
             <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-6 rounded-r-lg">

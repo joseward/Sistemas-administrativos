@@ -6,7 +6,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
-    const { firstName, lastName, email, phone, cedula, specialization, contractStatus } = body;
+    const { firstName, lastName, email, phone, cedula, contractStatus } = body;
 
     const teacher = await prisma.teacher.findUnique({ where: { id: params.id } });
     if (!teacher) {
@@ -31,7 +31,7 @@ export async function PUT(
           email,
           phone,
           cedula,
-          specialization,
+          specialization: null,
           contractStatus,
         },
       });

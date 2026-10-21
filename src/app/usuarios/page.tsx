@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button, Badge } from '@/components/ui';
+import { ShieldCheck, SlidersHorizontal, GraduationCap, Unlock, Info, ArrowLeft } from 'lucide-react';
 import { MOCK_USERS, type MockUser } from '@/lib/mockData';
 import { UserForm } from '@/components/usuarios/UserForm';
 import { ChangePasswordModal } from '@/components/usuarios/ChangePasswordModal';
@@ -124,13 +125,16 @@ export default function UsuariosPage() {
           href="/"
           className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium mb-6 transition-colors group"
         >
-          <span className="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           Regresar al inicio
         </Link>
 
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-[#061266]">🔐 Gestión de Accesos y Usuarios</h1>
+            <h1 className="text-4xl font-bold text-[#061266] flex items-center gap-3">
+              <ShieldCheck className="w-9 h-9 text-blue-600" />
+              Gestión de Accesos y Usuarios
+            </h1>
             <p className="text-gray-600 mt-2">
               Administra las cuentas del personal administrativo y verifica el acceso de los docentes.
             </p>
@@ -153,30 +157,35 @@ export default function UsuariosPage() {
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setActiveTab('admin')}
-              className={`flex-1 py-4 text-center font-semibold text-lg transition-colors ${
+              className={`flex-1 py-4 text-center font-semibold text-lg transition-colors flex items-center justify-center gap-2 ${
                 activeTab === 'admin'
                   ? 'border-b-4 border-[#061266] text-[#061266] bg-blue-50/50'
                   : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
-              🛠️ Administradores (Backend)
+              <SlidersHorizontal className="w-5 h-5" />
+              Administradores (Backend)
             </button>
             <button
               onClick={() => setActiveTab('docente')}
-              className={`flex-1 py-4 text-center font-semibold text-lg transition-colors ${
+              className={`flex-1 py-4 text-center font-semibold text-lg transition-colors flex items-center justify-center gap-2 ${
                 activeTab === 'docente'
                   ? 'border-b-4 border-[#061266] text-[#061266] bg-blue-50/50'
                   : 'text-gray-500 hover:bg-gray-50'
               }`}
             >
-              👨‍🏫 Docentes (Frontend)
+              <GraduationCap className="w-5 h-5" />
+              Docentes (Frontend)
             </button>
           </div>
 
           <div className="p-6">
             {activeTab === 'docente' && (
-              <div className="mb-4 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-200">
-                ℹ️ <strong>Nota:</strong> Los usuarios docentes se crean y eliminan automáticamente desde la sección de <strong>Gestión de Maestros</strong> para mantener la sincronización.
+              <div className="mb-4 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-200 flex items-start gap-2.5">
+                <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong>Nota:</strong> Los usuarios docentes se crean y eliminan automáticamente desde la sección de <strong>Gestión de Maestros</strong> para mantener la sincronización.
+                </div>
               </div>
             )}
 
@@ -213,8 +222,9 @@ export default function UsuariosPage() {
                         <td className="px-6 py-4 text-center">
                           <div className="flex justify-center gap-2">
                             {user.status === 'blocked' && (
-                              <Button size="sm" onClick={() => handleUnblock(user.id)} className="bg-orange-500 hover:bg-orange-600 text-white">
-                                🔓 Desbloquear
+                              <Button size="sm" onClick={() => handleUnblock(user.id)} className="bg-orange-500 hover:bg-orange-600 text-white flex items-center gap-1">
+                                <Unlock className="w-3.5 h-3.5" />
+                                Desbloquear
                               </Button>
                             )}
                             {user.role === 'admin' ? (

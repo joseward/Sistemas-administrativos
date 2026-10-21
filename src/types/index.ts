@@ -18,7 +18,6 @@ export interface ITeacher {
   email: string;
   phone?: string;
   cedula?: string;
-  specialization?: string;
   contractStatus: 'active' | 'inactive' | 'pending';
   createdAt: Date;
   updatedAt: Date;

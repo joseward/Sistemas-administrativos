@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { jwtVerify } from 'jose';
 import { MOCK_SUBJECTS, MOCK_GROUPS } from '@/lib/mockData';
+import { ensureContractForTeacher } from '@/lib/contracts';
 
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
@@ -125,6 +126,10 @@ export async function POST(request: NextRequest) {
         });
       }
     });
+
+    if (teacherId && assignments && assignments.length > 0) {
+      await ensureContractForTeacher(teacherId, assignments[0]?.academicYear);
+    }
 
     return NextResponse.json({ success: true, message: 'Horarios sincronizados correctamente' });
   } catch (error) {

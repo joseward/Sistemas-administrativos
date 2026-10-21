@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Link from 'next/link';
 import './globals.css';
 import { HeaderUserMenu } from '@/components/layout/HeaderUserMenu';
+import { TopNavBar } from '@/components/layout/TopNavBar';
 import { ContextualAssistant } from '@/components/layout/ContextualAssistant';
 import { TooltipProvider } from '@/components/ui/Tooltip';
 
@@ -23,17 +25,18 @@ export default function RootLayout({
         {/* Global Header Brand */}
         <header className="bg-[#061266] text-white border-b-4 border-[#fdb515] sticky top-0 z-[60] shadow-md print:hidden">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
               <img 
                 src="/logo.png" 
                 alt="Aztlán Playa del Carmen Logo" 
                 className="h-10 w-auto brightness-0 invert object-contain"
               />
-            </div>
+            </Link>
             <div className="flex items-center gap-4">
               <HeaderUserMenu />
             </div>
           </div>
+          <TopNavBar />
         </header>
 
         {/* Main Content */}

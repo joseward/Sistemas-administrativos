@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input, Modal } from '@/components/ui';
+import { KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
 
@@ -72,8 +73,9 @@ export function ChangePasswordForm() {
 
   return (
     <>
-      <Button variant="secondary" onClick={() => setIsOpen(true)} className="print:hidden">
-        🔐 Cambiar Contraseña
+      <Button variant="secondary" onClick={() => setIsOpen(true)} className="print:hidden flex items-center gap-2">
+        <KeyRound className="w-4 h-4 text-gray-500" />
+        Cambiar Contraseña
       </Button>
 
       <Modal
@@ -93,14 +95,16 @@ export function ChangePasswordForm() {
           </p>
 
           {successMsg && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm">
-              ✅ {successMsg}
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>{successMsg}</span>
             </div>
           )}
 
           {errorMsg && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm">
-              ❌ {errorMsg}
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <span>{errorMsg}</span>
             </div>
           )}
 

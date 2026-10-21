@@ -11,7 +11,8 @@ import {
   FolderOpen, 
   CheckSquare, 
   Shield,
-  ArrowRight
+  ArrowRight,
+  BookOpen
 } from 'lucide-react';
 
 export default function Home() {
@@ -19,13 +20,23 @@ export default function Home() {
     <main className="min-h-screen bg-transparent p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-12 text-center mt-4">
+        <div className="mb-10 text-center mt-4">
           <h1 className="text-4xl md:text-5xl font-extrabold text-[#061266] mb-3 tracking-tight">
             Panel de Administración
           </h1>
-          <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-5">
             Gestión eficiente de docentes, horarios, grupos y asistencia
           </p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <Link
+              href="/manual"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white hover:bg-blue-50 text-[#061266] border border-blue-200 shadow-2xs text-xs font-extrabold transition-all"
+            >
+              <BookOpen className="w-4 h-4 text-blue-600" />
+              Manual de Usuario Paso a Paso (Administrador y Docente)
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
 
         {/* Panel de Métricas (Semáforo) */}

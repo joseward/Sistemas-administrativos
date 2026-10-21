@@ -75,6 +75,38 @@ export async function POST(request: Request) {
     const body = await request.json();
     const userId = await getUserId();
     
+    // Verificar si ya existe una plantilla para este grupo y módulo
+    const existing = await prisma.groupTemplate.findFirst({
+      where: {
+        groupId: body.groupId,
+        modulo: body.modulo
+      }
+    });
+
+    if (existing) {
+      // Reemplazar o actualizar la plantilla existente en lugar de crear un duplicado
+      await prisma.templateSubject.deleteMany({
+        where: { templateId: existing.id }
+      });
+
+      const template = await prisma.groupTemplate.update({
+        where: { id: existing.id },
+        data: {
+          turno: body.turno,
+          classroom: body.classroom,
+          startTime: body.startTime,
+          endTime: body.endTime,
+          createdById: userId,
+          subjects: {
+            create: body.subjectIds.map((id: string) => ({
+              subject: { connect: { id } }
+            }))
+          }
+        }
+      });
+      return NextResponse.json(template);
+    }
+
     const template = await prisma.groupTemplate.create({
       data: {
         groupId: body.groupId,
